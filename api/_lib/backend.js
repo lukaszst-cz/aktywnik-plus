@@ -2,9 +2,10 @@
 
 function cloudReady(){
   const directDatabaseConfigured=Boolean(process.env.DATABASE_URL);
+  const supabaseServerKey=process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   const supabaseConfigured=Boolean(
     process.env.SUPABASE_URL &&
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    supabaseServerKey
   );
   const databaseConfigured=directDatabaseConfigured || supabaseConfigured;
   const authConfigured=Boolean(process.env.AUTH_MODE && process.env.AUTH_MODE!=='disabled');
