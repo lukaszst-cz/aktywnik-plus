@@ -23,6 +23,8 @@ jobs:
           node --check install.js
           node --check share.js
           node --check sw.js
+          node --check api/health.js
+          node --check api/capabilities.js
           python3 - <<'PY'
           import json, os, re
           with open("manifest.webmanifest", encoding="utf-8") as f:
@@ -62,3 +64,30 @@ jobs:
           grep -q 'data-test="pass"' /tmp/aktywnik-smoke.html
           grep -q 'PASS: pilot, timer, validation, manual activity, approval, report, multi-item class handlers, backup, manifest and persistence' /tmp/aktywnik-smoke.html
           echo "Aktywnik+ browser smoke PASS"
+
+
+      - name: Backend API unit smoke
+        run: |
+          node - <<'NODE'
+          function mock(){
+            const out={statusCode:200,headers:{},body:null};
+            return {
+              out,
+              setHeader(k,v){out.headers[k]=v},
+              status(n){out.statusCode=n;return this},
+              json(v){out.body=v;return this}
+            };
+          }
+          for (const file of ['./api/health.js','./api/capabilities.js']){
+            const handler=require(file);
+            const res=mock();
+            handler({method:'GET'},res);
+            if(res.out.statusCode!==200) throw new Error(file+' status');
+            if(!res.out.body) throw new Error(file+' no body');
+          }
+          const health=require('./api/health.js');
+          const denied=mock();
+          health({method:'POST'},denied);
+          if(denied.out.statusCode!==405) throw new Error('health method guard');
+          console.log('backend API smoke OK');
+          NODE
