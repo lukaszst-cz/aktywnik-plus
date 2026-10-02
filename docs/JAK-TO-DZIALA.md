@@ -101,3 +101,10 @@ DZIECKO
 ## Najważniejsza zasada
 
 Aktywnik+ pomaga dokumentować ruch i decyzje związane z raportami. Nie zastępuje nauczyciela, nie ustala ocen za szkołę i nie ocenia wyglądu, masy ciała ani sprawności dziecka.
+
+
+## Gdzie działa
+
+Aktywnik+ działa bez instalacji w przeglądarce oraz jako PWA na obsługiwanych urządzeniach. Można korzystać na Androidzie, iPhonie/iPadzie, Windows, macOS, ChromeOS i Linux. Dostępna jest również wersja papierowa.
+
+Brak możliwości instalacji PWA nie blokuje korzystania z wersji przeglądarkowej.
