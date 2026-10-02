@@ -1,8 +1,17 @@
+## Status: zakończone
+
+- projekt Vercel: `aktywnik-plus`
+- konto: `lukaszstaniewicz-6630`
+- produkcja: https://aktywnik-plus.vercel.app
+- repo GitHub połączone: `lukaszst-cz/aktywnik-plus`
+- automatyczne deploye z `main`: aktywne
+- Vercel Authentication dla produkcji: wyłączone
+
 # Stałe wdrożenie Aktywnik+ na Vercel
 
 ## Cel
 
-Publiczna, stała wersja Aktywnik+ powinna działać pod adresem w rodzaju:
+Publiczna, stała wersja Aktywnik+ działa pod adresem:
 
 `https://aktywnik-plus.vercel.app`
 
