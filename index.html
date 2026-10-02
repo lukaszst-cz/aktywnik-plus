@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#0f172a" />
   <meta name="description" content="Aktywnik+ — aktywność dziecka, akceptacja rodzica i raporty dla szkoły." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="landing.css" />
   <title>Aktywnik+ — ruch, rodzic, szkoła</title>
 </head>
@@ -27,6 +29,7 @@
         <p>Aktywnik+ łączy szybki wpis dziecka, wieczorną akceptację rodzica, raporty i elastyczne zasady nauczyciela. Bez rankingów dzieci i bez obowiązku korzystania z aplikacji.</p>
         <div class="cta">
           <a class="primary" href="app.html">Wypróbuj demo</a>
+          <button class="primary install-button" type="button" data-install-pwa>Zainstaluj Aktywnik+</button>
           <a class="secondary" href="konto.html">Zarejestruj się / zaloguj</a>
           <a class="secondary" href="paper.html">Pobierz wersję papierową</a>
         </div>
@@ -71,5 +74,6 @@
   </main>
 
   <footer>Aktywnik+ • projekt otwarty do testów i dalszego rozwoju</footer>
+  <script src="install.js"></script>
 </body>
 </html>
