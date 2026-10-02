@@ -92,6 +92,17 @@
         <div class="form-grid">
           <label>Data<input id="activityDate" type="date" /></label>
           <label>Czas (min)<input id="activityDuration" type="number" min="1" max="600" value="30" /></label>
+          <div class="wide duration-box">
+            <span class="duration-label">Szybki czas zajęć</span>
+            <div class="duration-presets" role="group" aria-label="Szybki wybór czasu">
+              <button type="button" data-duration="30">30 min</button>
+              <button type="button" data-duration="45">45 min</button>
+              <button type="button" data-duration="60">1 h</button>
+              <button type="button" data-duration="90">1,5 h</button>
+              <button type="button" data-duration="120">2 h</button>
+            </div>
+            <small>Wybierz rzeczywisty czas zajęć albo wpisz własną liczbę minut. To zapis aktywności, nie cel do osiągnięcia.</small>
+          </div>
           <label>Wysiłek 1–5<input id="activityEffort" type="range" min="1" max="5" value="2" /></label>
           <label class="wide">Notatka (opcjonalnie)<input id="activityNote" maxlength="120" placeholder="np. z tatą, z kolegami, trening" /></label>
         </div>
@@ -249,6 +260,32 @@
           <label>Nazwa dziecka / identyfikator<input id="paperChildName" maxlength="60" placeholder="np. Julia R." /></label>
         </div>
         <div class="actions"><button id="addPaperChildBtn" class="primary">Dodaj do klasy</button></div>
+      </section>
+
+      <section id="paperImportCard" class="card">
+        <div class="section-head"><h2>📷 Skan / import karty papierowej</h2><span class="badge">lokalny pilot</span></div>
+        <p><strong>Najprostszy wariant:</strong> zeskanuj kartę w DocPilot, wykonaj OCR, wyeksportuj CSV/JSON i wczytaj tutaj. Możesz też wkleić tekst OCR ręcznie.</p>
+        <div class="prototype-warning"><strong>Import w pilocie działa lokalnie i tylko w odblokowanej strefie rodzica/szkoły.</strong> Produkcyjny nauczyciel otrzyma osobne konto i uprawnienia backendowe.</div>
+        <div class="form-grid">
+          <label>Klasa<select id="importClassId"></select></label>
+          <label>Dziecko / identyfikator<input id="importChildName" maxlength="60" placeholder="np. Daniel S." /></label>
+          <label>Plik CSV / JSON / TXT<input id="paperImportFile" type="file" accept=".csv,.json,.txt,text/csv,application/json,text/plain" /></label>
+          <label class="wide">Wklej tekst po OCR
+            <textarea id="ocrPaste" rows="6" placeholder="Data;Aktywność;Czas;Wysiłek;Uwagi&#10;2026-10-01;Judo;90;3;trening klubowy"></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="parsePaperImportBtn" class="ghost">Pokaż podgląd</button>
+          <button id="savePaperImportBtn" class="primary" disabled>Zapisz import</button>
+        </div>
+        <div id="paperImportStatus"></div>
+        <div id="paperImportPreview" class="import-preview"></div>
+        <small>DocPilot → skan / zdjęcie → OCR → eksport CSV/JSON → Aktywnik+ → podgląd → poprawki → zatwierdzenie.</small>
+      </section>
+
+      <section class="card">
+        <div class="section-head"><h2>Zaimportowane karty</h2><a class="button-link ghost" href="dla-nauczyciela.html" target="_blank" rel="noopener">Instrukcja dla nauczyciela</a></div>
+        <div id="paperImportHistory" class="list"></div>
       </section>
 
       <section class="card">
