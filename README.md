@@ -12,6 +12,8 @@ Aktywnik+ to prosty dziennik aktywności dziecka z szybkim wpisem na telefonie, 
 - raporty: miesięczny, kwartalny, półroczny i roczny;
 - statystyki dotyczą wyłącznie własnej historii dziecka — bez rankingów między dziećmi;
 - raport zawiera miejsce na uwagi rodzica oraz nauczyciela / wychowawcy;
+- aplikacja zapamiętuje plusy i oceny przyznane przez nauczyciela;
+- zasady przeliczania plusów na oceny ustala nauczyciel lub szkoła;
 - aplikacja nie śledzi masy ciała, kalorii ani wyglądu dziecka.
 
 ## Jak to działa
@@ -20,7 +22,7 @@ Prosty schemat dla dziecka, rodzica i nauczyciela jest tutaj:
 
 **[Jak działa Aktywnik+ — rodzice i nauczyciele](docs/JAK-TO-DZIALA.md)**
 
-Obecne założenie szkolnego systemu motywacyjnego: **3 plusy = ocena 6 z WF**. Reguła pozostanie konfigurowalna, ponieważ szkoły mogą stosować inne zasady.
+Aktywnik+ nie narzuca szkolnego przelicznika plusów na oceny. Nauczyciel może przyznawać plusy i oceny według własnych zasad, a aplikacja przechowuje ich historię przy profilu dziecka.
 
 ## Prototyp
 
