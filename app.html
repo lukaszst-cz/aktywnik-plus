@@ -11,114 +11,115 @@
   <title>Aktywnik+ — aplikacja</title>
 </head>
 <body>
-  <a class="skip-link" href="#mainContent">Przejdź do treści</a>
+  <a class="skip-link" href="#mainContent" data-i18n="app.skip">Przejdź do treści</a>
   <header class="topbar">
     <div>
       <strong class="brand">Aktywnik+</strong>
-      <span class="tagline">ruch bez presji</span>
+      <span class="tagline" data-i18n="app.tagline">ruch bez presji</span>
       <span class="version-badge">Universal 0.4.0</span>
-      <span class="local-session-badge">bez logowania · dane lokalne</span>
+      <span class="local-session-badge" data-i18n="app.localSession">bez logowania · dane lokalne</span>
     </div>
-    <button class="install-mini" type="button" data-install-pwa>Zainstaluj</button>
+    <select class="language-switch" data-language-switch><option value="pl">PL</option><option value="en">EN</option></select>
+    <button class="install-mini" type="button" data-install-pwa data-i18n="common.install">Zainstaluj</button>
     <div class="secure-actions">
-      <span id="saveStatusBadge" class="badge save-status" aria-live="polite">zapis lokalny</span>
+      <span id="saveStatusBadge" class="badge save-status" aria-live="polite" data-i18n="app.saveLocal">zapis lokalny</span>
       <span id="cloudSyncBadge" class="badge" aria-live="polite">lokalnie · sync opcjonalny</span>
       <span id="deviceChildBadge" class="badge"></span>
       <a class="ghost button-link" href="konto.html">Konto / Sync ☁️</a>
-      <button id="parentAccessBtn" class="ghost">Strefa rodzica 🔒</button>
+      <button id="parentAccessBtn" class="ghost" data-i18n="app.parentZone">Strefa rodzica 🔒</button>
     </div>
   </header>
 
   <main id="mainContent" class="shell">
     <section id="pilotSetupCard" class="card pilot-card hidden" aria-labelledby="setupTitle">
       <div>
-        <p class="eyebrow">Pierwsze uruchomienie</p>
-        <h2 id="setupTitle">Jak chcesz korzystać z Aktywnik+?</h2>
-        <p>Wybierz prosty tryb osobisty albo rodzinny. Funkcje szkoły i klubu są dodatkiem, nie warunkiem korzystania.</p>
+        <p class="eyebrow" data-i18n="app.firstRun">Pierwsze uruchomienie</p>
+        <h2 id="setupTitle" data-i18n="app.setupTitle">Jak chcesz korzystać z Aktywnik+?</h2>
+        <p data-i18n="app.setupIntro">Wybierz prosty tryb osobisty albo rodzinny. Funkcje szkoły i klubu są dodatkiem, nie warunkiem korzystania.</p>
       </div>
       <div class="pilot-setup">
-        <label>Tryb korzystania
+        <label><span data-i18n="app.modeLabel">Tryb korzystania</span>
           <select id="setupMode">
-            <option value="self">Dla siebie — bez zatwierdzania przez rodzica</option>
-            <option value="family">Rodzina — dziecko + rodzic/opiekun</option>
+            <option value="self" data-i18n="app.modeSelf">Dla siebie — bez zatwierdzania przez rodzica</option>
+            <option value="family" data-i18n="app.modeFamily">Rodzina — dziecko + rodzic/opiekun</option>
           </select>
         </label>
-        <label id="setupNameLabel">Nazwa profilu
-          <input id="pilotChildName" maxlength="60" autocomplete="nickname" placeholder="np. Łukasz albo Daniel S." />
+        <label id="setupNameLabel"><span data-i18n="app.profileName">Nazwa profilu</span>
+          <input id="pilotChildName" maxlength="60" autocomplete="nickname" placeholder="np. Łukasz albo Daniel S." data-i18n-placeholder="app.profilePlaceholder" />
         </label>
         <div id="familySetupFields" class="setup-family-fields hidden">
-          <label>PIN rodzica
-            <input id="parentPinSetup" type="password" inputmode="numeric" minlength="4" maxlength="8" autocomplete="new-password" placeholder="4–8 cyfr" />
+          <label><span data-i18n="app.parentPin">PIN rodzica</span>
+            <input id="parentPinSetup" type="password" inputmode="numeric" minlength="4" maxlength="8" autocomplete="new-password" placeholder="4–8 cyfr" data-i18n-placeholder="app.pinPlaceholder" />
           </label>
-          <label>Powtórz PIN
-            <input id="parentPinConfirm" type="password" inputmode="numeric" minlength="4" maxlength="8" autocomplete="new-password" placeholder="powtórz PIN" />
+          <label><span data-i18n="app.repeatPin">Powtórz PIN</span>
+            <input id="parentPinConfirm" type="password" inputmode="numeric" minlength="4" maxlength="8" autocomplete="new-password" placeholder="powtórz PIN" data-i18n-placeholder="app.repeatPinPlaceholder" />
           </label>
         </div>
-        <button id="startPilotBtn" class="primary">Zacznij korzystać</button>
-        <small id="setupHint">Tryb osobisty działa lokalnie bez konta. Dane możesz później eksportować jako kopię.</small>
+        <button id="startPilotBtn" class="primary" data-i18n="app.start">Zacznij korzystać</button>
+        <small id="setupHint" data-i18n="app.setupHint">Tryb osobisty działa lokalnie bez konta. Dane możesz później eksportować jako kopię.</small>
       </div>
     </section>
     <section id="childPanel">
       <div class="hero card">
         <div>
-          <p class="eyebrow">Dzisiaj <span id="childDisplayName"></span></p>
-          <h1>Co robiłeś/aś?</h1>
-          <p>Wybierz ulubioną aktywność albo znajdź inną.</p>
+          <p class="eyebrow"><span data-i18n="app.today">Dzisiaj</span> <span id="childDisplayName"></span></p>
+          <h1 data-i18n="app.whatDid">Co robiłeś/aś?</h1>
+          <p data-i18n="app.chooseActivity">Wybierz ulubioną aktywność albo znajdź inną.</p>
         </div>
-        <div class="metric"><span id="todayMinutes">0</span><small>min dzisiaj</small></div>
+        <div class="metric"><span id="todayMinutes">0</span><small data-i18n="app.minToday">min dzisiaj</small></div>
       </div>
 
       <section id="childOverviewCard" class="card overview-card">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Szybki podgląd</p>
-            <h2>Ten tydzień</h2>
+            <p class="eyebrow" data-i18n="app.quickView">Szybki podgląd</p>
+            <h2 data-i18n="app.thisWeek">Ten tydzień</h2>
           </div>
-          <button id="repeatLastActivityBtn" class="ghost hidden" type="button">Powtórz ostatnią aktywność</button>
+          <button id="repeatLastActivityBtn" class="ghost hidden" type="button" data-i18n="app.repeatLast">Powtórz ostatnią aktywność</button>
         </div>
         <div id="childWeekSnapshot" class="snapshot-grid"></div>
-        <small class="calm-note">To tylko podsumowanie aktywności — bez celów, rankingów i porównywania z innymi.</small>
+        <small class="calm-note" data-i18n="app.calmSummary">To tylko podsumowanie aktywności — bez celów, rankingów i porównywania z innymi.</small>
       </section>
 
       <section id="timerStatusCard" class="card timer-card hidden">
         <div class="timer-live">
           <div>
-            <p class="eyebrow">Pomiar trwa</p>
-            <h2 id="timerActivityName">Aktywność</h2>
+            <p class="eyebrow" data-i18n="app.timerRunning">Pomiar trwa</p>
+            <h2 id="timerActivityName" data-i18n="app.activity">Aktywność</h2>
             <p id="timerStartedAt" class="timer-meta"></p>
           </div>
           <div id="timerElapsed" class="timer-clock">00:00:00</div>
         </div>
         <div class="actions">
-          <button id="cancelTimerBtn" class="ghost">Anuluj pomiar</button>
-          <button id="stopTimerBtn" class="primary">■ Stop i zapisz</button>
+          <button id="cancelTimerBtn" class="ghost" data-i18n="app.cancelTimer">Anuluj pomiar</button>
+          <button id="stopTimerBtn" class="primary" data-i18n="app.stopSave">■ Stop i zapisz</button>
         </div>
-        <small>Możesz zminimalizować lub zamknąć PWA. Czas jest liczony od zapisanego momentu startu.</small>
+        <small data-i18n="app.timerHint">Możesz zminimalizować lub zamknąć PWA. Czas jest liczony od zapisanego momentu startu.</small>
       </section>
 
       <section class="card">
         <div class="section-head">
-          <h2>⭐ Ulubione</h2>
-          <button id="editFavoritesBtn" class="ghost">Edytuj</button>
+          <h2 data-i18n="app.favorites">⭐ Ulubione</h2>
+          <button id="editFavoritesBtn" class="ghost" data-i18n="app.edit">Edytuj</button>
         </div>
         <div id="favoriteActivities" class="activity-grid"></div>
       </section>
 
       <section class="card">
         <div class="section-head">
-          <h2>Wszystkie aktywności</h2>
-          <input id="activitySearch" type="search" placeholder="Szukaj aktywności" />
+          <h2 data-i18n="app.allActivities">Wszystkie aktywności</h2>
+          <input id="activitySearch" type="search" placeholder="Szukaj aktywności" data-i18n-placeholder="app.search" />
         </div>
         <div id="allActivities" class="activity-grid compact"></div>
       </section>
 
       <section id="entryCard" class="card hidden">
-        <h2 id="selectedActivityTitle">Nowa aktywność</h2>
+        <h2 id="selectedActivityTitle" data-i18n="app.newActivity">Nowa aktywność</h2>
         <div class="form-grid">
-          <label>Data<input id="activityDate" type="date" /></label>
-          <label>Czas (min)<input id="activityDuration" type="number" min="1" max="600" value="30" /></label>
+          <label><span data-i18n="app.date">Data</span><input id="activityDate" type="date" /></label>
+          <label><span data-i18n="app.duration">Czas (min)</span><input id="activityDuration" type="number" min="1" max="600" value="30" /></label>
           <div class="wide duration-box">
-            <span class="duration-label">Szybki czas zajęć</span>
+            <span class="duration-label" data-i18n="app.quickDuration">Szybki czas zajęć</span>
             <div class="duration-presets" role="group" aria-label="Szybki wybór czasu">
               <button type="button" data-duration="30">30 min</button>
               <button type="button" data-duration="45">45 min</button>
@@ -126,48 +127,48 @@
               <button type="button" data-duration="90">1,5 h</button>
               <button type="button" data-duration="120">2 h</button>
             </div>
-            <small>Wybierz rzeczywisty czas treningu albo wpisz własną liczbę minut. To zapis zajęć, nie cel do osiągnięcia.</small>
+            <small data-i18n="app.durationHelp">Wybierz rzeczywisty czas treningu albo wpisz własną liczbę minut. To zapis zajęć, nie cel do osiągnięcia.</small>
           </div>
-          <label>Wysiłek 1–5<input id="activityEffort" type="range" min="1" max="5" value="2" /></label>
-          <label class="wide">Własna nazwa aktywności (opcjonalnie)<input id="customActivityName" maxlength="80" placeholder="np. trening siłowy, ogród, spacer po lesie" /></label>
-          <label class="wide">Notatka (opcjonalnie)<input id="activityNote" maxlength="120" placeholder="np. z rodziną, trening, rekreacyjnie" /></label>
+          <label><span data-i18n="app.effort">Wysiłek 1–5</span><input id="activityEffort" type="range" min="1" max="5" value="2" /></label>
+          <label class="wide"><span data-i18n="app.customName">Własna nazwa aktywności (opcjonalnie)</span><input id="customActivityName" maxlength="80" placeholder="np. trening siłowy, ogród, spacer po lesie" data-i18n-placeholder="app.customPlaceholder" /></label>
+          <label class="wide"><span data-i18n="app.note">Notatka (opcjonalnie)</span><input id="activityNote" maxlength="120" placeholder="np. z rodziną, trening, rekreacyjnie" data-i18n-placeholder="app.notePlaceholder" /></label>
         </div>
         <div class="actions">
-          <button id="cancelEntryBtn" class="ghost">Anuluj</button>
-          <button id="startTimerBtn" class="timer-start">▶ Start pomiaru</button>
-          <button id="saveEntryBtn" class="primary">Zapisz ręcznie</button>
+          <button id="cancelEntryBtn" class="ghost" data-i18n="app.cancel">Anuluj</button>
+          <button id="startTimerBtn" class="timer-start" data-i18n="app.startTimer">▶ Start pomiaru</button>
+          <button id="saveEntryBtn" class="primary" data-i18n="app.saveManual">Zapisz ręcznie</button>
         </div>
       </section>
 
       <section class="card">
-        <div class="section-head"><h2>Moje ostatnie wpisy</h2><span id="pendingChildBadge" class="badge"></span></div>
+        <div class="section-head"><h2 data-i18n="app.recent">Moje ostatnie wpisy</h2><span id="pendingChildBadge" class="badge"></span></div>
         <div id="childEntries" class="list"></div>
       </section>
 
       <section id="childRewardsCard" class="card">
-        <div class="section-head"><h2>Moje plusy i oceny</h2><span class="badge">tylko moje</span></div>
+        <div class="section-head"><h2 data-i18n="app.rewards">Moje plusy i oceny</h2><span class="badge" data-i18n="app.onlyMine">tylko moje</span></div>
         <div id="childRewardHistory" class="list"></div>
       </section>
 
       <section class="card">
-        <div class="section-head"><h2>Moje statystyki</h2><select id="reportPeriod" aria-label="Okres statystyk"><option value="month">Miesiąc</option><option value="quarter">Kwartał</option><option value="half">Półrocze</option><option value="year">Rok</option></select></div>
+        <div class="section-head"><h2 data-i18n="app.stats">Moje statystyki</h2><select id="reportPeriod" aria-label="Okres statystyk"><option value="month" data-i18n="app.month">Miesiąc</option><option value="quarter" data-i18n="app.quarter">Kwartał</option><option value="half" data-i18n="app.half">Półrocze</option><option value="year" data-i18n="app.year">Rok</option></select></div>
         <div id="statsGrid" class="stats-grid"></div>
         <div id="activityBreakdown" class="bars"></div>
       </section>
 
       <section id="selfDataCard" class="card hidden">
-        <div class="section-head"><h2>Moje dane</h2><span class="badge">lokalnie</span></div>
-        <p>W trybie osobistym możesz korzystać bez konta. Zapisz kopię przed zmianą urządzenia lub czyszczeniem przeglądarki.</p>
+        <div class="section-head"><h2 data-i18n="app.myData">Moje dane</h2><span class="badge" data-i18n="app.local">lokalnie</span></div>
+        <p data-i18n="app.myDataText">W trybie osobistym możesz korzystać bez konta. Zapisz kopię przed zmianą urządzenia lub czyszczeniem przeglądarki.</p>
         <div class="backup-actions">
-          <button id="selfExportCsvBtn" class="ghost">Eksport CSV</button>
-          <button id="selfExportBackupBtn" class="primary">Eksport kopii JSON</button>
-          <label class="button-link ghost file-button">Przywróć kopię
+          <button id="selfExportCsvBtn" class="ghost" data-i18n="app.exportCsv">Eksport CSV</button>
+          <button id="selfExportBackupBtn" class="primary" data-i18n="app.exportJson">Eksport kopii JSON</button>
+          <label class="button-link ghost file-button"><span data-i18n="app.restore">Przywróć kopię</span>
             <input id="selfImportBackupInput" type="file" accept="application/json,.json" hidden />
           </label>
-          <button id="selfPersistentStorageBtn" class="ghost">Chroń dane na urządzeniu</button>
-          <button id="selfDeleteLocalDataBtn" class="danger">Usuń dane</button>
+          <button id="selfPersistentStorageBtn" class="ghost" data-i18n="app.protect">Chroń dane na urządzeniu</button>
+          <button id="selfDeleteLocalDataBtn" class="danger" data-i18n="app.delete">Usuń dane</button>
         </div>
-        <small id="selfStorageStatus">Dane są zapisane lokalnie w tej przeglądarce.</small>
+        <small id="selfStorageStatus" data-i18n="app.storageStatus">Dane są zapisane lokalnie w tej przeglądarce.</small>
       </section>
     </section>
 
@@ -433,6 +434,7 @@
 
   <footer class="app-footer">Aktywnik+ • bezpłatny projekt rodzicielski • Twórca i właściciel projektu: Łukasz St‑cz • <a href="https://github.com/lukaszst-cz/aktywnik-plus" target="_blank" rel="noopener">GitHub Łukasza St‑cz</a></footer>
 
+  <script src="i18n.js"></script>
   <script src="auth-config.js"></script>
   <script src="auth.js"></script>
   <script src="sync-client.js"></script>
