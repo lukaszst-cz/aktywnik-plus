@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — Draft hardening
+
+### Niezawodność wpisów
+- szkice niedokończonych wpisów są rozdzielone między profile dzieci;
+- zmiana profilu nie przenosi formularza ani szkicu do innego dziecka;
+- edycja wpisu oczekującego nie usuwa wcześniej rozpoczętego szkicu;
+- Start/Stop i szybki start ostatniej aktywności czyszczą tylko szkic aktywnego profilu;
+- import kopii, usunięcie profilu i wyczyszczenie danych usuwają nieaktualne szkice;
+- zachowana jest migracja wcześniejszego pojedynczego klucza szkicu.
+
+
 ## 0.5.0-beta.1 — Sync Foundation
 
 ### Konto i synchronizacja
