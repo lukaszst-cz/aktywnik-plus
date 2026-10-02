@@ -1,6 +1,6 @@
 # Security policy
 
-Aktywnik+ 0.4.0 jest nadal wersją pilotażową. Aplikacja obsługuje tryb osobisty i rodzinny, ale produkcyjna synchronizacja chmurowa pozostaje wyłączona.
+Aktywnik+ 0.5.0-beta.1 jest nadal wersją pilotażową. Aplikacja obsługuje tryb osobisty i rodzinny, ale produkcyjna synchronizacja chmurowa pozostaje wyłączona.
 
 ## Najważniejsze zasady
 
@@ -13,7 +13,7 @@ Aktywnik+ 0.4.0 jest nadal wersją pilotażową. Aplikacja obsługuje tryb osobi
 
 Jeżeli repozytorium udostępnia prywatne zgłaszanie podatności GitHub, użyj tej ścieżki. W przeciwnym razie skontaktuj się prywatnie z właścicielem repozytorium zamiast publikować szczegóły podatności wraz z danymi użytkowników w publicznym issue.
 
-## Wersja 0.4.0
+## Wersja 0.5.0-beta.1
 
 - dane użytkownika są lokalne w przeglądarce;
 - tryb **Dla siebie** nie wymaga konta ani PIN-u rodzica;
@@ -21,6 +21,8 @@ Jeżeli repozytorium udostępnia prywatne zgłaszanie podatności GitHub, użyj 
 - lokalny PIN chroni interfejs, ale nie jest granicą bezpieczeństwa dla osoby z technicznym dostępem do profilu przeglądarki;
 - nie ma jeszcze produkcyjnej synchronizacji między urządzeniami;
 - backend i RLS pozostają fail-closed do czasu pełnej konfiguracji i testów;
+- tryb osobisty ma osobną tabelę `personal_activities` z politykami owner-only;
+- klient używa wyłącznie publishable key; sekret serwerowy nie może znaleźć się w PWA;
 - nie ma produkcyjnej centralnej bazy uczniów.
 
 Przed włączeniem Aktywnik+ School lub synchronizacji wymagane są testy bezpieczeństwa backendu, autoryzacji, RLS, izolacji tenantów, retencji, backupów, odzyskiwania konta i obsługi incydentów.
