@@ -20,6 +20,7 @@ Przeczytaj przed pilotażem:
 - **[Warunki krytyczne pilota](docs/WARUNKI-KRYTYCZNE-PILOTA.md)**
 - **[Pilot w jednej klasie](docs/PILOT-JEDNEJ-KLASY.md)**
 - **[Jak zainstalować PWA](docs/INSTALACJA-PWA.md)**
+- **[Checklista gotowości pilota](docs/CHECKLISTA-PILOTA.md)**
 
 ## Co już działa
 
