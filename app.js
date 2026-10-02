@@ -56,6 +56,22 @@ function usableChildEntries(childId){
 function latestActivityEntry(childId){
   return childEntries(childId).filter(e=>e.status!=='rejected'&&validDate(e.date)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;
 }
+function latestMatchingActivityEntry(childId,activity){
+  return childEntries(childId)
+    .filter(e=>e.status!=='rejected'&&validDate(e.date)&&e.activity===activity)
+    .slice()
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;
+}
+function showDurationSuggestion(activity){
+  const hint=$('#durationSuggestionHint'),child=activeChild();if(!hint||!child)return;
+  const previous=latestMatchingActivityEntry(child.id,activity);
+  hint.classList.toggle('hidden',!previous);
+  if(!previous){hint.textContent='';return}
+  const value=fmtMin(clampInt(previous.minutes,1,600,30));
+  const lang=window.AktywnikI18n?.getLanguage?.()||document.documentElement.lang||'pl';
+  hint.textContent=lang==='en'?('Last time: '+value+' — suggestion, you can change it.'):('Ostatnio: '+value+' — podpowiedź, możesz ją zmienić.');
+}
+
 function recentDuplicate(childId,payload){
   const cutoff=Date.now()-20000;
   return state.entries.some(e=>e.childId===childId&&e.source==='manual'&&e.date===payload.date&&e.activity===payload.activity&&Number(e.minutes)===Number(payload.minutes)&&String(e.note||'')===String(payload.note||'')&&new Date(e.createdAt||0).getTime()>=cutoff);
@@ -117,6 +133,7 @@ function restoreEntryDraft(){
   if($('#customActivityName'))$('#customActivityName').value=cleanText(draft.customName,80);
   $('#activityNote').value=cleanText(draft.note,120);
   $('#saveEntryBtn').textContent='Zapisz ręcznie';
+  showDurationSuggestion(selected);
   $('#startTimerBtn').classList.remove('hidden');
   $('#entryCard').classList.remove('hidden');
   $('#entryCard').dataset.restoredDraft='true';
@@ -125,8 +142,11 @@ function restoreEntryDraft(){
 }
 
 function pickActivity(name){
-  if(!activeChild())return;selected=name;editingEntryId=null;
-  $('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#activityDuration').value='30';$('#activityEffort').value='2';if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';
+  const child=activeChild();if(!child)return;selected=name;editingEntryId=null;
+  const previous=latestMatchingActivityEntry(child.id,name),suggestedMinutes=previous?clampInt(previous.minutes,1,600,30):30,suggestedEffort=previous?clampInt(previous.effort,1,5,2):2;
+  $('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#activityDuration').value=String(suggestedMinutes);$('#activityEffort').value=String(suggestedEffort);if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';
+  $('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(suggestedMinutes)));
+  showDurationSuggestion(name);
   $('#saveEntryBtn').textContent='Zapisz ręcznie';$('#startTimerBtn').classList.remove('hidden');$('#entryCard').classList.remove('hidden');delete $('#entryCard').dataset.restoredDraft;saveEntryDraft();$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function activityButton([name,emoji]){const b=document.createElement('button');b.className='activity';b.innerHTML=`<span class="emoji">${emoji}</span>${name}`;b.onclick=()=>pickActivity(name);return b}
@@ -205,10 +225,10 @@ function cancelActivityTimer(){
 }
 function editChildEntry(id){
   const child=activeChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id);if(!e||!['pending','rejected'].includes(e.status))return;
-  clearEntryDraft();editingEntryId=e.id;selected=e.activity;$('#selectedActivityTitle').textContent=e.status==='rejected'?'Popraw odrzucony wpis':'Edytuj oczekujący wpis';
+  clearEntryDraft();editingEntryId=e.id;selected=e.activity;const suggestion=$('#durationSuggestionHint');if(suggestion){suggestion.classList.add('hidden');suggestion.textContent=''};$('#selectedActivityTitle').textContent=e.status==='rejected'?'Popraw odrzucony wpis':'Edytuj oczekujący wpis';
   $('#activityDate').value=e.date;$('#activityDuration').value=e.minutes;$('#activityEffort').value=e.effort;if($('#customActivityName'))$('#customActivityName').value=ACTIVITIES.some(a=>a[0]===e.activity)?'':e.activity;$('#activityNote').value=e.note||'';$('#saveEntryBtn').textContent=e.status==='rejected'?'Popraw i wyślij ponownie':'Zapisz poprawkę';$('#startTimerBtn').classList.add('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
 }
-function cancelEntry(){clearEntryDraft();editingEntryId=null;selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';$('#entryCard').classList.add('hidden');delete $('#entryCard').dataset.restoredDraft;$('#startTimerBtn').classList.remove('hidden');$('#saveEntryBtn').textContent='Zapisz ręcznie'}
+function cancelEntry(){clearEntryDraft();editingEntryId=null;selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';const suggestion=$('#durationSuggestionHint');if(suggestion){suggestion.classList.add('hidden');suggestion.textContent=''};$('#entryCard').classList.add('hidden');delete $('#entryCard').dataset.restoredDraft;$('#startTimerBtn').classList.remove('hidden');$('#saveEntryBtn').textContent='Zapisz ręcznie'}
 function saveEntry(){
   const child=activeChild();if(!child)return;const minutes=Number($('#activityDuration').value),date=$('#activityDate').value||today();
   if(!selected||!Number.isFinite(minutes)||minutes<1||minutes>600){alert('Podaj czas od 1 do 600 minut.');return}
@@ -714,6 +734,7 @@ $('#exportCsvBtn').onclick=exportReportCsv;
 $('#printReportBtn').onclick=()=>{if(guardParent())window.print()};
 $('#printSchoolReportBtn').onclick=printSchoolMonthlyReport;
 window.addEventListener('afterprint',()=>document.body.classList.remove('school-print-mode'));
+window.addEventListener('aktywnik:languagechange',()=>{if(selected&&!editingEntryId)showDurationSuggestion(selected)});
 setInterval(renderTimer,1000);
 setInterval(()=>{if((currentMode==='parent'||currentMode==='school')&&!parentUnlocked())lockParent()},10000);
 ['pointerdown','keydown','touchstart'].forEach(evt=>document.addEventListener(evt,()=>{if((currentMode==='parent'||currentMode==='school')&&parentUnlocked())touchParentSession()},{passive:true}));
