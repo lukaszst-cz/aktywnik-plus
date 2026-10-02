@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.1 — Pilot update
+
+Aktualizacja przygotowująca Aktywnik+ do wygodniejszego testowania przez dziecko, rodzica i nauczyciela.
+
+### Nowe
+- Start/Stop aktywności dziecka z licznikiem czasu;
+- timer przetrwa zminimalizowanie lub ponowne otwarcie PWA, ponieważ zapisuje moment rozpoczęcia;
+- możliwość ręcznego wpisu pozostaje równolegle;
+- sekcja „Gdzie działa Aktywnik+?”: przeglądarka, Android, iPhone/iPad, Windows, macOS, ChromeOS, Linux i wersja papierowa;
+- dokładniejszy opis produktu;
+- na kluczowych stronach wskazany jest twórca i właściciel projektu: Łukasz St‑cz;
+- na kluczowych stronach dostępny jest link do repozytorium GitHub: https://github.com/lukaszst-cz/aktywnik-plus.
+
+### Testy
+- automatyczny test Start/Stop;
+- test zachowania aktywnego timera po ponownym załadowaniu aplikacji;
+- pełny lokalny smoke test PWA: service worker, cache, manifest, raporty i backup.
+
+
 ## 0.1.0 — Pilot
 
 Pierwsza wersja przygotowana do pilota rodzinnego przed wdrożeniem backendu.
