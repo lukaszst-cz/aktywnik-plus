@@ -68,6 +68,16 @@ Dokumentacja:
 - rodzic powinien móc eksportować i usuwać dane dziecka;
 - cyfrowa i papierowa ścieżka mają być równoważne.
 
+## Bezpieczeństwo danych pilota
+
+Obecna PWA ma:
+- eksport kopii lokalnych danych do pliku JSON;
+- przywracanie kopii z pliku;
+- możliwość poproszenia przeglądarki o trwałą pamięć;
+- jasne oznaczenie funkcji klas jako **demo lokalne** do czasu uruchomienia backendu.
+
+Przed czyszczeniem danych przeglądarki, zmianą telefonu lub ważnym raportem warto wykonać eksport kopii.
+
 ## Prototyp
 
 Obecny prototyp zapisuje dane lokalnie w przeglądarce (`localStorage`). To pozwala testować interfejs bez zakładania konta i bez wysyłania danych na serwer.
