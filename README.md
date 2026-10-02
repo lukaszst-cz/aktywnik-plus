@@ -130,7 +130,7 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Demo i pobieranie
 
-- demo PWA: publikowane przez Vercel; stały adres zostanie wpisany po przypisaniu deploymentu do konta
+- **wersja publiczna / PWA:** https://aktywnik-plus.vercel.app
 - repozytorium: `https://github.com/lukaszst-cz/aktywnik-plus`
 - wydania: `https://github.com/lukaszst-cz/aktywnik-plus/releases`
 
