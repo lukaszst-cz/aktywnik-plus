@@ -36,6 +36,14 @@ Nie wymagamy:
 - zdjęcia twarzy;
 - danych zdrowotnych.
 
+## Rodzina z wieloma dziećmi
+
+Rodzic może prowadzić wiele profili dzieci. Każdy wpis, raport, nagroda i historia akceptacji są przypisane technicznym `child_id`.
+
+W produkcji relacja `guardians` ogranicza dostęp: rodzic widzi tylko dzieci, z którymi ma aktywne powiązanie. Konto dziecka poprzez `child_accounts` widzi tylko swój profil. Rodzeństwo nie dzieli uprawnień.
+
+Jednorazowe kody/QR do parowania nie zawierają danych dziecka i są przechowywane wyłącznie jako skrót tokenu z krótkim terminem ważności.
+
 ## Izolacja szkół
 
 Każdy rekord szkolny ma `tenant_id`.
