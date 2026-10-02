@@ -5,7 +5,7 @@
 1. Otwórz publiczny link Aktywnik+.
 2. Naciśnij **Zainstaluj Aktywnik+**.
 3. Jeżeli przeglądarka nie pokaże instalacji, użyj opcji **Dodaj do ekranu głównego** / **Zainstaluj aplikację**.
-4. Otwórz panel **Dziecko** i dodaj pierwszą aktywność.
+4. Otwórz panel **Dziecko** i dodaj pierwszą aktywność — ręcznie albo używając **Start/Stop**.
 5. Wieczorem przejdź do panelu **Rodzic** i zatwierdź wpisy.
 6. Na koniec miesiąca lub innego okresu wygeneruj raport.
 7. Przekaż raport nauczycielowi jako PDF lub wydruk.
@@ -39,3 +39,24 @@ Koszty mogą pojawić się dopiero przy przyszłej wersji produkcyjnej z backend
 ## Ważne
 
 PWA nie pobiera się jak pliku EXE lub APK. Użytkownik otwiera stronę HTTPS i instaluje ją z przeglądarki. Po instalacji pojawia się ikona aplikacji i Aktywnik+ uruchamia się w trybie podobnym do zwykłej aplikacji.
+
+
+## Gdzie można używać
+
+- przeglądarka bez instalacji;
+- Android;
+- iPhone/iPad;
+- Windows;
+- macOS;
+- ChromeOS;
+- Linux;
+- wersja papierowa/PDF.
+
+Instalacja PWA jest opcjonalna. Jeżeli przeglądarka jej nie oferuje, użytkownik nadal może korzystać przez zwykły link.
+
+## Raport dla nauczyciela
+
+Rodzic może:
+- wydrukować raport;
+- zapisać raport jako PDF;
+- wyeksportować zatwierdzone wpisy do CSV.
