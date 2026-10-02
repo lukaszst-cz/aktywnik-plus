@@ -84,13 +84,38 @@ function registerPinFailure(){
 function touchParentSession(){const mins=clampInt(state.parentAuth?.autoLockMinutes,1,30,5);sessionStorage.setItem(PARENT_SESSION_KEY,String(Date.now()+mins*60*1000))}
 function addApprovalEvent(action,entry,actor,note='',before=null,after=null){state.approvalEvents=state.approvalEvents||[];state.approvalEvents.unshift({id:uuid(),entryId:entry?.id||'',childId:entry?.childId||parentChild()?.id||activeChild()?.id||'',action,actor,note:cleanText(note,240),before,after,at:nowIso()});state.approvalEvents=state.approvalEvents.slice(0,10000)}
 
-function clearEntryDraft(){try{localStorage.removeItem(ENTRY_DRAFT_KEY)}catch{}}
-function readEntryDraft(){
+function entryDraftKey(childId){return `${ENTRY_DRAFT_KEY}:${childId}`}
+function clearEntryDraft(childId=activeChild()?.id){
   try{
-    const draft=JSON.parse(localStorage.getItem(ENTRY_DRAFT_KEY)||'null');
-    if(!draft||draft.version!==1||!draft.savedAt||Date.now()-new Date(draft.savedAt).getTime()>ENTRY_DRAFT_MAX_AGE_MS){clearEntryDraft();return null}
+    if(childId)localStorage.removeItem(entryDraftKey(childId));
+    const legacy=JSON.parse(localStorage.getItem(ENTRY_DRAFT_KEY)||'null');
+    if(!childId||legacy?.childId===childId)localStorage.removeItem(ENTRY_DRAFT_KEY);
+  }catch{}
+}
+function clearAllEntryDrafts(){
+  try{Object.keys(localStorage).filter(k=>k===ENTRY_DRAFT_KEY||k.startsWith(ENTRY_DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k))}catch{}
+}
+function readEntryDraft(childId=activeChild()?.id){
+  if(!childId)return null;
+  try{
+    let key=entryDraftKey(childId),raw=localStorage.getItem(key),fromLegacy=false;
+    if(!raw){raw=localStorage.getItem(ENTRY_DRAFT_KEY);fromLegacy=!!raw}
+    const draft=JSON.parse(raw||'null');
+    const savedAt=draft?.savedAt?new Date(draft.savedAt).getTime():NaN;
+    if(!draft||draft.version!==1||!Number.isFinite(savedAt)||Date.now()-savedAt>ENTRY_DRAFT_MAX_AGE_MS){
+      if(raw&&fromLegacy)localStorage.removeItem(ENTRY_DRAFT_KEY);else if(raw)localStorage.removeItem(key);
+      return null;
+    }
+    if(draft.childId!==childId)return null;
+    if(fromLegacy){
+      localStorage.setItem(key,JSON.stringify(draft));
+      localStorage.removeItem(ENTRY_DRAFT_KEY);
+    }
     return draft;
-  }catch{clearEntryDraft();return null}
+  }catch{
+    try{localStorage.removeItem(entryDraftKey(childId))}catch{}
+    return null;
+  }
 }
 function saveEntryDraft(){
   const child=activeChild();
@@ -103,12 +128,13 @@ function saveEntryDraft(){
     customName:cleanText($('#customActivityName')?.value,80),
     note:cleanText($('#activityNote')?.value,120)
   };
-  try{localStorage.setItem(ENTRY_DRAFT_KEY,JSON.stringify(draft))}catch{}
+  try{localStorage.setItem(entryDraftKey(child.id),JSON.stringify(draft))}catch{}
 }
 function restoreEntryDraft(){
-  const child=activeChild(),draft=readEntryDraft();
+  const child=activeChild(),draft=readEntryDraft(child?.id);
   if(!appReady()||!child||state.activeTimer||!draft)return false;
-  if(draft.childId!==child.id||!cleanText(draft.selected,80)){clearEntryDraft();return false}
+  const knownActivity=ACTIVITIES.some(a=>a[0]===draft.selected);
+  if(!knownActivity){clearEntryDraft(child.id);return false}
   selected=cleanText(draft.selected,80);editingEntryId=null;
   $('#selectedActivityTitle').textContent=selected;
   $('#activityDate').value=allowedActivityDate(draft.date)?draft.date:today();
@@ -175,7 +201,7 @@ function startActivityTimer(){
   if(selected==='Inna aktywność'&&!customName){alert('Podaj własną nazwę aktywności.');return}
   const date=$('#activityDate').value||today();if(!allowedActivityDate(date)){alert('Data aktywności nie może być z przyszłości.');return}
   state.activeTimer={childId:child.id,activity:activityName,startAt:nowIso(),date,effort:clampInt($('#activityEffort').value,1,5,2),note:cleanText($('#activityNote').value,120)};
-  clearEntryDraft();selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';$('#entryCard').classList.add('hidden');persist();
+  clearEntryDraft(child.id);selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';$('#entryCard').classList.add('hidden');persist();
 }
 function timerElapsedSeconds(){
   if(!state.activeTimer?.startAt)return 0;
@@ -205,10 +231,15 @@ function cancelActivityTimer(){
 }
 function editChildEntry(id){
   const child=activeChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id);if(!e||!['pending','rejected'].includes(e.status))return;
-  clearEntryDraft();editingEntryId=e.id;selected=e.activity;$('#selectedActivityTitle').textContent=e.status==='rejected'?'Popraw odrzucony wpis':'Edytuj oczekujący wpis';
+  editingEntryId=e.id;selected=e.activity;$('#selectedActivityTitle').textContent=e.status==='rejected'?'Popraw odrzucony wpis':'Edytuj oczekujący wpis';
   $('#activityDate').value=e.date;$('#activityDuration').value=e.minutes;$('#activityEffort').value=e.effort;if($('#customActivityName'))$('#customActivityName').value=ACTIVITIES.some(a=>a[0]===e.activity)?'':e.activity;$('#activityNote').value=e.note||'';$('#saveEntryBtn').textContent=e.status==='rejected'?'Popraw i wyślij ponownie':'Zapisz poprawkę';$('#startTimerBtn').classList.add('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
 }
-function cancelEntry(){clearEntryDraft();editingEntryId=null;selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';$('#entryCard').classList.add('hidden');delete $('#entryCard').dataset.restoredDraft;$('#startTimerBtn').classList.remove('hidden');$('#saveEntryBtn').textContent='Zapisz ręcznie'}
+function cancelEntry(){
+  const wasEditing=!!editingEntryId,childId=activeChild()?.id;
+  editingEntryId=null;selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';$('#entryCard').classList.add('hidden');delete $('#entryCard').dataset.restoredDraft;$('#startTimerBtn').classList.remove('hidden');$('#saveEntryBtn').textContent='Zapisz ręcznie';
+  if(wasEditing){restoreEntryDraft();return}
+  clearEntryDraft(childId);
+}
 function saveEntry(){
   const child=activeChild();if(!child)return;const minutes=Number($('#activityDuration').value),date=$('#activityDate').value||today();
   if(!selected||!Number.isFinite(minutes)||minutes<1||minutes>600){alert('Podaj czas od 1 do 600 minut.');return}
@@ -407,7 +438,8 @@ function renameChild(){
 function setDeviceChild(){
   if(!guardParent())return;const child=parentChild();if(!child)return;
   if(state.activeTimer&&state.activeTimer.childId!==child.id){alert('Najpierw zakończ trwający pomiar aktywności na obecnym profilu.');return}
-  state.activeChildId=child.id;persist();
+  if(selected&&!editingEntryId)saveEntryDraft();editingEntryId=null;selected=null;$('#entryCard').classList.add('hidden');
+  state.activeChildId=child.id;persist();restoreEntryDraft();
 }
 function purgeChildLocalData(childId,target=state){
   target.entries=(target.entries||[]).filter(e=>e.childId!==childId);
@@ -423,7 +455,7 @@ function purgeChildLocalData(childId,target=state){
 function removeChild(){
   if(!guardParent())return;const child=parentChild();if(!child)return;if(state.children.length<=1){alert('Musi pozostać co najmniej jeden profil dziecka.');return}
   if(!confirm('Usunąć profil '+child.displayName+' oraz wszystkie jego lokalne powiązania?'))return;
-  purgeChildLocalData(child.id);
+  purgeChildLocalData(child.id);clearEntryDraft(child.id);
   state.children=state.children.filter(c=>c.id!==child.id);
   if(state.activeChildId===child.id)state.activeChildId=state.children[0].id;
   parentSelectedChildId=state.activeChildId;persist();
@@ -638,11 +670,11 @@ function exportBackup(){
 }
 async function importBackup(file){
   if(!canManageLocalData()||!file)return;
-  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());if(parsed.format&&parsed.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');const candidate=safeBackupState(parsed),summary='Kopia zawiera '+candidate.children.length+' profili i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne?';if(!confirm(summary))return;state=candidate;localStorage.setItem(KEY,JSON.stringify(state));sessionStorage.removeItem(PARENT_SESSION_KEY);alert(isSelfMode()?'Kopia została przywrócona.':'Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{const a=$('#importBackupInput'),b=$('#selfImportBackupInput');if(a)a.value='';if(b)b.value=''}
+  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());if(parsed.format&&parsed.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');const candidate=safeBackupState(parsed),summary='Kopia zawiera '+candidate.children.length+' profili i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne?';if(!confirm(summary))return;clearAllEntryDrafts();state=candidate;localStorage.setItem(KEY,JSON.stringify(state));sessionStorage.removeItem(PARENT_SESSION_KEY);alert(isSelfMode()?'Kopia została przywrócona.':'Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{const a=$('#importBackupInput'),b=$('#selfImportBackupInput');if(a)a.value='';if(b)b.value=''}
 }
 async function requestPersistentStorage(){if(!canManageLocalData())return;try{const ok=await navigator.storage?.persist?.();setStorageMessage(ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.')}catch{setStorageMessage('Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.')}}
 async function renderStorageStatus(){if(!isSelfMode()&&!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();setStorageMessage(persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.')}catch{setStorageMessage('Dane są zapisane lokalnie w tej przeglądarce.')}}
-function deleteLocalData(){if(!canManageLocalData())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;localStorage.removeItem(KEY);clearEntryDraft();sessionStorage.removeItem(PARENT_SESSION_KEY);location.reload()}
+function deleteLocalData(){if(!canManageLocalData())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;clearAllEntryDrafts();localStorage.removeItem(KEY);sessionStorage.removeItem(PARENT_SESSION_KEY);location.reload()}
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
 function renderAll(){
