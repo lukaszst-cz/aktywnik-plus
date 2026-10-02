@@ -1,6 +1,6 @@
 # Security policy
 
-Aktywnik+ 0.5.0-beta.1 jest nadal wersją pilotażową. Aplikacja obsługuje tryb osobisty i rodzinny, ale produkcyjna synchronizacja chmurowa pozostaje wyłączona.
+Aktywnik+ 0.5.0-beta.2 jest nadal wersją pilotażową. Aplikacja obsługuje tryb osobisty i rodzinny, ale produkcyjna synchronizacja chmurowa pozostaje wyłączona.
 
 ## Najważniejsze zasady
 
@@ -13,7 +13,7 @@ Aktywnik+ 0.5.0-beta.1 jest nadal wersją pilotażową. Aplikacja obsługuje try
 
 Jeżeli repozytorium udostępnia prywatne zgłaszanie podatności GitHub, użyj tej ścieżki. W przeciwnym razie skontaktuj się prywatnie z właścicielem repozytorium zamiast publikować szczegóły podatności wraz z danymi użytkowników w publicznym issue.
 
-## Wersja 0.5.0-beta.1
+## Wersja 0.5.0-beta.2
 
 - dane użytkownika są lokalne w przeglądarce;
 - tryb **Dla siebie** nie wymaga konta ani PIN-u rodzica;
