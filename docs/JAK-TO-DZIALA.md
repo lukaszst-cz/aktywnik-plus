@@ -45,27 +45,43 @@ Rodzic przekazuje gotowy raport zawierający:
 - podsumowanie okresu,
 - miejsce na uwagi nauczyciela / wychowawcy.
 
-Nauczyciel może na podstawie raportu przyznać plus za dodatkową aktywność zgodnie z zasadami obowiązującymi w klasie lub szkole.
+### Plusy i oceny
 
-### System plusów
+Aktywnik+ **nie narzuca przelicznika plusów na ocenę**.
 
-W obecnym założeniu projektu:
+Nauczyciel sam decyduje:
+- czy za dany raport lub aktywność przyznaje plus;
+- ile plusów przyznaje;
+- czy plusy są zamieniane na ocenę;
+- jaki przelicznik obowiązuje w jego klasie lub szkole;
+- jaką ocenę wystawia.
 
-**3 plusy = ocena 6 z WF.**
+Aplikacja ma tylko zapamiętać decyzję nauczyciela.
 
-Ta zasada powinna być konfigurowalna, ponieważ szkoły i nauczyciele mogą stosować inne reguły oceniania.
+Dla dziecka zapisujemy historię:
+- data przyznania plusa;
+- liczba plusów;
+- okres lub raport, którego dotyczą;
+- opcjonalna uwaga nauczyciela;
+- wystawiona ocena, jeśli nauczyciel ją przyznał;
+- data wystawienia oceny;
+- opcjonalna informacja, z jakich plusów powstała ocena.
+
+Dzięki temu rodzic i dziecko widzą, które aktywności zostały już rozliczone, a które jeszcze nie.
+
+Jeżeli nauczyciel nie korzysta bezpośrednio z aplikacji, rodzic może przepisać otrzymany plus lub ocenę do Aktywnik+ po otrzymaniu informacji ze szkoły.
 
 ## Minima i maksy
 
-Aktywnik+ będzie miał możliwość ustawienia progów motywacyjnych, ale bez zachęcania do nadmiernego wysiłku.
+Aktywnik+ będzie mógł obsługiwać progi motywacyjne, ale nie powinien narzucać jednego systemu wszystkim.
 
-Przykładowo można ustawić:
-- minimalną liczbę aktywnych dni w miesiącu,
-- minimalny łączny czas aktywności,
-- próg potrzebny do zdobycia plusa,
-- rozsądny dzienny limit wpisów lub czasu zaliczanego do punktacji.
+Szkoła, nauczyciel albo rodzic mogą ustawić własne zasady, np.:
+- minimalną liczbę aktywnych dni;
+- minimalny łączny czas aktywności;
+- warunek przyznania plusa;
+- maksymalną liczbę minut lub wpisów liczonych do określonego celu.
 
-Progi mają pomagać w regularności, a nie zmuszać dziecko do „nabijania minut”.
+Progi powinny pomagać w regularności, a nie zachęcać do nadmiernego wysiłku.
 
 ## Schemat
 
@@ -87,13 +103,14 @@ ZATWIERDZONE
   v
 NAUCZYCIEL
   |
-  | ocenia zgodnie z zasadami szkoły
+  | według własnych zasad
   v
-PLUS / INFORMACJA ZWROTNA
-
-3 PLUSY -> OCENA 6 Z WF
+PLUS / PLUSY / OCENA / UWAGA
+  |
+  v
+HISTORIA W AKTYWNIK+
 ```
 
 ## Najważniejsza zasada
 
-Aktywnik+ nie ma oceniać wyglądu, masy ciała ani sprawności dziecka. Ma dokumentować ruch i pomagać budować regularny, zdrowy nawyk aktywności.
+Aktywnik+ dokumentuje aktywność i decyzje związane z raportami, ale nie ustala zasad oceniania za nauczyciela. Nie ocenia też wyglądu, masy ciała ani sprawności dziecka.
