@@ -154,16 +154,34 @@ function safeBackupState(raw){
   const base=structuredClone(defaultState);
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Nieprawidłowy plik kopii.');
   const d=raw.data&&typeof raw.data==='object'&&!Array.isArray(raw.data)?raw.data:raw;
+  const allowed=new Set(ACTIVITIES.map(a=>a[0]));
+  let children=(Array.isArray(d.children)?d.children:[]).map(c=>{
+    if(!c||typeof c!=='object')return null;
+    const displayName=cleanText(c.displayName||c.name,60);if(!displayName)return null;
+    const favorites=(Array.isArray(c.favorites)?c.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20);
+    return {id:cleanText(c.id,80)||uuid(),displayName,favorites:favorites.length?favorites:[...DEFAULT_FAVORITES],requireParentApproval:c.requireParentApproval!==false,createdAt:c.createdAt||nowIso()};
+  }).filter(Boolean).slice(0,50);
+  if(!children.length&&(d.pilot?.started||cleanText(d.pilot?.childDisplayName,60)||(Array.isArray(d.entries)&&d.entries.length))){
+    children=[{id:uuid(),displayName:cleanText(d.pilot?.childDisplayName,60)||'Profil dziecka',favorites:(Array.isArray(d.favorites)?d.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20),requireParentApproval:true,createdAt:nowIso()}];
+  }
+  const ids=new Set(children.map(c=>c.id)),fallback=children[0]?.id||null,activeChildId=ids.has(d.activeChildId)?d.activeChildId:fallback;
   const entries=(Array.isArray(d.entries)?d.entries:[]).slice(0,MAX_ENTRIES).map(e=>{
     if(!e||typeof e!=='object'||!validDate(e.date)||!cleanText(e.activity,80))return null;
-    const minutes=clampInt(e.minutes,1,600,0);if(!minutes)return null;
-    return {...e,id:cleanText(e.id,80)||crypto.randomUUID(),date:e.date,activity:cleanText(e.activity,80),minutes,effort:clampInt(e.effort,1,5,2),note:cleanText(e.note,120),status:['pending','approved','rejected'].includes(e.status)?e.status:'pending'};
+    const minutes=clampInt(e.minutes,1,600,0),childId=ids.has(e.childId)?e.childId:fallback;if(!minutes||!childId)return null;
+    return {...e,id:cleanText(e.id,80)||uuid(),childId,date:e.date,activity:cleanText(e.activity,80),minutes,effort:clampInt(e.effort,1,5,2),note:cleanText(e.note,120),status:['pending','approved','rejected'].includes(e.status)?e.status:'pending',source:['manual','timer'].includes(e.source)?e.source:'manual',rejectionReason:cleanText(e.rejectionReason,160),createdAt:e.createdAt||nowIso()};
   }).filter(Boolean);
+  const approvalEvents=(Array.isArray(d.approvalEvents)?d.approvalEvents:[]).slice(0,10000).map(ev=>{
+    if(!ev||typeof ev!=='object')return null;const childId=ids.has(ev.childId)?ev.childId:fallback;if(!childId)return null;
+    return {id:cleanText(ev.id,80)||uuid(),entryId:cleanText(ev.entryId,80),childId,action:['created','edited','resubmitted','approved','approved_auto','corrected','rejected'].includes(ev.action)?ev.action:'edited',actor:['child','parent','system'].includes(ev.actor)?ev.actor:'system',note:cleanText(ev.note,240),at:ev.at||nowIso(),before:ev.before&&typeof ev.before==='object'?ev.before:null,after:ev.after&&typeof ev.after==='object'?ev.after:null};
+  }).filter(Boolean);
+  const rewards=(Array.isArray(d.rewards)?d.rewards:[]).slice(0,2000).map(r=>{if(!r||typeof r!=='object')return null;const childId=ids.has(r.childId)?r.childId:fallback;if(!childId)return null;return {...r,id:cleanText(r.id,80)||uuid(),childId,type:['plus','grade','note'].includes(r.type)?r.type:'plus',value:cleanText(r.value,20),date:validDate(r.date)?r.date:today(),note:cleanText(r.note,160),createdAt:r.createdAt||nowIso()}}).filter(Boolean);
   const classes=(Array.isArray(d.classes)?d.classes:[]).slice(0,MAX_CLASSES);
-  const joinRequests=(Array.isArray(d.joinRequests)?d.joinRequests:[]).slice(0,MAX_JOIN_REQUESTS);
-  const allowed=new Set(ACTIVITIES.map(a=>a[0]));
-  const favorites=(Array.isArray(d.favorites)?d.favorites:base.favorites).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20);
-  return {...base,schemaVersion:3,pilot:{...base.pilot,...(d.pilot||{}),childDisplayName:cleanText(d.pilot?.childDisplayName,60)},activeTimer:d.activeTimer&&typeof d.activeTimer==='object'?d.activeTimer:null,favorites:favorites.length?favorites:base.favorites,entries,rewards:Array.isArray(d.rewards)?d.rewards.slice(0,1000):[],classes,joinRequests,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
+  const joinRequests=(Array.isArray(d.joinRequests)?d.joinRequests:[]).slice(0,MAX_JOIN_REQUESTS).map(r=>r&&typeof r==='object'?{...r,childId:ids.has(r.childId)?r.childId:null,childName:cleanText(r.childName,60),status:['pending','accepted','rejected'].includes(r.status)?r.status:'pending'}:null).filter(Boolean);
+  let activeTimer=null;
+  if(d.activeTimer&&typeof d.activeTimer==='object'){const childId=ids.has(d.activeTimer.childId)?d.activeTimer.childId:fallback;if(childId&&cleanText(d.activeTimer.activity,80)&&d.activeTimer.startAt)activeTimer={...d.activeTimer,childId,activity:cleanText(d.activeTimer.activity,80),date:validDate(d.activeTimer.date)?d.activeTimer.date:today(),effort:clampInt(d.activeTimer.effort,1,5,2),note:cleanText(d.activeTimer.note,120)}}
+  const auth=d.parentAuth&&typeof d.parentAuth==='object'?d.parentAuth:{};
+  const parentAuth={pinSalt:cleanText(auth.pinSalt,300),pinHash:cleanText(auth.pinHash,300),iterations:clampInt(auth.iterations,50000,500000,PIN_ITERATIONS),autoLockMinutes:clampInt(auth.autoLockMinutes,1,30,5)};
+  return {...base,schemaVersion:4,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
 function exportBackup(){const payload={format:'aktywnik-plus-backup',version:3,exportedAt:new Date().toISOString(),data:state};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`aktywnik-plus-kopia-${today()}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);const s=$('#backupStatus');if(s)s.textContent='kopia zapisana'}
 async function importBackup(file){if(!file)return;try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());if(parsed.format&&parsed.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');state=safeBackupState(parsed);persist();const s=$('#backupStatus');if(s)s.textContent='kopia przywrócona';alert('Kopia danych została przywrócona.')}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{$('#importBackupInput').value=''}}
