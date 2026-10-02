@@ -16,6 +16,7 @@
       <strong class="brand">Aktywnik+</strong>
       <span class="tagline">ruch bez presji</span>
       <span class="version-badge">Pilot 0.1.2</span>
+      <span class="local-session-badge">bez logowania · dane lokalne</span>
     </div>
     <button class="install-mini" type="button" data-install-pwa>Zainstaluj</button>
     <nav class="mode-switch" aria-label="Tryb aplikacji">
@@ -30,13 +31,16 @@
       <div>
         <p class="eyebrow">Pilot bez konta</p>
         <h2>Start w 30 sekund</h2>
-        <p>Podaj tylko nazwę wyświetlaną na tym urządzeniu. Dane zostają lokalnie w przeglądarce.</p>
+        <p>Nie zakładasz konta i nie ustawiasz hasła. Nazwę możesz podać teraz albo pominąć i uzupełnić dopiero przy raporcie.</p>
       </div>
       <div class="pilot-setup">
         <label>Nazwa dziecka / identyfikator
           <input id="pilotChildName" maxlength="60" placeholder="np. Daniel S." />
         </label>
-        <button id="startPilotBtn" class="primary">Rozpocznij bez konta</button>
+        <div class="pilot-actions">
+          <button id="startPilotBtn" class="primary">Rozpocznij bez konta</button>
+          <button id="skipPilotNameBtn" class="ghost" type="button">Pomiń nazwę</button>
+        </div>
       </div>
     </section>
     <section id="childPanel">
