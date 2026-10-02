@@ -15,7 +15,7 @@
     <div>
       <strong class="brand">Aktywnik+</strong>
       <span class="tagline">ruch bez presji</span>
-      <span class="version-badge">Pilot 0.2.0</span>
+      <span class="version-badge">Pilot 0.2.1</span>
       <span class="local-session-badge">bez logowania · dane lokalne</span>
     </div>
     <button class="install-mini" type="button" data-install-pwa>Zainstaluj</button>
@@ -196,10 +196,11 @@
       </section>
 
       <section class="card">
-        <div class="section-head"><h2>Raporty</h2><div class="entry-actions"><button id="exportCsvBtn" class="ghost">Eksport CSV</button><button id="printReportBtn" class="ghost">Drukuj / PDF</button></div></div>
+        <div class="section-head"><h2>Raporty</h2><div class="entry-actions report-actions"><label class="report-month-picker">Miesiąc odniesienia <input id="parentReportMonth" type="month" /></label><button id="exportCsvBtn" class="ghost">Eksport CSV</button><button id="printReportBtn" class="ghost">Drukuj podsumowanie</button><button id="printSchoolReportBtn" class="primary">Dziennik A4 1–70+</button></div></div>
         <div class="report-buttons">
           <button data-report="month">Miesięczny</button><button data-report="quarter">Kwartalny</button><button data-report="half">Półroczny</button><button data-report="year">Roczny</button>
         </div>
+        <p class="report-help">Wybierz miesiąc odniesienia. Przycisk <strong>Dziennik A4 1–70+</strong> wypełnia zatwierdzonymi wpisami szkolny układ 35 wpisów na stronę i automatycznie dodaje kolejne strony, gdy wpisów jest więcej.</p>
         <div id="parentReport"></div>
       </section>
 
@@ -327,6 +328,8 @@
       </section>
     </section>
   </main>
+
+  <section id="schoolPrintReport" class="school-print-report" aria-hidden="true"></section>
 
   <dialog id="parentUnlockDialog">
     <form method="dialog" id="parentUnlockForm">
