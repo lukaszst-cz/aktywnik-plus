@@ -50,6 +50,8 @@ Przeczytaj przed pilotażem:
 - wieczorna lista wpisów do akceptacji przez rodzica;
 - raporty: miesięczny, kwartalny, półroczny i roczny;
 - **Eksport CSV** zatwierdzonych wpisów dla nauczyciela;
+- **Skan/import kart papierowych** — CSV/JSON/TXT lub wklejony OCR, z podglądem i poprawkami;
+- przygotowana integracja **DocPilot → OCR → Aktywnik+**;
 - statystyki wyłącznie dla danego dziecka;
 - panel szkoły z wyborem trybu **cyfrowy / hybrydowy / papierowy**;
 - konfiguracja akceptacji rodzica, poziomu wysiłku, plusów i zasad oceniania;
