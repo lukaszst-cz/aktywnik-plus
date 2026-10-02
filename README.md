@@ -1,6 +1,8 @@
 # Aktywnik+
 
-Aktywnik+ to prosty dziennik aktywności dziecka z szybkim wpisem na telefonie, akceptacją rodzica i raportami okresowymi.
+Aktywnik+ to bezpłatna PWA do prostego rejestrowania dodatkowej aktywności dzieci, akceptacji rodzica i raportów okresowych dla nauczyciela.
+
+**Twórca i właściciel projektu: Łukasz St‑cz.** Repozytorium: https://github.com/lukaszst-cz/aktywnik-plus
 
 ## Bezpłatny pilot rodzicielski
 
@@ -35,6 +37,7 @@ Przeczytaj przed pilotażem:
 - panel dziecka z dużą listą aktywności;
 - ulubione aktywności do szybkiego wyboru;
 - wpis aktywności z datą, czasem, wysiłkiem i notatką;
+- **Start/Stop aktywności** — pomiar czasu oparty na zapisanym czasie startu, działający także po zminimalizowaniu lub ponownym otwarciu PWA;
 - wieczorna lista wpisów do akceptacji przez rodzica;
 - raporty: miesięczny, kwartalny, półroczny i roczny;
 - statystyki wyłącznie dla danego dziecka;
@@ -42,6 +45,16 @@ Przeczytaj przed pilotażem:
 - konfiguracja akceptacji rodzica, poziomu wysiłku, plusów i zasad oceniania;
 - historia plusów i ocen przyznanych przez nauczyciela;
 - formularz papierowy dla rodzin, które nie chcą korzystać z aplikacji.
+
+## Gdzie działa
+
+- bez instalacji w nowoczesnej przeglądarce;
+- Android — przeglądarka lub instalacja PWA;
+- iPhone/iPad — przeglądarka lub web app dodana do ekranu początkowego;
+- Windows, macOS, ChromeOS i Linux — przeglądarka, a w obsługiwanych przeglądarkach również instalacja PWA;
+- papier / PDF — dla rodzin, które nie chcą korzystać cyfrowo.
+
+Dostępność przycisku instalacji zależy od przeglądarki i systemu. Brak instalacji nie blokuje używania aplikacji.
 
 ## Jak to działa
 
