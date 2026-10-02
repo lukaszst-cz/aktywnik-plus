@@ -33,7 +33,17 @@ async function run(){
 
     let {w,d}=await loadApp('first');
     if(!d.getElementById('pilotSetupCard')) throw new Error('pilot setup missing');
+    if(!d.getElementById('skipPilotNameBtn')) throw new Error('skip pilot name button missing');
 
+    // Direct role links should not require login/setup for teacher.
+    f.src='../app.html?mode=school&smoke=direct-'+Date.now();
+    await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('direct mode load timeout')),5000);f.onload=()=>{clearTimeout(timer);resolve()}});
+    await sleep(200);
+    w=f.contentWindow;d=f.contentDocument;
+    if(d.getElementById('schoolPanel').classList.contains('hidden')) throw new Error('direct school mode failed');
+    if(!d.getElementById('pilotSetupCard').classList.contains('hidden')) throw new Error('pilot setup blocks school mode');
+
+    ({w,d}=await loadApp('child-setup'));
     d.getElementById('pilotChildName').value='Test D.';
     d.getElementById('startPilotBtn').click();
     await sleep(100);
