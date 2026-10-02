@@ -1,169 +1,197 @@
 # Warunki krytyczne wersji pilotażowej Aktywnik+
 
-Ten dokument opisuje warunki, które muszą być spełnione, aby obecny prototyp można było rozsądnie pokazać rodzicom i nauczycielom oraz przetestować w jednej klasie.
+Ten dokument pokazuje aktualny stan pilota i rozdziela:
+- **✅ spełnione w obecnym pilocie**;
+- **🟡 częściowo rozwiązane / przygotowane projektowo**;
+- **🔴 wymagające backendu albo decyzji szkoły**.
 
 ## Status tej wersji
 
-Obecna wersja jest **bezpłatnym prototypem / pilotem projektu rodzicielskiego**.
+Aktywnik+ jest obecnie **bezpłatnym pilotem projektu rodzicielskiego**.
 
 Nie jest jeszcze:
 - szkolnym systemem informatycznym;
 - centralnym dziennikiem;
-- usługą z kontami użytkowników;
-- produkcyjnym SaaS;
+- produkcyjnym SaaS z kontami i wspólną bazą;
 - miejscem do przechowywania pełnej dokumentacji uczniów.
 
-## 1. GitHub Pages tylko do strony i demo
+Publiczna wersja:
+**https://aktywnik-plus.vercel.app**
 
-GitHub Pages może służyć do:
-- strony projektu;
-- instrukcji;
-- demonstracji PWA;
-- udostępnienia formularza papierowego;
-- pokazania działania interfejsu.
+## 1. Hosting publicznego pilota — ✅ spełnione
 
-Nie powinien służyć do:
-- logowania użytkowników i przesyłania haseł;
-- centralnego przechowywania danych uczniów;
-- produkcyjnej usługi SaaS;
-- operacji na danych wymagających wysokiego poziomu poufności.
+Pilot jest hostowany na Vercel, a nie na GitHub Pages.
 
-Docelowe konta i synchronizacja wymagają osobnego backendu.
+Aktualnie:
+- działa przez HTTPS;
+- ma stały publiczny adres;
+- ma Content-Security-Policy;
+- ma HSTS;
+- blokuje osadzanie w obcych iframe;
+- nie prosi o hasła użytkowników;
+- nie przechowuje centralnie danych dzieci;
+- GitHub służy do kodu i dokumentacji.
 
-## 2. Dane pilota pozostają lokalnie
+Frontend pilota nadal nie jest backendem szkolnym.
 
-W obecnym prototypie wpisy są zapisywane w pamięci przeglądarki urządzenia.
+## 2. Dane pilota pozostają lokalnie — 🟡 mocno ograniczone ryzyko
 
-Warunki:
-- aplikacja nie wysyła aktywności do GitHuba;
-- każdy telefon/komputer ma osobny zestaw danych;
-- nauczyciel nie ma centralnego panelu z urządzeń rodziców;
-- wyczyszczenie danych przeglądarki może usunąć historię;
-- przed ważnym podsumowaniem należy wygenerować raport lub wydruk.
+Wpisy są zapisane lokalnie w pamięci przeglądarki urządzenia.
 
-Ta wersja nadaje się do sprawdzenia pomysłu i interfejsu, ale nie do trwałego szkolnego archiwum.
+Zrobione:
+- eksport kopii do JSON;
+- import kopii;
+- przycisk prośby o trwałą pamięć przeglądarki;
+- ręczne usunięcie danych lokalnych;
+- raport PDF;
+- eksport CSV;
+- brak automatycznej wysyłki danych do GitHuba/Vercela;
+- brak obowiązkowego logowania.
 
-## 3. Minimum danych o dziecku
+Pozostaje:
+- dane są zależne od konkretnego urządzenia/profilu przeglądarki;
+- skasowanie danych przeglądarki bez kopii może usunąć historię;
+- nie ma jeszcze szyfrowanej kopii chmurowej.
 
-Na etapie pilota nie zbieramy więcej danych niż potrzeba.
+## 3. Minimum danych o dziecku — ✅ spełnione
 
-Preferowane:
-- imię + inicjał lub uzgodniony identyfikator;
-- klasa tylko w raporcie przekazywanym nauczycielowi;
-- aktywność, data, czas, opcjonalny wysiłek i uwaga.
+W pilocie preferowane są:
+- imię + inicjał albo umówiony identyfikator;
+- aktywność, data, czas;
+- opcjonalny wysiłek i uwaga.
 
-Nie zbieramy:
+Nie wymagamy:
 - adresu;
-- numeru telefonu dziecka;
-- dokładnej lokalizacji;
+- telefonu dziecka;
+- GPS;
 - masy ciała;
 - kalorii;
 - danych medycznych;
-- zdjęcia twarzy jako obowiązkowego elementu;
-- publicznej listy dzieci.
+- zdjęcia twarzy;
+- publicznej listy klasy.
 
-## 4. Brak publicznych danych dzieci na GitHubie
+Nazwa dziecka może zostać pominięta przy starcie.
 
-Repozytorium jest publiczne.
+## 4. Brak publicznych danych dzieci w repo — ✅ spełnione jako zasada projektu
 
-Nigdy nie umieszczamy w nim:
-- list klasy;
-- prawdziwych raportów dzieci;
-- plików z imionami i aktywnościami;
-- eksportów bazy;
-- danych logowania;
-- sekretów i kluczy;
+Publiczne repozytorium zawiera kod, dokumentację i dane demonstracyjne.
+
+Nie wolno umieszczać:
+- prawdziwej listy klasy;
+- rzeczywistych raportów dzieci;
+- eksportów z danymi dzieci;
+- sekretów, tokenów i danych logowania;
 - kopii dokumentacji szkolnej.
 
-Dane demonstracyjne muszą być fikcyjne.
+Testy używają danych syntetycznych.
 
-## 5. Rola szkoły przed formalnym wdrożeniem
+## 5. Rola szkoły / dyrektora / IOD — 🟡 przygotujemy pakiet, decyzja pozostaje po stronie szkoły
 
-Jeżeli Aktywnik+ ma stać się rozwiązaniem używanym oficjalnie przez szkołę, przed rozpoczęciem centralnego przetwarzania danych szkoła powinna ustalić z dyrektorem i IOD:
-- cel przetwarzania;
-- podstawę prawną;
-- zakres danych;
-- role administratora i podmiotu przetwarzającego;
-- retencję;
-- zasady dostępu;
-- sposób obsługi praw osób;
-- potrzebę DPIA lub wyniku screeningu DPIA.
+Możemy przygotować:
+- opis celu i zakresu pilota;
+- mapę danych;
+- listę ról;
+- model dostępu;
+- propozycję retencji;
+- checklistę dla dyrektora/IOD;
+- screening pytań do DPIA;
+- opis dostawcy i hostingu.
 
-W polskich materiałach UODO szkoła jest co do zasady administratorem danych uczniów, gdy decyduje o celach i sposobach ich przetwarzania.
+Nie możemy za szkołę:
+- wybrać podstawy prawnej;
+- zatwierdzić modelu przetwarzania;
+- zdecydować o DPIA;
+- zatwierdzić formalnego wdrożenia.
 
-## 6. Dzieci wymagają podwyższonej ochrony
+## 6. Podwyższona ochrona dzieci — ✅ spełnione projektowo
 
-Interfejs i komunikaty powinny być:
-- proste;
-- zrozumiałe;
-- odpowiednie do wieku;
-- pozbawione ukrytych mechanizmów presji;
-- bez rankingów pomiędzy dziećmi.
+Aktywnik+:
+- nie tworzy rankingów dzieci;
+- nie porównuje dzieci ze sobą;
+- nie śledzi wagi, kalorii ani wyglądu;
+- nie wymaga GPS;
+- pokazuje prosty interfejs;
+- statystyki dotyczą własnej historii dziecka;
+- szybkie czasy treningu są zapisem faktycznych zajęć, a nie celem do „nabijania”.
 
-Nie stosujemy funkcji opartych na wyglądzie, wadze, kaloriach ani porównywaniu sprawności.
+## 7. Papierowa alternatywa — ✅ spełnione
 
-## 7. Papierowa alternatywa
+Dostępne są:
+- aplikacja;
+- tryb hybrydowy;
+- formularz papierowy;
+- arkusz 70 wpisów;
+- druk / zapis PDF;
+- import papierowej karty po OCR/CSV/JSON.
 
-Pilot musi zachować możliwość udziału bez aplikacji.
+Brak aplikacji nie blokuje udziału w programie.
 
-Rodzina może:
-- korzystać z aplikacji;
-- korzystać hybrydowo;
-- prowadzić papierowy dziennik.
+## 8. Plusy i oceny — ✅ spełnione projektowo
 
-Brak korzystania z aplikacji nie powinien stawiać dziecka w gorszej sytuacji.
+Aktywnik+:
+- może zapisać plus/ocenę;
+- nie narzuca przelicznika;
+- nie ustala sam zasad oceniania.
 
-## 8. Plusy i oceny
+Reguły pozostają po stronie nauczyciela/szkoły.
 
-Aplikacja:
-- może zapamiętać plus lub ocenę;
-- nie ustala sama regulaminu oceniania;
-- nie narzuca przelicznika plusów na ocenę.
+## 9. Prawdziwa wspólna klasa — 🔴 wymaga backendu
 
-Decyzja należy do nauczyciela/szkoły.
+Obecny kod klasy jest lokalnym demo UX.
 
-## 9. Bez serwera nie ma prawdziwej wspólnej klasy
+Prawdziwe dołączanie między urządzeniami wymaga:
+- backendu;
+- bazy;
+- synchronizacji;
+- identyfikacji dorosłych;
+- uprawnień po stronie serwera/bazy.
 
-Kod klasy w obecnym prototypie działa lokalnie i służy do testowania UX.
+To pozostaje największą techniczną granicą pilota.
 
-Aby rodzic na swoim telefonie rzeczywiście dołączył do klasy widocznej na telefonie nauczyciela, potrzebne są:
-- backend;
-- konta;
-- baza danych;
-- synchronizacja;
-- uprawnienia po stronie serwera/bazy.
+## 10. Warunki produkcyjne — stan bieżący
 
-To jest granica pomiędzy prototypem a wersją produkcyjną.
+| Warunek | Stan |
+| --- | --- |
+| backend produkcyjny | 🔴 brak |
+| uwierzytelnianie | 🟡 zaprojektowany model bez haseł, brak backendu |
+| role/uprawnienia | 🟡 dokumentacja + schema DB, brak egzekwowania serwerowego |
+| izolacja szkół / tenant | 🟡 schema DB przewiduje tenant_id, brak wdrożonego RLS |
+| HTTPS | ✅ działa na Vercel |
+| kopie zapasowe | 🟡 lokalny eksport/import działa; brak backupu serwerowego |
+| audyt administracyjny | 🟡 schema przewiduje audit_events; brak backendu |
+| retencja/usuwanie | 🟡 opisane; lokalne usunięcie działa; brak polityki serwerowej |
+| eksport danych | ✅ JSON / CSV / PDF |
+| informacja o prywatności | ✅ publiczna strona |
+| uzgodnienie ze szkołą/IOD | 🔴 decyzja szkoły |
+| DPIA screening | 🔴 do wykonania przy formalnym wdrożeniu |
+| testy bezpieczeństwa | 🟡 CI/smoke testy są; formalny security review przed produkcją |
+| procedura incydentów | 🟡 dokument do przygotowania przed wdrożeniem szkolnym |
+| środowisko testowe bez prawdziwych danych | ✅ dane syntetyczne |
 
-## 10. Warunki przejścia do wersji produkcyjnej
+## 11. Warunek publikacji — ✅ spełnione
 
-Przed uruchomieniem realnych kont szkolnych wymagane będą co najmniej:
+Publiczny pilot jasno komunikuje, że:
+- jest bezpłatnym projektem rodzicielskim;
+- działa bez konta;
+- dane pilota są lokalne;
+- nie jest jeszcze szkolnym systemem informatycznym.
 
-1. backend produkcyjny;
-2. uwierzytelnianie;
-3. role i egzekwowanie uprawnień w bazie;
-4. izolacja szkół (tenant);
-5. szyfrowany transport HTTPS;
-6. kopie zapasowe i test odtworzenia;
-7. audyt działań administracyjnych;
-8. polityka retencji i usuwania;
-9. eksport danych;
-10. informacja o prywatności;
-11. uzgodnienie modelu ze szkołą/IOD;
-12. screening DPIA i — jeśli wymagany — DPIA;
-13. testy bezpieczeństwa;
-14. procedura reagowania na incydenty;
-15. środowisko testowe bez prawdziwych danych dzieci.
+## Najważniejsze nierozwiązane rzeczy
 
-## 11. Warunek publikacji
-
-Publiczny link do demo powinien jasno informować:
-
-**Aktywnik+ — bezpłatny projekt rodzicielski w fazie pilotażowej. Obecna wersja demonstracyjna zapisuje dane lokalnie na urządzeniu i nie jest jeszcze szkolnym systemem informatycznym.**
+Do przejścia z pilota do Aktywnik+ School pozostają przede wszystkim:
+1. backend;
+2. synchronizacja między urządzeniami;
+3. bezpieczne konta dorosłych;
+4. serwerowe role i RLS;
+5. backup/restore backendu;
+6. audyt i retencja po stronie serwera;
+7. formalne ustalenia ze szkołą/IOD;
+8. DPIA screening;
+9. security review.
 
 ## Źródła
 
-- GitHub Pages — HTTPS i ostrzeżenie przed wrażliwymi transakcjami: https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https
-- GitHub Pages — ograniczenia i brak przeznaczenia do produkcyjnego SaaS: https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits
-- UODO — administrator danych w oświacie: https://uodo.gov.pl/file/1384
-- EDPB — szczególna ochrona danych dzieci: https://www.edpb.europa.eu/topics/key-gdpr-concepts/children_en
+- RODO: https://eur-lex.europa.eu/eli/reg/2016/679
+- UODO: https://uodo.gov.pl/
+- EDPB — dzieci: https://www.edpb.europa.eu/topics/key-gdpr-concepts/children_en
+- Vercel — dokumentacja bezpieczeństwa i hostingu: https://vercel.com/docs
