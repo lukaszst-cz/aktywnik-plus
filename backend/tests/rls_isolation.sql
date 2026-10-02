@@ -141,16 +141,15 @@ begin
 end $$;
 select pg_temp.back_to_admin();
 
--- Anonymous: brak danych.
-set local role anon;
-select set_config('request.jwt.claims','{"role":"anon"}',true);
-do $$
-begin
-  if exists(select 1 from children) then raise exception 'RLS LEAK: anon children'; end if;
-  if exists(select 1 from activities) then raise exception 'RLS LEAK: anon activities'; end if;
-  if exists(select 1 from reports) then raise exception 'RLS LEAK: anon reports'; end if;
-end $$;
+-- Anonymous: nie ma nawet uprawnień SELECT do danych szkolnych.
 reset role;
+do $
+begin
+  if has_table_privilege('anon','public.children','SELECT') then raise exception 'GRANT LEAK: anon children'; end if;
+  if has_table_privilege('anon','public.activities','SELECT') then raise exception 'GRANT LEAK: anon activities'; end if;
+  if has_table_privilege('anon','public.reports','SELECT') then raise exception 'GRANT LEAK: anon reports'; end if;
+  if has_table_privilege('anon','public.classes','SELECT') then raise exception 'GRANT LEAK: anon classes'; end if;
+end $;
 
 rollback;
 
