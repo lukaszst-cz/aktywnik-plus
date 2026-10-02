@@ -36,9 +36,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.1.2 — Pilot**
+**Aktywnik+ 0.1.3 — Pilot**
 
-- [Release notes 0.1.2](docs/RELEASE-0.1.2.md)
+- [Release notes 0.1.3](docs/RELEASE-0.1.3.md)
 - [Changelog](CHANGELOG.md)
 - [Pobierz / zainstaluj](pobierz.html)
 - [FAQ](faq.html)
@@ -137,6 +137,17 @@ W pilocie nie ma logowania. W przyszłej wersji synchronizowanej:
 
 Szczegóły: [Logowanie bez tarcia](docs/LOGOWANIE-BEZ-TARCIA.md).
 
+## Backend 0.1.3
+
+Backendowy fundament jest już w repo:
+- `/api/health`;
+- `/api/capabilities`;
+- `backend/migrations/001_core.sql`;
+- `backend/migrations/002_supabase_rls.sql`;
+- `.env.example`.
+
+Backend jest domyślnie wyłączony dla synchronizacji chmurowej. Włączenie wymaga prawdziwej bazy, autoryzacji i przejścia testów RLS.
+
 ## Wersja produkcyjna
 
 Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + reguły dostępu po stronie backendu. Planowany stos: Next.js / TypeScript / Supabase. Powiadomienie końca dnia będzie korzystać z Web Push.
@@ -149,4 +160,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.1.2 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
+`0.1.3 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
