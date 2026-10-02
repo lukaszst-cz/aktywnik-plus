@@ -1,0 +1,9 @@
+{
+  "name":"Aktywnik+",
+  "short_name":"Aktywnik+",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#f1f5f9",
+  "theme_color":"#0f172a",
+  "description":"Dziennik aktywności dziecka z akceptacją rodzica i raportami."
+}
