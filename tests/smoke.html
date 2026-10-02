@@ -33,6 +33,11 @@ async function run(){
     const seeded={schemaVersion:4,pilot:{started:true},parentAuth:{pinSalt:'test-salt',pinHash:'test-hash',iterations:120000,autoLockMinutes:5},children:[childA],activeChildId:childA.id,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
     localStorage.setItem(KEY,JSON.stringify(seeded));
     ctx=await loadApp('seeded');w=ctx.w;d=ctx.d;
+    await w.setParentPin('2468');
+    w.persist();
+    await sleep(80);
+    if(!await w.verifyParentPin('2468'))throw new Error('correct PIN verification failed');
+    if(await w.verifyParentPin('1111'))throw new Error('wrong PIN verification succeeded');
     if(d.getElementById('childPanel').classList.contains('hidden'))throw new Error('child mode not active');
     if(!d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('parent visible without session');
 
@@ -53,6 +58,11 @@ async function run(){
 
     sessionStorage.setItem(SESSION_KEY,String(Date.now()+600000));w.switchMode('parent',true);await sleep(80);
     if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('authorized parent session not shown');
+    d.getElementById('parentAutoLockMinutes').value='10';
+    d.getElementById('saveAutoLockBtn').click();
+    await sleep(60);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.parentAuth?.autoLockMinutes!==10)throw new Error('auto-lock setting not saved');
 
     d.getElementById('newChildName').value='Dziecko B';d.getElementById('addChildBtn').click();await sleep(80);
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');if(saved.children?.length!==2)throw new Error('second child not added');
