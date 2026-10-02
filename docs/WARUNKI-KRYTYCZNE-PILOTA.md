@@ -152,10 +152,10 @@ To pozostaje największą techniczną granicą pilota.
 
 | Warunek | Stan |
 | --- | --- |
-| backend produkcyjny | 🔴 brak |
-| uwierzytelnianie | 🟡 zaprojektowany model bez haseł, brak backendu |
-| role/uprawnienia | 🟡 dokumentacja + schema DB, brak egzekwowania serwerowego |
-| izolacja szkół / tenant | 🟡 schema DB przewiduje tenant_id, brak wdrożonego RLS |
+| backend produkcyjny | 🟡 działa szkielet Vercel API; cloud sync celowo wyłączony do czasu bazy/auth |
+| uwierzytelnianie | 🟡 model bez haseł zaprojektowany; Supabase Auth do podłączenia |
+| role/uprawnienia | 🟡 dokumentacja + schema DB + przygotowane RLS; wymagane wdrożenie i testy w Supabase |
+| izolacja szkół / tenant | 🟡 tenant_id + przygotowane RLS; wymagane wdrożenie i testy |
 | HTTPS | ✅ działa na Vercel |
 | kopie zapasowe | 🟡 lokalny eksport/import działa; brak backupu serwerowego |
 | audyt administracyjny | 🟡 schema przewiduje audit_events; brak backendu |
@@ -176,13 +176,27 @@ Publiczny pilot jasno komunikuje, że:
 - dane pilota są lokalne;
 - nie jest jeszcze szkolnym systemem informatycznym.
 
+## Backend — stan 0.1.3
+
+Na produkcji działają:
+- `/api/health`;
+- `/api/capabilities`;
+- chronione endpointy `/api/v1/classes` i `/api/v1/sync`.
+
+Chronione endpointy zwracają `503 cloud_sync_disabled`, dopóki nie ma jednocześnie:
+- bazy;
+- autoryzacji;
+- jawnego `AKTYWNIK_CLOUD_SYNC=true`.
+
+To oznacza, że backend już istnieje technicznie, ale nie przyjmuje danych szkolnych bez pełnej konfiguracji bezpieczeństwa.
+
 ## Najważniejsze nierozwiązane rzeczy
 
 Do przejścia z pilota do Aktywnik+ School pozostają przede wszystkim:
-1. backend;
+1. podłączenie produkcyjnej bazy Supabase/PostgreSQL;
 2. synchronizacja między urządzeniami;
 3. bezpieczne konta dorosłych;
-4. serwerowe role i RLS;
+4. wdrożenie i testy RLS;
 5. backup/restore backendu;
 6. audyt i retencja po stronie serwera;
 7. formalne ustalenia ze szkołą/IOD;
