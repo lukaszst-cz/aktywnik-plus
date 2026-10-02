@@ -148,9 +148,24 @@
       </section>
 
       <section class="card">
-        <div class="section-head"><h2>Moje statystyki</h2><select id="reportPeriod"><option value="month">Miesiąc</option><option value="quarter">Kwartał</option><option value="half">Półrocze</option><option value="year">Rok</option></select></div>
+        <div class="section-head"><h2>Moje statystyki</h2><select id="reportPeriod" aria-label="Okres statystyk"><option value="month">Miesiąc</option><option value="quarter">Kwartał</option><option value="half">Półrocze</option><option value="year">Rok</option></select></div>
         <div id="statsGrid" class="stats-grid"></div>
         <div id="activityBreakdown" class="bars"></div>
+      </section>
+
+      <section id="selfDataCard" class="card hidden">
+        <div class="section-head"><h2>Moje dane</h2><span class="badge">lokalnie</span></div>
+        <p>W trybie osobistym możesz korzystać bez konta. Zapisz kopię przed zmianą urządzenia lub czyszczeniem przeglądarki.</p>
+        <div class="backup-actions">
+          <button id="selfExportCsvBtn" class="ghost">Eksport CSV</button>
+          <button id="selfExportBackupBtn" class="primary">Eksport kopii JSON</button>
+          <label class="button-link ghost file-button">Przywróć kopię
+            <input id="selfImportBackupInput" type="file" accept="application/json,.json" hidden />
+          </label>
+          <button id="selfPersistentStorageBtn" class="ghost">Chroń dane na urządzeniu</button>
+          <button id="selfDeleteLocalDataBtn" class="danger">Usuń dane</button>
+        </div>
+        <small id="selfStorageStatus">Dane są zapisane lokalnie w tej przeglądarce.</small>
       </section>
     </section>
 
