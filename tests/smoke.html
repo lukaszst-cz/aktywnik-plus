@@ -10,6 +10,7 @@
 <iframe id="appFrame" src="../app.html"></iframe>
 <script>
 const KEY='aktywnik-plus-data-v1';
+const DRAFT_KEY='aktywnik-plus-entry-draft-v1';
 const SESSION_KEY='aktywnik-plus-parent-unlocked-until';
 const result=document.getElementById('result');
 function fail(msg){result.className='fail';result.textContent='FAIL: '+msg;document.body.dataset.test='fail'}
@@ -53,7 +54,19 @@ async function run(){
     if(!d.getElementById('parentAccessBtn').classList.contains('hidden'))throw new Error('parent access visible in self mode');
     if(d.getElementById('selfDataCard').classList.contains('hidden'))throw new Error('self data card missing');
     let custom=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Inna aktywność'));if(!custom)throw new Error('custom activity missing');
-    custom.click();d.getElementById('customActivityName').value='Prace w ogrodzie';d.getElementById('activityDuration').value='12';d.getElementById('saveEntryBtn').click();await sleep(80);
+    custom.click();
+    d.getElementById('customActivityName').value='Prace w ogrodzie';
+    d.getElementById('activityDuration').value='12';
+    d.getElementById('activityNote').value='draft test';
+    for(const id of ['customActivityName','activityDuration','activityNote'])d.getElementById(id).dispatchEvent(new w.Event('input',{bubbles:true}));
+    await sleep(50);
+    const draftBeforeReload=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');
+    if(!draftBeforeReload||draftBeforeReload.customName!=='Prace w ogrodzie'||draftBeforeReload.minutes!==12||draftBeforeReload.note!=='draft test')throw new Error('entry draft autosave failed');
+    ctx=await loadApp('draft-restore');w=ctx.w;d=ctx.d;await sleep(100);
+    if(d.getElementById('entryCard').classList.contains('hidden'))throw new Error('entry draft was not restored');
+    if(d.getElementById('customActivityName').value!=='Prace w ogrodzie'||d.getElementById('activityDuration').value!=='12'||d.getElementById('activityNote').value!=='draft test')throw new Error('restored entry draft values mismatch');
+    d.getElementById('saveEntryBtn').click();await sleep(80);
+    if(localStorage.getItem(DRAFT_KEY)!==null)throw new Error('entry draft not cleared after save');
     selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(selfSaved.entries?.[0]?.activity!=='Prace w ogrodzie'||selfSaved.entries?.[0]?.status!=='approved')throw new Error('self custom activity failed');
 
@@ -172,7 +185,7 @@ async function run(){
     w.clearPinFailures();
     if(w.pinLockRemainingMs()>0)throw new Error('PIN lockout reset failed');
 
-    pass('0.4.0 universal self mode, custom activity, data controls, family PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
+    pass('universal modes, entry draft recovery, data controls, family PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
