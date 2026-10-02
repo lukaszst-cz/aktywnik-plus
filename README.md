@@ -26,9 +26,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.1.1 — Pilot**
+**Aktywnik+ 0.1.2 — Pilot**
 
-- [Release notes 0.1.1](docs/RELEASE-0.1.1.md)
+- [Release notes 0.1.2](docs/RELEASE-0.1.2.md)
 - [Changelog](CHANGELOG.md)
 - [Pobierz / zainstaluj](pobierz.html)
 
@@ -122,6 +122,14 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 - repozytorium: `https://github.com/lukaszst-cz/aktywnik-plus`
 - wydania: `https://github.com/lukaszst-cz/aktywnik-plus/releases`
 
+## Darmowy projekt i wsparcie
+
+Aktywnik+ pozostaje bezpłatny. Jeśli aplikacja Ci się przydaje, możesz dobrowolnie wesprzeć jej dalszy rozwój:
+- Buy Me a Coffee: https://buymeacoffee.com/nalesnik_plus_plus
+- inne projekty i usługi WWW: https://zielona-marka.pl
+
+Wpłata nie odblokowuje dodatkowych funkcji i nie jest warunkiem korzystania z aplikacji.
+
 ## Status
 
-`0.1.1 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
+`0.1.2 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
