@@ -11,6 +11,8 @@ Pierwszy etap przejścia z lokalnej PWA do opcjonalnego konta i synchronizacji m
 - publiczny publishable key Supabase w kliencie — bez kluczy administracyjnych;
 - CSP dopuszcza połączenia wyłącznie z projektem Aktywnik+ Supabase;
 - local-first sync queue: zapis lokalny zawsze jest pierwszy, chmura nie blokuje aplikacji;
+- osobna tabela `personal_activities` z RLS dla trybu **Dla siebie** — dorosły użytkownik nie jest modelowany jako dziecko;
+- endpoint `/api/v1/sync` obsługuje idempotentny upsert własnych wpisów w trybie osobistym;
 - status synchronizacji w nagłówku;
 - skrót Konto / Sync;
 - obsługa nowego modelu Supabase publishable/secret keys;
