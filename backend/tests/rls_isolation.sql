@@ -143,13 +143,13 @@ select pg_temp.back_to_admin();
 
 -- Anonymous: nie ma nawet uprawnień SELECT do danych szkolnych.
 reset role;
-do $
+do $$
 begin
   if has_table_privilege('anon','public.children','SELECT') then raise exception 'GRANT LEAK: anon children'; end if;
   if has_table_privilege('anon','public.activities','SELECT') then raise exception 'GRANT LEAK: anon activities'; end if;
   if has_table_privilege('anon','public.reports','SELECT') then raise exception 'GRANT LEAK: anon reports'; end if;
   if has_table_privilege('anon','public.classes','SELECT') then raise exception 'GRANT LEAK: anon classes'; end if;
-end $;
+end $$;
 
 rollback;
 
