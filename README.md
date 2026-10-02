@@ -11,6 +11,8 @@ Aktywnik+ jest obecnie **bezpłatnym projektem rodzicielskim w fazie pilotażowe
 Na tym etapie:
 - nie ma opłat;
 - nie trzeba zakładać konta;
+- bezpośrednie wejście rolą: dziecko / rodzic / nauczyciel;
+- aplikacja pamięta ostatnio używany tryb na danym urządzeniu;
 - nie potrzeba własnego serwera;
 - dane prototypu pozostają lokalnie na urządzeniu;
 - rodzina może wybrać aplikację, tryb hybrydowy albo papier.
@@ -123,6 +125,17 @@ python -m http.server 8080
 ```
 
 Następnie otwórz `http://localhost:8080`.
+
+## Logowanie bez tarcia
+
+W pilocie nie ma logowania. W przyszłej wersji synchronizowanej:
+- dziecko nie dostaje własnego e-maila ani klasycznego hasła;
+- rodzic: preferowany passkey lub magic link;
+- nauczyciel: konto szkoły / Google / Microsoft SSO albo magic link;
+- konto jest wymagane tylko dla synchronizacji, klas między urządzeniami i kopii chmurowej;
+- lokalny tryb bez konta pozostaje dostępny do zwykłego prowadzenia dziennika.
+
+Szczegóły: [Logowanie bez tarcia](docs/LOGOWANIE-BEZ-TARCIA.md).
 
 ## Wersja produkcyjna
 
