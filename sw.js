@@ -1,4 +1,4 @@
-const CACHE='aktywnik-plus-v8';
+const CACHE='aktywnik-plus-v9';
 const ASSETS=[
   './',
   './index.html',
@@ -12,6 +12,7 @@ const ASSETS=[
   './styles.css',
   './app.js',
   './install.js',
+  './share.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png'
