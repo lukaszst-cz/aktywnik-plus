@@ -81,6 +81,23 @@ jobs:
           node tests/run-smoke.mjs 9222 'http://127.0.0.1:8765/tests/smoke.html'
           echo "Aktywnik+ browser smoke PASS"
 
+      - name: PWA runtime smoke test
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --no-first-run \
+            --remote-debugging-port=9223 \
+            --user-data-dir=/tmp/aktywnik-chrome-pwa \
+            'http://127.0.0.1:8765/tests/pwa-smoke.html' \
+            >/tmp/aktywnik-chrome-pwa.log 2>&1 &
+          echo $! > /tmp/aktywnik-chrome-pwa.pid
+          sleep 2
+          node tests/run-smoke.mjs 9223 'http://127.0.0.1:8765/tests/pwa-smoke.html'
+          echo "Aktywnik+ PWA runtime smoke PASS"
 
       - name: Backend API unit smoke
         run: |
