@@ -50,7 +50,7 @@ function renderActivities(){
   const fav=$('#favoriteActivities');fav.innerHTML='';ACTIVITIES.filter(a=>(child.favorites||DEFAULT_FAVORITES).includes(a[0])).forEach(a=>fav.append(activityButton(a)));
   const q=$('#activitySearch').value.toLowerCase(),all=$('#allActivities');all.innerHTML='';ACTIVITIES.filter(a=>a[0].toLowerCase().includes(q)).forEach(a=>all.append(activityButton(a)));
 }
-function setQuickDuration(minutes){const input=$('#activityDuration');if(!input)return;input.value=String(minutes);$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(minutes)))}
+function setQuickDuration(minutes){const input=$('#activityDuration');if(!input)return;input.value=String(minutes);$$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(minutes)))}
 
 function startActivityTimer(){
   const child=activeChild();if(!selected||!child||state.activeTimer)return;
@@ -309,7 +309,7 @@ function setReportStatus(classId,childId,status){
 function renderClasses(){
   const classes=state.classes.filter(c=>!c.archived),box=$('#classList');if(!box)return;if(!parentUnlocked()){box.innerHTML='';return}box.innerHTML='';
   classes.forEach(c=>{const children=c.children||[],el=document.createElement('div');el.className='entry',childRows=children.map(ch=>'<div class="class-child"><span><strong>'+escapeHtml(ch.name)+'</strong> · '+(ch.mode==='paper'?'papier':ch.mode==='hybrid'?'hybrydowo':'cyfrowo')+'</span><select data-report-class="'+escapeAttr(c.id)+'" data-report-child="'+escapeAttr(ch.id)+'"><option value="missing" '+(ch.reportStatus==='missing'?'selected':'')+'>brak raportu</option><option value="preparing" '+(ch.reportStatus==='preparing'?'selected':'')+'>w przygotowaniu</option><option value="submitted" '+(ch.reportStatus==='submitted'?'selected':'')+'>oddany</option><option value="reviewed" '+(ch.reportStatus==='reviewed'?'selected':'')+'>sprawdzony</option></select></div>').join('');el.innerHTML='<div style="width:100%"><strong>'+escapeHtml(c.name)+'</strong><small>'+escapeHtml(c.schoolYear)+' · kod klasy: <b>'+escapeHtml(c.code)+'</b> · '+children.length+' dzieci</small>'+(childRows?'<div class="class-children">'+childRows+'</div>':'<small>Brak dzieci w klasie.</small>')+'</div>';box.append(el)});
-  if(!classes.length)box.innerHTML='<small>Nie utworzono jeszcze żadnej klasy.</small>';const options=classes.map(c=>'<option value="'+escapeAttr(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.schoolYear)+'</option>').join('');const select=$('#paperClassId');if(select)select.innerHTML=options;const importSelect=$('#importClassId');if(importSelect)importSelect.innerHTML=options;$('[data-report-child]').forEach(sel=>sel.onchange=()=>setReportStatus(sel.dataset.reportClass,sel.dataset.reportChild,sel.value));
+  if(!classes.length)box.innerHTML='<small>Nie utworzono jeszcze żadnej klasy.</small>';const options=classes.map(c=>'<option value="'+escapeAttr(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.schoolYear)+'</option>').join('');const select=$('#paperClassId');if(select)select.innerHTML=options;const importSelect=$('#importClassId');if(importSelect)importSelect.innerHTML=options;$$('[data-report-child]').forEach(sel=>sel.onchange=()=>setReportStatus(sel.dataset.reportClass,sel.dataset.reportChild,sel.value));
 }
 function renderJoinRequests(){
   const box=$('#classJoinRequests');if(!box)return;if(!parentUnlocked()){box.innerHTML='';return}
