@@ -1,0 +1,17 @@
+{
+  "mode": "hybrid",
+  "requireParentApproval": true,
+  "showEffort": true,
+  "rewards": {
+    "enabled": true,
+    "teacherDecides": true,
+    "automaticGradeConversion": false
+  },
+  "reports": ["month", "quarter", "halfYear", "year"],
+  "limits": {
+    "minimumActiveDays": null,
+    "minimumMinutes": null,
+    "maximumCountedMinutesPerDay": null
+  },
+  "paperFallback": true
+}
