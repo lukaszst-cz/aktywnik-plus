@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Aktywnik+ smoke test</title>
+<style>body{font-family:system-ui;padding:20px}.pass{color:#166534}.fail{color:#b91c1c}iframe{width:1px;height:1px;opacity:.01}</style>
+</head>
+<body>
+<h1>Aktywnik+ smoke test</h1>
+<div id="result">RUNNING</div>
+<iframe id="appFrame"></iframe>
+<script>
+const KEY='aktywnik-plus-data-v1';
+const result=document.getElementById('result');
+function fail(msg){result.className='fail';result.textContent='FAIL: '+msg;document.body.dataset.test='fail'}
+function pass(msg){result.className='pass';result.textContent='PASS: '+msg;document.body.dataset.test='pass'}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function run(){
+  try{
+    localStorage.removeItem(KEY);
+    const f=document.getElementById('appFrame');
+    f.src='../app.html?smoke='+Date.now();
+    await new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error('app load timeout')),5000);
+      f.onload=()=>{clearTimeout(timer);resolve()}
+    });
+    await sleep(300);
+    const w=f.contentWindow,d=f.contentDocument;
+    if(!d.getElementById('pilotSetupCard')) throw new Error('pilot setup missing');
+    d.getElementById('pilotChildName').value='Test D.';
+    d.getElementById('startPilotBtn').click();
+    await sleep(100);
+    if(!d.getElementById('pilotSetupCard').classList.contains('hidden')) throw new Error('pilot setup did not close');
+
+    const spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));
+    if(!spacer) throw new Error('activity button missing');
+    spacer.click();
+    d.getElementById('activityDuration').value='25';
+    d.getElementById('activityNote').value='smoke test';
+    d.getElementById('saveEntryBtn').click();
+    await sleep(100);
+
+    d.getElementById('parentModeBtn').click();
+    await sleep(50);
+    if(d.getElementById('pendingCount').textContent!=='1') throw new Error('pending count is not 1');
+    d.getElementById('approveAllBtn').click();
+    await sleep(100);
+
+    let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name not saved');
+    if(saved.entries?.length!==1) throw new Error('entry not saved');
+    if(saved.entries[0].status!=='approved') throw new Error('entry not approved');
+    if(!d.getElementById('parentReport').textContent.includes('Test D.')) throw new Error('report does not contain pilot name');
+
+    d.getElementById('schoolModeBtn').click();
+    d.getElementById('newClassName').value='5A — TEST';
+    d.getElementById('createClassBtn').click();
+    await sleep(100);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.classes?.length!==1 || !saved.classes[0].code) throw new Error('local class demo failed');
+
+    const payload={format:'aktywnik-plus-backup',version:2,data:saved};
+    const restored=w.safeBackupState(payload);
+    if(restored.entries?.length!==1 || restored.pilot?.childDisplayName!=='Test D.') throw new Error('backup validation failed');
+
+    location.reload();
+  }catch(e){fail(e.message)}
+}
+if(sessionStorage.getItem('aktywnik-smoke-reload')==='1'){
+  sessionStorage.removeItem('aktywnik-smoke-reload');
+  try{
+    const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.entries?.length!==1 || saved.entries[0].status!=='approved') throw new Error('data did not persist after reload');
+    if(saved.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name did not persist');
+    pass('pilot, activity, approval, report, local class demo, backup validation and persistence');
+    localStorage.removeItem(KEY);
+  }catch(e){fail(e.message)}
+}else{
+  sessionStorage.setItem('aktywnik-smoke-reload','1');
+  run();
+}
+</script>
+</body>
+</html>
