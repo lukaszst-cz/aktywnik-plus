@@ -1,5 +1,5 @@
 const ACTIVITIES=[
-['Spacer','🚶'],['Spacer z psem','🐕'],['Rower','🚲'],['Hulajnoga','🛴'],['Rolki','🛼'],['Deskorolka','🛹'],['Basen','🏊'],['Bieganie','🏃'],['Marsz','🥾'],['Piłka nożna','⚽'],['Koszykówka','🏀'],['Siatkówka','🏐'],['Tenis','🎾'],['Badminton','🏸'],['Tenis stołowy','🏓'],['Judo','🥋'],['Karate','🥋'],['Taniec','💃'],['Gimnastyka','🤸'],['Ćwiczenia w domu','🏠'],['SKS','🏫'],['Trening klubowy','🏅'],['Plac zabaw','🛝'],['Zabawa na podwórku','🌳'],['Trampolina','🤸'],['Wspinaczka','🧗'],['Park linowy','🌲'],['Wycieczka piesza','🥾'],['Góry','⛰️'],['Narty','⛷️'],['Snowboard','🏂'],['Łyżwy','⛸️'],['Kajak','🛶'],['Żagle','⛵'],['Frisbee','🥏'],['Rzutki / celność','🎯'],['Gra terenowa','🧭'],['Zabawy ruchowe','🎈'],['Rozciąganie','🧘'],['Inna aktywność','➕']
+['Spacer','🚶'],['Spacer z psem','🐕'],['Rower','🚲'],['Hulajnoga','🛴'],['Rolki','🛼'],['Deskorolka','🛹'],['Basen','🏊'],['Bieganie','🏃'],['Marsz','🥾'],['Piłka nożna','⚽'],['Koszykówka','🏀'],['Siatkówka','🏐'],['Tenis','🎾'],['Badminton','🏸'],['Tenis stołowy','🏓'],['Judo','🥋'],['Karate','🥋'],['Taniec','💃'],['Gimnastyka','🤸'],['Ćwiczenia w domu','🏠'],['SKS','🏫'],['Trening klubowy','🏅'],['Plac zabaw','🛝'],['Zabawa na podwórku','🌳'],['Trampolina','🤸'],['Wspinaczka','🧗'],['Park linowy','🌲'],['Wycieczka piesza','🥾'],['Góry','⛰️'],['Narty','⛷️'],['Snowboard','🏂'],['Łyżwy','⛸️'],['Kajak','🛶'],['Żagle','⛵'],['Frisbee','🥏'],['Rzutki / celność','🎯'],['Gra terenowa','🧭'],['Zabawy ruchowe','🎈'],['Rozciąganie','🧘'],['Trening siłowy','🏋️'],['Fitness','🏃'],['Joga','🧘'],['Pilates','🤸'],['Nordic walking','🥾'],['Prace w ogrodzie','🌿'],['Inna aktywność','➕']
 ];
 const KEY='aktywnik-plus-data-v1';
 const MAX_BACKUP_BYTES=2*1024*1024;
@@ -13,7 +13,7 @@ const MAX_PIN_ATTEMPTS=5;
 const PIN_LOCK_MS=30000;
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
-const defaultState={schemaVersion:5,meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
+const defaultState={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
 let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let parentReportMonth=today().slice(0,7); let lastPersistOk=true;
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist(){
@@ -59,7 +59,8 @@ function recentDuplicate(childId,payload){
   return state.entries.some(e=>e.childId===childId&&e.source==='manual'&&e.date===payload.date&&e.activity===payload.activity&&Number(e.minutes)===Number(payload.minutes)&&String(e.note||'')===String(payload.note||'')&&new Date(e.createdAt||0).getTime()>=cutoff);
 }
 function pinConfigured(){return !!state.parentAuth?.pinHash&&!!state.parentAuth?.pinSalt}
-function appReady(){return state.children.length>0&&pinConfigured()}
+function isSelfMode(){return state.profileMode==='self'}
+function appReady(){return state.children.length>0&&(isSelfMode()||pinConfigured())}
 function bytesToB64(bytes){let out='';bytes.forEach(b=>out+=String.fromCharCode(b));return btoa(out)}
 function b64ToBytes(value){const raw=atob(value);return Uint8Array.from(raw,c=>c.charCodeAt(0))}
 async function derivePin(pin,saltB64,iterations=PIN_ITERATIONS){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:b64ToBytes(saltB64),iterations},key,256);return bytesToB64(new Uint8Array(bits))}
@@ -83,7 +84,7 @@ function addApprovalEvent(action,entry,actor,note='',before=null,after=null){sta
 
 function pickActivity(name){
   if(!activeChild())return;selected=name;editingEntryId=null;
-  $('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#activityDuration').value='30';$('#activityEffort').value='2';$('#activityNote').value='';
+  $('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#activityDuration').value='30';$('#activityEffort').value='2';if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';
   $('#saveEntryBtn').textContent='Zapisz ręcznie';$('#startTimerBtn').classList.remove('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function activityButton([name,emoji]){const b=document.createElement('button');b.className='activity';b.innerHTML=`<span class="emoji">${emoji}</span>${name}`;b.onclick=()=>pickActivity(name);return b}
@@ -103,7 +104,7 @@ function renderChildOverview(){
   const child=activeChild(),box=$('#childWeekSnapshot'),repeat=$('#repeatLastActivityBtn');if(!child||!box||!repeat)return;
   const {start,end}=weekBounds(),week=usableChildEntries(child.id).filter(e=>{const d=new Date(e.date+'T12:00:00');return d>=start&&d<end});
   const minutes=week.reduce((sum,e)=>sum+Number(e.minutes||0),0),days=new Set(week.map(e=>e.date)).size,pending=childEntries(child.id).filter(e=>e.status==='pending').length,last=latestActivityEntry(child.id);
-  box.innerHTML='<div class="snapshot-item"><strong>'+fmtMin(minutes)+'</strong><small>ruch w tym tygodniu</small></div><div class="snapshot-item"><strong>'+days+'</strong><small>aktywne dni</small></div><div class="snapshot-item"><strong>'+pending+'</strong><small>czeka na rodzica</small></div><div class="snapshot-item"><strong>'+(last?escapeHtml(last.activity):'—')+'</strong><small>'+(last?'ostatnio · '+escapeHtml(last.date):'brak wpisów')+'</small></div>';
+  box.innerHTML='<div class="snapshot-item"><strong>'+fmtMin(minutes)+'</strong><small>ruch w tym tygodniu</small></div><div class="snapshot-item"><strong>'+days+'</strong><small>aktywne dni</small></div><div class="snapshot-item"><strong>'+pending+'</strong><small>'+(isSelfMode()?'oczekujące':'czeka na rodzica')+'</small></div><div class="snapshot-item"><strong>'+(last?escapeHtml(last.activity):'—')+'</strong><small>'+(last?'ostatnio · '+escapeHtml(last.date):'brak wpisów')+'</small></div>';
   repeat.classList.toggle('hidden',!last);
 }
 function repeatLastActivity(){
@@ -128,9 +129,11 @@ function setQuickDuration(minutes){const input=$('#activityDuration');if(!input)
 function startActivityTimer(){
   const child=activeChild();if(!selected||!child||state.activeTimer)return;
   if(editingEntryId){alert('Podczas poprawiania wpisu zapisz czas ręcznie.');return}
+  const customName=cleanText($('#customActivityName')?.value,80),activityName=customName||selected;
+  if(selected==='Inna aktywność'&&!customName){alert('Podaj własną nazwę aktywności.');return}
   const date=$('#activityDate').value||today();if(!allowedActivityDate(date)){alert('Data aktywności nie może być z przyszłości.');return}
-  state.activeTimer={childId:child.id,activity:selected,startAt:nowIso(),date,effort:clampInt($('#activityEffort').value,1,5,2),note:cleanText($('#activityNote').value,120)};
-  selected=null;$('#activityNote').value='';$('#entryCard').classList.add('hidden');persist();
+  state.activeTimer={childId:child.id,activity:activityName,startAt:nowIso(),date,effort:clampInt($('#activityEffort').value,1,5,2),note:cleanText($('#activityNote').value,120)};
+  selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';$('#entryCard').classList.add('hidden');persist();
 }
 function timerElapsedSeconds(){
   if(!state.activeTimer?.startAt)return 0;
@@ -161,14 +164,16 @@ function cancelActivityTimer(){
 function editChildEntry(id){
   const child=activeChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id);if(!e||!['pending','rejected'].includes(e.status))return;
   editingEntryId=e.id;selected=e.activity;$('#selectedActivityTitle').textContent=e.status==='rejected'?'Popraw odrzucony wpis':'Edytuj oczekujący wpis';
-  $('#activityDate').value=e.date;$('#activityDuration').value=e.minutes;$('#activityEffort').value=e.effort;$('#activityNote').value=e.note||'';$('#saveEntryBtn').textContent=e.status==='rejected'?'Popraw i wyślij ponownie':'Zapisz poprawkę';$('#startTimerBtn').classList.add('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
+  $('#activityDate').value=e.date;$('#activityDuration').value=e.minutes;$('#activityEffort').value=e.effort;if($('#customActivityName'))$('#customActivityName').value=ACTIVITIES.some(a=>a[0]===e.activity)?'':e.activity;$('#activityNote').value=e.note||'';$('#saveEntryBtn').textContent=e.status==='rejected'?'Popraw i wyślij ponownie':'Zapisz poprawkę';$('#startTimerBtn').classList.add('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
 }
-function cancelEntry(){editingEntryId=null;selected=null;$('#entryCard').classList.add('hidden');$('#startTimerBtn').classList.remove('hidden');$('#saveEntryBtn').textContent='Zapisz ręcznie'}
+function cancelEntry(){editingEntryId=null;selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#entryCard').classList.add('hidden');$('#startTimerBtn').classList.remove('hidden');$('#saveEntryBtn').textContent='Zapisz ręcznie'}
 function saveEntry(){
   const child=activeChild();if(!child)return;const minutes=Number($('#activityDuration').value),date=$('#activityDate').value||today();
   if(!selected||!Number.isFinite(minutes)||minutes<1||minutes>600){alert('Podaj czas od 1 do 600 minut.');return}
   if(!allowedActivityDate(date)){alert('Data aktywności nie może być z przyszłości.');return}
-  const payload={date,activity:selected,minutes:Math.round(minutes),effort:clampInt($('#activityEffort').value,1,5,2),note:cleanText($('#activityNote').value,120)};
+  const customName=cleanText($('#customActivityName')?.value,80),activityName=customName||selected;
+  if(selected==='Inna aktywność'&&!customName){alert('Podaj własną nazwę aktywności.');return}
+  const payload={date,activity:activityName,minutes:Math.round(minutes),effort:clampInt($('#activityEffort').value,1,5,2),note:cleanText($('#activityNote').value,120)};
   if(editingEntryId){
     const e=state.entries.find(x=>x.id===editingEntryId&&x.childId===child.id);if(!e||!['pending','rejected'].includes(e.status)){cancelEntry();return}
     const before={date:e.date,activity:e.activity,minutes:e.minutes,effort:e.effort,note:e.note,status:e.status},wasRejected=e.status==='rejected';
@@ -183,7 +188,7 @@ function saveEntry(){
   cancelEntry();persist();
 }
 function statusLabel(e){
-  if(e.status==='approved')return '✅ zatwierdzone';
+  if(e.status==='approved')return isSelfMode()?'✅ zapisane':'✅ zatwierdzone';
   if(e.status==='rejected')return '↩️ do poprawy'+(e.rejectionReason?': '+e.rejectionReason:'');
   return '⏳ czeka na rodzica';
 }
@@ -195,7 +200,8 @@ function renderChildEntries(){
   const pending=childEntries(child.id).filter(e=>e.status==='pending').length;$('#pendingChildBadge').textContent=pending?pending+' do zatwierdzenia':'';$('#todayMinutes').textContent=childEntries(child.id).filter(e=>e.date===today()).reduce((sum,e)=>sum+e.minutes,0);
 }
 function renderChildRewards(){
-  const child=activeChild(),box=$('#childRewardHistory');if(!box)return;box.innerHTML='';if(!child)return;
+  const card=$('#childRewardsCard');if(card)card.classList.toggle('hidden',isSelfMode());
+  const child=activeChild(),box=$('#childRewardHistory');if(!box)return;box.innerHTML='';if(!child||isSelfMode())return;
   const rewards=childRewards(child.id).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,20);
   rewards.forEach(r=>{const el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+(r.type==='plus'?'Plus':r.type==='grade'?'Ocena':'Informacja')+' · '+escapeHtml(r.value)+'</strong><small>'+escapeHtml(r.date)+(r.note?' · '+escapeHtml(r.note):'')+'</small></div>';box.append(el)});
   if(!rewards.length)box.innerHTML='<small>Brak zapisanych plusów i ocen.</small>';
@@ -505,28 +511,38 @@ function renderPaperImports(){
   box.innerHTML=imports.slice(0,20).map(x=>{const klass=state.classes.find(c=>c.id===x.classId),total=(x.rows||[]).reduce((sum,r)=>sum+Number(r.minutes||0),0);return '<div class="entry"><div><strong>'+escapeHtml(x.childName)+' · '+(x.rows||[]).length+' wpisów</strong><small>'+escapeHtml(klass?.name||'bez klasy')+' · '+fmtMin(total)+' · import OCR/DocPilot</small></div></div>'}).join('')||'<small>Nie zaimportowano jeszcze żadnej karty papierowej.</small>';
 }
 
+function renderSetupMode(){
+  const select=$('#setupMode'),fields=$('#familySetupFields'),hint=$('#setupHint');if(!select||!fields||!hint)return;
+  const family=select.value==='family';fields.classList.toggle('hidden',!family);
+  hint.textContent=family?'Rodzic ustawia lokalny PIN. Dziecko korzysta z prostego widoku, a rodzic zatwierdza wpisy.':'Tryb osobisty działa bez rodzica i bez konta. Wpisy zapisują się od razu.';
+}
 async function startPilot(){
-  const name=cleanText($('#pilotChildName').value,60),pin=$('#parentPinSetup').value,confirmPin=$('#parentPinConfirm').value;
-  if(!name){alert('Podaj nazwę dziecka.');return}
-  if(!/^\d{4,8}$/.test(pin)){alert('PIN rodzica musi mieć 4–8 cyfr.');return}
-  if(pin!==confirmPin){alert('PIN-y nie są takie same.');return}
+  const mode=$('#setupMode')?.value==='family'?'family':'self',name=cleanText($('#pilotChildName').value,60)||'Mój profil',pin=$('#parentPinSetup').value,confirmPin=$('#parentPinConfirm').value;
+  if(mode==='family'&&!cleanText($('#pilotChildName').value,60)){alert('Podaj nazwę dziecka.');return}
+  if(mode==='family'&&!/^\d{4,8}$/.test(pin)){alert('PIN rodzica musi mieć 4–8 cyfr.');return}
+  if(mode==='family'&&pin!==confirmPin){alert('PIN-y nie są takie same.');return}
+  state.profileMode=mode;
   if(!state.children.length){
-    const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:true,createdAt:nowIso()};
+    const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:mode==='family',createdAt:nowIso()};
     state.children=[child];state.activeChildId=child.id;parentSelectedChildId=child.id;state.pilot={started:true};
   }else{
-    state.children[0].displayName=name;state.activeChildId=state.activeChildId||state.children[0].id;parentSelectedChildId=state.activeChildId;
+    state.children[0].displayName=name;state.children[0].requireParentApproval=mode==='family';state.activeChildId=state.activeChildId||state.children[0].id;parentSelectedChildId=state.activeChildId;
   }
-  await setParentPin(pin);$('#parentPinSetup').value='';$('#parentPinConfirm').value='';persist();switchMode('child',true);
+  if(mode==='family')await setParentPin(pin);
+  else state.parentAuth=structuredClone(defaultState.parentAuth);
+  $('#parentPinSetup').value='';$('#parentPinConfirm').value='';persist();switchMode('child',true);
 }
 function renderPilot(){
   const ready=appReady(),card=$('#pilotSetupCard');card.classList.toggle('hidden',ready);
   if(!ready&&state.children[0])$('#pilotChildName').value=$('#pilotChildName').value||state.children[0].displayName;
+  if(!ready)renderSetupMode();
   const child=activeChild();
   $('#childDisplayName').textContent=child?'· '+child.displayName:'';
   $('#deviceChildBadge').textContent=child?'Profil: '+child.displayName:'Brak profilu';
-  $('#parentAccessBtn').disabled=!ready;
+  $('#parentAccessBtn').disabled=!ready||isSelfMode();
+  $('#parentAccessBtn').classList.toggle('hidden',isSelfMode());
   $('#childPanel').classList.toggle('hidden',!ready||currentMode!=='child');
-  if(!ready){$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden')}
+  if(!ready||isSelfMode()){$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(isSelfMode())currentMode='child'}
 }
 function safeBackupState(raw){
   const base=structuredClone(defaultState);
@@ -561,12 +577,12 @@ function safeBackupState(raw){
   const auth=d.parentAuth&&typeof d.parentAuth==='object'?d.parentAuth:{};
   const parentAuth={pinSalt:cleanText(auth.pinSalt,300),pinHash:cleanText(auth.pinHash,300),iterations:clampInt(auth.iterations,50000,500000,PIN_ITERATIONS),autoLockMinutes:clampInt(auth.autoLockMinutes,1,30,5)};
   const rawMeta=d.meta&&typeof d.meta==='object'?d.meta:{},meta={lastBackupAt:safeIso(rawMeta.lastBackupAt),lastWriteAt:safeIso(rawMeta.lastWriteAt)};
-  return {...base,schemaVersion:5,meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
+  return {...base,schemaVersion:6,profileMode:d.profileMode==='self'?'self':'family',meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
 function exportBackup(){
   if(!guardParent())return;
   state.meta={...(state.meta||{}),lastBackupAt:nowIso()};persist();
-  const payload={format:'aktywnik-plus-backup',version:5,exportedAt:nowIso(),data:state},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  const payload={format:'aktywnik-plus-backup',version:6,exportedAt:nowIso(),data:state},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='aktywnik-plus-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#backupStatus').textContent='dziś';
 }
 async function importBackup(file){
@@ -595,6 +611,7 @@ function renderAll(){
 $('#activitySearch').oninput=renderActivities;
 $('#repeatLastActivityBtn').onclick=repeatLastActivity;
 $$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
+$('#setupMode').onchange=renderSetupMode;
 $('#startPilotBtn').onclick=startPilot;
 $('#parentAccessBtn').onclick=openParentGate;
 $('#unlockParentBtn').onclick=unlockParent;
