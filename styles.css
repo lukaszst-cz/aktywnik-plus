@@ -109,3 +109,18 @@ button:focus-visible,.button-link:focus-visible,input:focus-visible,select:focus
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+
+.language-switch {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: .35rem .55rem;
+  cursor: pointer;
+}
+.language-switch:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
