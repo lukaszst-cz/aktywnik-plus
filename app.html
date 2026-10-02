@@ -15,28 +15,34 @@
     <div>
       <strong class="brand">Aktywnik+</strong>
       <span class="tagline">ruch bez presji</span>
-      <span class="version-badge">Pilot 0.1.1</span>
+      <span class="version-badge">Pilot 0.2.0</span>
     </div>
     <button class="install-mini" type="button" data-install-pwa>Zainstaluj</button>
-    <nav class="mode-switch" aria-label="Tryb aplikacji">
-      <button id="childModeBtn" class="active">Dziecko</button>
-      <button id="parentModeBtn">Rodzic</button>
-      <button id="schoolModeBtn">Szkoła</button>
-    </nav>
+    <div class="secure-actions">
+      <span id="deviceChildBadge" class="badge"></span>
+      <button id="parentAccessBtn" class="ghost">Strefa rodzica 🔒</button>
+    </div>
   </header>
 
   <main class="shell">
     <section id="pilotSetupCard" class="card pilot-card hidden">
       <div>
-        <p class="eyebrow">Pilot bez konta</p>
-        <h2>Start w 30 sekund</h2>
-        <p>Podaj tylko nazwę wyświetlaną na tym urządzeniu. Dane zostają lokalnie w przeglądarce.</p>
+        <p class="eyebrow">Konfiguracja rodzica</p>
+        <h2>Przygotuj bezpieczny profil dziecka</h2>
+        <p>Rodzic tworzy pierwszy profil i ustawia PIN do swojej strefy. Dziecko nie może później przełączyć się do panelu rodzica ani szkoły bez PIN-u.</p>
       </div>
       <div class="pilot-setup">
         <label>Nazwa dziecka / identyfikator
           <input id="pilotChildName" maxlength="60" placeholder="np. Daniel S." />
         </label>
-        <button id="startPilotBtn" class="primary">Rozpocznij bez konta</button>
+        <label>PIN rodzica
+          <input id="parentPinSetup" type="password" inputmode="numeric" minlength="4" maxlength="8" autocomplete="new-password" placeholder="4–8 cyfr" />
+        </label>
+        <label>Powtórz PIN
+          <input id="parentPinConfirm" type="password" inputmode="numeric" minlength="4" maxlength="8" autocomplete="new-password" placeholder="powtórz PIN" />
+        </label>
+        <button id="startPilotBtn" class="primary">Utwórz profil i PIN</button>
+        <small>PIN jest przechowywany lokalnie w postaci skrótu kryptograficznego. To zabezpieczenie pilota na jednym urządzeniu; pełne konta i synchronizacja wymagają backendu.</small>
       </div>
     </section>
     <section id="childPanel">
@@ -102,6 +108,11 @@
       </section>
 
       <section class="card">
+        <div class="section-head"><h2>Moje plusy i oceny</h2><span class="badge">tylko moje</span></div>
+        <div id="childRewardHistory" class="list"></div>
+      </section>
+
+      <section class="card">
         <div class="section-head"><h2>Moje statystyki</h2><select id="reportPeriod"><option value="month">Miesiąc</option><option value="quarter">Kwartał</option><option value="half">Półrocze</option><option value="year">Rok</option></select></div>
         <div id="statsGrid" class="stats-grid"></div>
         <div id="activityBreakdown" class="bars"></div>
@@ -109,17 +120,39 @@
     </section>
 
     <section id="parentPanel" class="hidden">
-      <div id="approvalReminder" class="reminder hidden">🔔 Na dziś są wpisy do zatwierdzenia.</div>
+      <div id="approvalReminder" class="reminder hidden">🔔 Są wpisy do zatwierdzenia.</div>
       <section class="hero card">
-        <div><p class="eyebrow">Panel rodzica</p><h1>Do zatwierdzenia</h1><p>Jedna lista na koniec dnia. Możesz zatwierdzić wszystko lub sprawdzić wpisy osobno.</p></div>
+        <div><p class="eyebrow">Strefa rodzica 🔓</p><h1>Kontrola rodzicielska</h1><p>Wybierz dziecko, sprawdź wpisy i zdecyduj: zatwierdź, popraw albo odrzuć.</p></div>
         <div class="metric"><span id="pendingCount">0</span><small>oczekuje</small></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head"><h2>Moje dzieci</h2><button id="lockParentBtn" class="ghost">Zablokuj strefę rodzica 🔒</button></div>
+        <div class="form-grid">
+          <label>Zarządzam profilem
+            <select id="parentChildSelect"></select>
+          </label>
+          <label>Akceptacja wpisów
+            <select id="childApprovalMode"><option value="required">Wymagana akceptacja rodzica</option><option value="automatic">Automatyczne zatwierdzanie</option></select>
+          </label>
+          <label class="wide">Dodaj kolejne dziecko
+            <input id="newChildName" maxlength="60" placeholder="np. Ola S." />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="addChildBtn" class="primary">Dodaj dziecko</button>
+          <button id="renameChildBtn" class="ghost">Zmień nazwę</button>
+          <button id="setDeviceChildBtn" class="ghost">Ustaw jako profil na tym urządzeniu</button>
+          <button id="removeChildBtn" class="danger">Usuń profil dziecka</button>
+        </div>
+        <small>Rodzic może mieć dowolnie wiele profili dzieci. Na ekranie dziecka aktywny jest tylko jeden profil; zmiana wymaga odblokowanej strefy rodzica.</small>
       </section>
       <section class="card">
         <div class="section-head"><h2>Klasa dziecka</h2><span class="badge">demo lokalne</span></div>
         <div class="prototype-warning"><strong>Na etapie pilota kod klasy działa tylko na tym urządzeniu.</strong> Synchronizacja rodzic–nauczyciel między różnymi telefonami będzie dostępna dopiero po uruchomieniu backendu.</div>
         <p>Możesz przetestować cały przepływ lokalnie: utwórz klasę w panelu Szkoła, a następnie użyj jej kodu tutaj.</p>
         <div class="form-grid">
-          <label>Nazwa dziecka / identyfikator<input id="joinChildName" maxlength="60" placeholder="np. Daniel S." /></label>
+          <label>Dziecko<input id="joinChildName" maxlength="60" readonly /></label>
           <label>Kod klasy<input id="joinClassCode" maxlength="12" placeholder="np. 5A-K7P4" /></label>
           <label>Tryb udziału<select id="joinMode"><option value="digital">Cyfrowy</option><option value="hybrid">Hybrydowy</option><option value="paper">Papierowy</option></select></label>
         </div>
@@ -128,15 +161,26 @@
       </section>
 
       <section class="card">
-        <div class="section-head"><h2>Dzisiejsza lista</h2><button id="approveAllBtn" class="primary">Zatwierdź wszystkie</button></div>
+        <div class="section-head"><h2>Oczekujące wpisy</h2><button id="approveAllBtn" class="primary">Zatwierdź wszystkie widoczne</button></div>
         <div id="approvalList" class="list"></div>
       </section>
+      <section class="card">
+        <div class="section-head"><h2>Historia decyzji</h2><span class="badge">audyt lokalny</span></div>
+        <div id="approvalHistory" class="list"></div>
+      </section>
+
       <section class="card">
         <div class="section-head"><h2>Raporty</h2><div class="entry-actions"><button id="exportCsvBtn" class="ghost">Eksport CSV</button><button id="printReportBtn" class="ghost">Drukuj / PDF</button></div></div>
         <div class="report-buttons">
           <button data-report="month">Miesięczny</button><button data-report="quarter">Kwartalny</button><button data-report="half">Półroczny</button><button data-report="year">Roczny</button>
         </div>
         <div id="parentReport"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head"><h2>Panel szkoły — demo lokalne</h2><span class="badge">tylko po PIN-ie</span></div>
+        <p>Dziecko nie ma dostępu do tego panelu. W pilocie rodzic może otworzyć demonstrację szkoły dopiero po odblokowaniu swojej strefy.</p>
+        <button id="openSchoolDemoBtn" class="ghost">Otwórz panel szkoły (demo)</button>
       </section>
 
       <section class="card">
@@ -156,7 +200,8 @@
 
     <section id="schoolPanel" class="hidden">
       <section class="hero card">
-        <div><p class="eyebrow">Konfiguracja szkoły</p><h1>Zasady po Waszemu</h1><p>Nauczyciel wybiera sposób pracy, plusy i ocenianie. Aktywnik+ tylko zapisuje ustalenia.</p></div>
+        <div><p class="eyebrow">Konfiguracja szkoły — demo 🔒</p><h1>Zasady po Waszemu</h1><p>Ten panel jest dostępny tylko z odblokowanej strefy rodzica. W wersji produkcyjnej nauczyciel otrzyma osobne konto i własne uprawnienia.</p></div>
+        <button id="schoolExitBtn" class="ghost">Wróć do rodzica</button>
       </section>
 
       <section class="card">
@@ -213,6 +258,7 @@
       <section class="card">
         <div class="section-head"><h2>Plusy i oceny</h2><span class="badge">historia dziecka</span></div>
         <div class="form-grid">
+          <label>Dziecko<select id="rewardChildId"></select></label>
           <label>Rodzaj<select id="rewardType"><option value="plus">Plus</option><option value="grade">Ocena</option></select></label>
           <label>Wartość<input id="rewardValue" type="text" maxlength="10" placeholder="np. + lub 6" /></label>
           <label>Data<input id="rewardDate" type="date" /></label>
@@ -229,6 +275,48 @@
       </section>
     </section>
   </main>
+
+  <dialog id="parentUnlockDialog">
+    <form method="dialog" id="parentUnlockForm">
+      <div class="section-head"><h2>Strefa rodzica 🔒</h2><button value="cancel" class="ghost">Anuluj</button></div>
+      <p>Wpisz PIN rodzica. Po kilku minutach bezczynności panel zablokuje się automatycznie.</p>
+      <label>PIN rodzica<input id="parentPinInput" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" /></label>
+      <p id="parentPinError" class="form-error hidden">Nieprawidłowy PIN.</p>
+      <div class="actions"><button id="unlockParentBtn" type="button" class="primary">Odblokuj</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="parentEditDialog">
+    <form method="dialog">
+      <div class="section-head"><h2>Popraw i zatwierdź wpis</h2><button value="cancel" class="ghost">Anuluj</button></div>
+      <input id="parentEditEntryId" type="hidden" />
+      <div class="form-grid">
+        <label>Data<input id="parentEditDate" type="date" /></label>
+        <label>Czas (min)<input id="parentEditMinutes" type="number" min="1" max="600" /></label>
+        <label>Wysiłek 1–5<input id="parentEditEffort" type="number" min="1" max="5" /></label>
+        <label class="wide">Notatka<input id="parentEditNote" maxlength="120" /></label>
+      </div>
+      <div class="actions"><button id="saveParentCorrectionBtn" type="button" class="primary">Zapisz poprawkę i zatwierdź</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="rejectDialog">
+    <form method="dialog">
+      <div class="section-head"><h2>Odrzuć wpis</h2><button value="cancel" class="ghost">Anuluj</button></div>
+      <input id="rejectEntryId" type="hidden" />
+      <label>Powód
+        <select id="rejectReason">
+          <option value="Popraw czas">Popraw czas</option>
+          <option value="Duplikat">Duplikat</option>
+          <option value="Popraw opis">Popraw opis</option>
+          <option value="Błędna data">Błędna data</option>
+          <option value="Inny powód">Inny powód</option>
+        </select>
+      </label>
+      <label>Dodatkowa informacja<input id="rejectNote" maxlength="120" placeholder="opcjonalnie" /></label>
+      <div class="actions"><button id="confirmRejectBtn" type="button" class="danger">Odrzuć wpis</button></div>
+    </form>
+  </dialog>
 
   <dialog id="favoritesDialog">
     <form method="dialog">
