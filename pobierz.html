@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="landing.css">
+  <title>Aktywnik+ — pobierz i zainstaluj</title>
+</head>
+<body>
+<header class="nav">
+  <a class="logo" href="./">Aktywnik+</a>
+  <nav><a href="app.html">Otwórz aplikację</a><a href="paper.html">Papier</a><a href="./">Strona główna</a></nav>
+</header>
+<main class="section">
+  <span class="pill">Bezpłatny pilot</span>
+  <h2>Pobierz / zainstaluj Aktywnik+</h2>
+  <p>Na etapie pilota Aktywnik+ jest aplikacją PWA. Nie trzeba pobierać pliku EXE ani APK. Otwierasz stronę przez HTTPS i instalujesz ją z przeglądarki.</p>
+
+  <div class="cards">
+    <article>
+      <h3>📱 PWA — polecane</h3>
+      <p>Instalacja na telefonie lub komputerze. Po instalacji Aktywnik+ ma własną ikonę i otwiera się podobnie do zwykłej aplikacji.</p>
+      <button class="primary install-button" type="button" data-install-pwa>Zainstaluj Aktywnik+</button>
+    </article>
+    <article>
+      <h3>🌐 Bez instalacji</h3>
+      <p>Możesz też korzystać bezpośrednio w przeglądarce. Dane pilota pozostają na tym urządzeniu.</p>
+      <a class="primary" href="app.html">Otwórz aplikację</a>
+    </article>
+    <article>
+      <h3>📝 Wersja papierowa</h3>
+      <p>Dla rodzin, które nie chcą używać aplikacji. Ta ścieżka ma być równoważna w pilocie.</p>
+      <a class="secondary" href="paper.html">Otwórz do druku / PDF</a>
+    </article>
+  </div>
+
+  <section class="section action">
+    <h2>Instrukcja instalacji</h2>
+    <p><strong>Android:</strong> przycisk instalacji lub menu przeglądarki → Zainstaluj aplikację / Dodaj do ekranu głównego.</p>
+    <p><strong>iPhone/iPad:</strong> Safari → Udostępnij → Dodaj do ekranu początkowego.</p>
+    <p><strong>Windows/macOS:</strong> Chrome/Edge → ikona instalacji lub menu → Zainstaluj Aktywnik+.</p>
+    <p><small>W pilocie dane nie synchronizują się pomiędzy urządzeniami. Przed zmianą telefonu wykonaj kopię danych w panelu Rodzic.</small></p>
+  </section>
+
+  <section class="section">
+    <h2>Kod projektu</h2>
+    <p>Aktywnik+ jest obecnie publicznym, bezpłatnym projektem rodzicielskim w fazie pilotażowej.</p>
+    <a class="secondary" href="https://github.com/lukaszst-cz/aktywnik-plus">Repozytorium GitHub</a>
+  </section>
+</main>
+<footer>Aktywnik+ • bezpłatny projekt rodzicielski — pilot</footer>
+<script src="install.js"></script>
+</body>
+</html>
