@@ -6,111 +6,98 @@ Aktywnik+ ma być prosty dla dziecka, rodzica i nauczyciela.
 
 1. Dziecko wybiera aktywność z ulubionych albo z pełnej listy.
 2. Wpisuje czas aktywności i opcjonalnie poziom wysiłku lub krótką notatkę.
-3. Wpis zapisuje się jako **„czeka na akceptację rodzica”**.
-4. Po zatwierdzeniu przez rodzica aktywność trafia do oficjalnego dziennika.
+3. Wpis zapisuje się jako **„czeka na akceptację rodzica”**, jeśli szkoła wymaga takiego potwierdzenia.
+4. Po zatwierdzeniu aktywność trafia do dziennika i raportów.
 5. Dziecko widzi wyłącznie własne statystyki i własny postęp.
 
-Nie ma rankingów między dziećmi. Celem jest regularność, różnorodność ruchu i zauważanie własnego postępu.
+Nie ma rankingów między dziećmi.
 
 ## Dla rodzica
 
-Rodzic nie musi zatwierdzać każdej aktywności od razu.
-
-Na koniec dnia aplikacja pokazuje jedną listę wpisów dziecka:
+Na koniec dnia aplikacja może pokazać jedną listę wpisów dziecka:
 
 - **Akceptuj** — wpis jest poprawny;
 - **Popraw** — np. czas lub rodzaj aktywności;
-- **Odrzuć** — gdy wpis został dodany przez pomyłkę.
+- **Odrzuć** — wpis został dodany przez pomyłkę.
 
-Po akceptacji wpis trafia do statystyk i raportów.
+Rodzic może wygenerować raport miesięczny, kwartalny, półroczny lub roczny.
 
-Rodzic może wygenerować raport:
-- miesięczny,
-- kwartalny,
-- półroczny,
-- roczny.
-
-Raport może być zapisany jako PDF i przekazany nauczycielowi.
+Jeśli rodzic nie chce korzystać z aplikacji, może wybrać wersję papierową. Dziecko nadal uczestniczy w programie na tych samych zasadach.
 
 ## Dla nauczyciela
 
-Nauczyciel nie musi mieć konta w aplikacji.
+Nauczyciel wybiera jeden z trzech trybów:
 
-Rodzic przekazuje gotowy raport zawierający:
-- datę,
-- rodzaj aktywności,
-- czas,
-- poziom wysiłku,
-- potwierdzenie rodzica,
-- podsumowanie okresu,
-- miejsce na uwagi nauczyciela / wychowawcy.
+### Cyfrowy
+Dziecko i rodzic korzystają z aplikacji, a dane i raporty są prowadzone cyfrowo.
 
-### Plusy i oceny
+### Hybrydowy
+Dziecko i rodzic korzystają z aplikacji, ale nauczyciel może otrzymywać papierowy raport lub PDF.
+
+### Papierowy
+Rodzina prowadzi wydrukowany dziennik bez konta w aplikacji.
+
+W każdym trybie nauczyciel ustala własne zasady. Może zdecydować:
+
+- czy wymagana jest akceptacja rodzica;
+- czy używany jest poziom wysiłku;
+- czy przyznawane są plusy;
+- czy plusy mogą prowadzić do oceny;
+- jakie obowiązują minima i maksima;
+- jaki okres raportowania jest stosowany.
+
+## Plusy i oceny
 
 Aktywnik+ **nie narzuca przelicznika plusów na ocenę**.
 
-Nauczyciel sam decyduje:
-- czy za dany raport lub aktywność przyznaje plus;
-- ile plusów przyznaje;
-- czy plusy są zamieniane na ocenę;
-- jaki przelicznik obowiązuje w jego klasie lub szkole;
-- jaką ocenę wystawia.
+Nauczyciel sam decyduje, czy i za co przyznaje plus, kiedy plusy są rozliczone oraz jaką ocenę wystawia.
 
-Aplikacja ma tylko zapamiętać decyzję nauczyciela.
+Aplikacja zapamiętuje:
 
-Dla dziecka zapisujemy historię:
-- data przyznania plusa;
-- liczba plusów;
-- okres lub raport, którego dotyczą;
-- opcjonalna uwaga nauczyciela;
-- wystawiona ocena, jeśli nauczyciel ją przyznał;
-- data wystawienia oceny;
-- opcjonalna informacja, z jakich plusów powstała ocena.
+- datę;
+- plus lub ocenę;
+- okres, którego dotyczy;
+- opcjonalną uwagę nauczyciela;
+- informację, czy dany plus został wykorzystany przy ocenie.
 
-Dzięki temu rodzic i dziecko widzą, które aktywności zostały już rozliczone, a które jeszcze nie.
+Jeżeli nauczyciel pracuje papierowo, rodzic może później zapisać otrzymany plus lub ocenę w historii Aktywnik+.
 
-Jeżeli nauczyciel nie korzysta bezpośrednio z aplikacji, rodzic może przepisać otrzymany plus lub ocenę do Aktywnik+ po otrzymaniu informacji ze szkoły.
+## Raporty
 
-## Minima i maksy
+Raport może obejmować:
 
-Aktywnik+ będzie mógł obsługiwać progi motywacyjne, ale nie powinien narzucać jednego systemu wszystkim.
+- daty i rodzaje aktywności;
+- czas;
+- opcjonalny poziom wysiłku;
+- potwierdzenie rodzica;
+- podsumowanie okresu;
+- uwagi nauczyciela / wychowawcy;
+- plusy i oceny, jeśli szkoła z nich korzysta.
 
-Szkoła, nauczyciel albo rodzic mogą ustawić własne zasady, np.:
-- minimalną liczbę aktywnych dni;
-- minimalny łączny czas aktywności;
-- warunek przyznania plusa;
-- maksymalną liczbę minut lub wpisów liczonych do określonego celu.
+## Zasada równego dostępu
 
-Progi powinny pomagać w regularności, a nie zachęcać do nadmiernego wysiłku.
+Brak korzystania z aplikacji nie powinien pozbawiać dziecka możliwości udziału. Papierowa i cyfrowa ścieżka dokumentują ten sam rodzaj aktywności i są oceniane według tych samych zasad ustalonych przez nauczyciela.
 
 ## Schemat
 
 ```
 DZIECKO
   |
-  | dodaje aktywność
-  v
-CZEKA NA AKCEPTACJĘ
-  |
-  | rodzic sprawdza
-  v
-ZATWIERDZONE
-  |
-  +--> statystyki dziecka
-  |
-  +--> raport miesięczny / kwartalny / półroczny / roczny
-  |
-  v
-NAUCZYCIEL
-  |
-  | według własnych zasad
-  v
-PLUS / PLUSY / OCENA / UWAGA
-  |
-  v
-HISTORIA W AKTYWNIK+
+  +--> APLIKACJA --> AKCEPTACJA RODZICA
+  |                       |
+  |                       v
+  +--> PAPIER ----------> RAPORT
+                          |
+                          v
+                     NAUCZYCIEL
+                          |
+                          v
+              PLUS / OCENA / UWAGA
+                          |
+                          v
+                 HISTORIA DZIECKA
 ```
 
 ## Najważniejsza zasada
 
-Aktywnik+ dokumentuje aktywność i decyzje związane z raportami, ale nie ustala zasad oceniania za nauczyciela. Nie ocenia też wyglądu, masy ciała ani sprawności dziecka.
+Aktywnik+ pomaga dokumentować ruch i decyzje związane z raportami. Nie zastępuje nauczyciela, nie ustala ocen za szkołę i nie ocenia wyglądu, masy ciała ani sprawności dziecka.
