@@ -118,9 +118,51 @@ function renderChildEntries(){
   if(!entries.length)box.innerHTML='<small>Jeszcze nie ma wpisów.</small>';$$('[data-child-edit]').forEach(b=>b.onclick=()=>editChildEntry(b.dataset.childEdit));
   const pending=childEntries(child.id).filter(e=>e.status==='pending').length;$('#pendingChildBadge').textContent=pending?pending+' do zatwierdzenia':'';$('#todayMinutes').textContent=childEntries(child.id).filter(e=>e.date===today()).reduce((sum,e)=>sum+e.minutes,0);
 }
-function approve(id){const e=state.entries.find(x=>x.id===id);if(e)e.status='approved';persist()}
-function removeEntry(id){state.entries=state.entries.filter(x=>x.id!==id);persist()}
-function renderApprovals(){const p=state.entries.filter(e=>e.status==='pending');$('#pendingCount').textContent=p.length;const list=$('#approvalList');list.innerHTML='';p.forEach(e=>{const el=document.createElement('div');el.className='entry';el.innerHTML=`<div><strong>${escapeHtml(e.activity)} · ${fmtMin(e.minutes)}</strong><small>${escapeHtml(e.date)} · wysiłek ${e.effort}/5${e.note?` · ${escapeHtml(e.note)}`:''}</small></div><div class="entry-actions"><button class="primary" data-approve="${escapeAttr(e.id)}">Akceptuj</button><button class="ghost" data-remove="${escapeAttr(e.id)}">Usuń</button></div>`;list.append(el)});if(!p.length)list.innerHTML='<small>Wszystko zatwierdzone.</small>';$$('[data-approve]').forEach(b=>b.onclick=()=>approve(b.dataset.approve));$$('[data-remove]').forEach(b=>b.onclick=()=>removeEntry(b.dataset.remove));const n=new Date(),after=n.getHours()>state.reminderHour||(n.getHours()===state.reminderHour&&n.getMinutes()>=state.reminderMinute);$('#approvalReminder').classList.toggle('hidden',!(after&&p.length))}
+function renderChildRewards(){
+  const child=activeChild(),box=$('#childRewardHistory');if(!box)return;box.innerHTML='';if(!child)return;
+  const rewards=childRewards(child.id).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,20);
+  rewards.forEach(r=>{const el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+(r.type==='plus'?'Plus':r.type==='grade'?'Ocena':'Informacja')+' · '+escapeHtml(r.value)+'</strong><small>'+escapeHtml(r.date)+(r.note?' · '+escapeHtml(r.note):'')+'</small></div>';box.append(el)});
+  if(!rewards.length)box.innerHTML='<small>Brak zapisanych plusów i ocen.</small>';
+}
+
+function approve(id){
+  if(!guardParent())return;const child=parentChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id&&x.status==='pending');if(!e)return;
+  const before={status:e.status};e.status='approved';e.rejectionReason='';e.approvedAt=nowIso();addApprovalEvent('approved',e,'parent','Rodzic zatwierdził wpis.',before,{status:e.status});persist();
+}
+function openParentCorrection(id){
+  if(!guardParent())return;const child=parentChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id&&x.status==='pending');if(!e)return;
+  $('#parentEditEntryId').value=e.id;$('#parentEditDate').value=e.date;$('#parentEditMinutes').value=e.minutes;$('#parentEditEffort').value=e.effort;$('#parentEditNote').value=e.note||'';$('#parentEditDialog').showModal();
+}
+function saveParentCorrection(){
+  if(!guardParent())return;const id=$('#parentEditEntryId').value,child=parentChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id&&x.status==='pending');if(!e)return;
+  const date=$('#parentEditDate').value,minutes=Number($('#parentEditMinutes').value);if(!allowedActivityDate(date)||!Number.isFinite(minutes)||minutes<1||minutes>600){alert('Sprawdź datę i czas (1–600 min).');return}
+  const before={date:e.date,minutes:e.minutes,effort:e.effort,note:e.note,status:e.status};e.date=date;e.minutes=Math.round(minutes);e.effort=clampInt($('#parentEditEffort').value,1,5,2);e.note=cleanText($('#parentEditNote').value,120);e.status='approved';e.rejectionReason='';e.approvedAt=nowIso();e.correctedByParent=true;
+  addApprovalEvent('corrected',e,'parent','Rodzic poprawił i zatwierdził wpis.',before,{date:e.date,minutes:e.minutes,effort:e.effort,note:e.note,status:e.status});$('#parentEditDialog').close();persist();
+}
+function openReject(id){
+  if(!guardParent())return;const child=parentChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id&&x.status==='pending');if(!e)return;
+  $('#rejectEntryId').value=e.id;$('#rejectReason').value='Popraw czas';$('#rejectNote').value='';$('#rejectDialog').showModal();
+}
+function confirmReject(){
+  if(!guardParent())return;const id=$('#rejectEntryId').value,child=parentChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id&&x.status==='pending');if(!e)return;
+  const reason=[cleanText($('#rejectReason').value,80),cleanText($('#rejectNote').value,120)].filter(Boolean).join(' — '),before={status:e.status};e.status='rejected';e.rejectionReason=reason||'Do poprawy';e.rejectedAt=nowIso();addApprovalEvent('rejected',e,'parent',e.rejectionReason,before,{status:e.status,rejectionReason:e.rejectionReason});$('#rejectDialog').close();persist();
+}
+function approveAllVisible(){
+  if(!guardParent())return;const child=parentChild();if(!child)return;const pending=state.entries.filter(e=>e.childId===child.id&&e.status==='pending');if(!pending.length)return;
+  if(!confirm('Zatwierdzić '+pending.length+' oczekujących wpisów profilu '+child.displayName+'?'))return;
+  pending.forEach(e=>{const before={status:e.status};e.status='approved';e.rejectionReason='';e.approvedAt=nowIso();addApprovalEvent('approved',e,'parent','Zatwierdzenie zbiorcze.',before,{status:e.status})});persist();
+}
+function renderApprovals(){
+  const list=$('#approvalList'),history=$('#approvalHistory');if(!parentUnlocked()||!parentChild()){$('#pendingCount').textContent='0';list.innerHTML='';history.innerHTML='';return}
+  const child=parentChild(),pending=state.entries.filter(e=>e.childId===child.id&&e.status==='pending');$('#pendingCount').textContent=pending.length;list.innerHTML='';
+  pending.forEach(e=>{const el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+' · wysiłek '+e.effort+'/5 · '+(e.source==='timer'?'⏱ Start/Stop':'✍️ ręczny')+(e.note?' · '+escapeHtml(e.note):'')+'</small></div><div class="entry-actions"><button class="primary" data-approve="'+escapeAttr(e.id)+'">Zatwierdź</button><button class="ghost" data-correct="'+escapeAttr(e.id)+'">Popraw</button><button class="danger" data-reject="'+escapeAttr(e.id)+'">Odrzuć</button></div>';list.append(el)});
+  if(!pending.length)list.innerHTML='<small>Brak wpisów oczekujących na decyzję.</small>';
+  $$('[data-approve]').forEach(b=>b.onclick=()=>approve(b.dataset.approve));$$('[data-correct]').forEach(b=>b.onclick=()=>openParentCorrection(b.dataset.correct));$$('[data-reject]').forEach(b=>b.onclick=()=>openReject(b.dataset.reject));
+  const n=new Date(),after=n.getHours()>state.reminderHour||(n.getHours()===state.reminderHour&&n.getMinutes()>=state.reminderMinute);$('#approvalReminder').classList.toggle('hidden',!(after&&pending.length));
+  const labels={created:'Utworzono wpis',edited:'Dziecko poprawiło wpis',resubmitted:'Ponownie wysłano',approved:'Rodzic zatwierdził',approved_auto:'Zatwierdzono automatycznie',corrected:'Rodzic poprawił i zatwierdził',rejected:'Rodzic odrzucił'};history.innerHTML='';
+  state.approvalEvents.filter(ev=>ev.childId===child.id).slice(0,30).forEach(ev=>{const entry=state.entries.find(e=>e.id===ev.entryId),el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+escapeHtml(labels[ev.action]||ev.action)+(entry?' · '+escapeHtml(entry.activity):'')+'</strong><small>'+new Date(ev.at).toLocaleString('pl-PL')+(ev.note?' · '+escapeHtml(ev.note):'')+'</small></div>';history.append(el)});
+  if(!history.children.length)history.innerHTML='<small>Historia decyzji pojawi się po pierwszym wpisie.</small>';
+}
 function startFor(type,d=new Date()){const y=d.getFullYear(),m=d.getMonth();if(type==='month')return new Date(y,m,1);if(type==='quarter')return new Date(y,Math.floor(m/3)*3,1);if(type==='half')return new Date(y,m<6?0:6,1);return new Date(y,0,1)}
 function filtered(type){const start=startFor(type),end=new Date(today()+'T23:59:59');return state.entries.filter(e=>{if(e.status!=='approved'||!validDate(e.date))return false;const d=new Date(e.date+'T12:00:00');return d>=start&&d<=end})}
 function stats(type){const es=filtered(type),minutes=es.reduce((s,e)=>s+e.minutes,0),days=new Set(es.map(e=>e.date)).size,types=new Set(es.map(e=>e.activity)).size;const counts={};es.forEach(e=>counts[e.activity]=(counts[e.activity]||0)+e.minutes);return {es,minutes,days,types,counts}}
