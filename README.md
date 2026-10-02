@@ -106,7 +106,6 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 ## Demo i pobieranie
 
 - demo PWA (Vercel): `https://temporary-rushing-gold-nge8tsd.vercel.app/`
-- mirror GitHub Pages: `https://lukaszst-cz.github.io/aktywnik-plus/`
 - repozytorium: `https://github.com/lukaszst-cz/aktywnik-plus`
 - wydania: `https://github.com/lukaszst-cz/aktywnik-plus/releases`
 
