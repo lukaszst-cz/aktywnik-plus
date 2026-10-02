@@ -154,8 +154,8 @@ To pozostaje największą techniczną granicą pilota.
 | --- | --- |
 | backend produkcyjny | 🟡 działa szkielet Vercel API; cloud sync celowo wyłączony do czasu bazy/auth |
 | uwierzytelnianie | 🟡 model bez haseł zaprojektowany; Supabase Auth do podłączenia |
-| role/uprawnienia | 🟡 dokumentacja + schema DB + przygotowane RLS; wymagane wdrożenie i testy w Supabase |
-| izolacja szkół / tenant | 🟡 tenant_id + przygotowane RLS; wymagane wdrożenie i testy |
+| role/uprawnienia | 🟡 migracje RLS + jawne GRANT-y + syntetyczny test izolacji gotowe; wymagane wykonanie w Supabase |
+| izolacja szkół / tenant | 🟡 tenant_id + RLS + test cross-tenant gotowe; wymagane wykonanie w Supabase |
 | HTTPS | ✅ działa na Vercel |
 | kopie zapasowe | 🟡 lokalny eksport/import działa; brak backupu serwerowego |
 | audyt administracyjny | 🟡 schema przewiduje audit_events; brak backendu |
@@ -176,7 +176,7 @@ Publiczny pilot jasno komunikuje, że:
 - dane pilota są lokalne;
 - nie jest jeszcze szkolnym systemem informatycznym.
 
-## Backend — stan 0.1.3
+## Backend — stan 0.2.x
 
 Na produkcji działają:
 - `/api/health`;
@@ -186,7 +186,8 @@ Na produkcji działają:
 Chronione endpointy zwracają `503 cloud_sync_disabled`, dopóki nie ma jednocześnie:
 - bazy;
 - autoryzacji;
-- jawnego `AKTYWNIK_CLOUD_SYNC=true`.
+- jawnego `AKTYWNIK_CLOUD_SYNC=true`;
+- potwierdzonego `AKTYWNIK_RLS_VERIFIED=true`.
 
 To oznacza, że backend już istnieje technicznie, ale nie przyjmuje danych szkolnych bez pełnej konfiguracji bezpieczeństwa.
 
