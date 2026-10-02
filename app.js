@@ -220,7 +220,7 @@ function renderParentChildren(){
   const select=$('#parentChildSelect');if(!select)return;if(!parentUnlocked()){select.innerHTML='';return}
   if(!getChild(parentSelectedChildId))parentSelectedChildId=state.activeChildId||state.children[0]?.id||null;
   select.innerHTML=state.children.map(c=>'<option value="'+escapeAttr(c.id)+'" '+(c.id===parentSelectedChildId?'selected':'')+'>'+escapeHtml(c.displayName)+(c.id===state.activeChildId?' — profil urządzenia':'')+'</option>').join('');
-  const child=parentChild();$('#childApprovalMode').value=approvalRequired(child)?'required':'automatic';$('#joinChildName').value=child?.displayName||'';renderRewardChildSelect();
+  const child=parentChild();$('#childApprovalMode').value=approvalRequired(child)?'required':'automatic';$('#joinChildName').value=child?.displayName||'';$('#parentAutoLockMinutes').value=String(clampInt(state.parentAuth?.autoLockMinutes,1,15,5));renderRewardChildSelect();
 }
 function addChild(){
   if(!guardParent())return;const name=cleanText($('#newChildName').value,60);if(!name)return;
@@ -241,6 +241,24 @@ function removeChild(){
   if(state.activeTimer?.childId===child.id)state.activeTimer=null;if(state.activeChildId===child.id)state.activeChildId=state.children[0].id;parentSelectedChildId=state.activeChildId;persist();
 }
 function saveApprovalMode(){if(!guardParent())return;const child=parentChild();if(!child)return;child.requireParentApproval=$('#childApprovalMode').value==='required';persist()}
+function saveAutoLockSetting(){
+  if(!guardParent())return;
+  state.parentAuth.autoLockMinutes=clampInt($('#parentAutoLockMinutes').value,1,15,5);
+  touchParentSession();
+  persist();
+}
+async function changeParentPin(){
+  if(!guardParent())return;
+  const current=$('#currentParentPin').value,newPin=$('#newParentPin').value,confirmPin=$('#confirmNewParentPin').value;
+  if(!await verifyParentPin(current)){alert('Obecny PIN jest nieprawidłowy.');return}
+  if(!/^\d{4,8}$/.test(newPin)){alert('Nowy PIN musi mieć 4–8 cyfr.');return}
+  if(newPin!==confirmPin){alert('Nowe PIN-y nie są takie same.');return}
+  await setParentPin(newPin);
+  $('#currentParentPin').value='';$('#newParentPin').value='';$('#confirmNewParentPin').value='';
+  touchParentSession();
+  persist();
+  alert('PIN rodzica został zmieniony.');
+}
 function renderRewardChildSelect(){
   const sel=$('#rewardChildId');if(!sel)return;const previous=sel.value;sel.innerHTML=state.children.map(c=>'<option value="'+escapeAttr(c.id)+'">'+escapeHtml(c.displayName)+'</option>').join('');
   if(getChild(previous))sel.value=previous;else if(parentChild())sel.value=parentChild().id;
@@ -390,6 +408,8 @@ $('#openSchoolDemoBtn').onclick=()=>switchMode('school');
 $('#schoolExitBtn').onclick=()=>switchMode('parent');
 $('#parentChildSelect').onchange=e=>{if(!guardParent())return;parentSelectedChildId=e.target.value;renderAll()};
 $('#childApprovalMode').onchange=saveApprovalMode;
+$('#saveAutoLockBtn').onclick=saveAutoLockSetting;
+$('#changeParentPinBtn').onclick=changeParentPin;
 $('#addChildBtn').onclick=addChild;
 $('#renameChildBtn').onclick=renameChild;
 $('#setDeviceChildBtn').onclick=setDeviceChild;
