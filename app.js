@@ -8,7 +8,7 @@ const MAX_CLASSES=100;
 const MAX_JOIN_REQUESTS=1000;
 const defaultState={schemaVersion:3,pilot:{started:false,childDisplayName:''},activeTimer:null,favorites:['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'],entries:[],rewards:[],classes:[],joinRequests:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
 let state=load(); let selected=null; let reportType='month';
-function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return {...structuredClone(defaultState),...saved,pilot:{...defaultState.pilot,...(saved.pilot||{})},activeTimer:saved.activeTimer||null,favorites:Array.isArray(saved.favorites)?saved.favorites:defaultState.favorites,entries:Array.isArray(saved.entries)?saved.entries:[],rewards:Array.isArray(saved.rewards)?saved.rewards:[],classes:Array.isArray(saved.classes)?saved.classes:[],joinRequests:Array.isArray(saved.joinRequests)?saved.joinRequests:[],school:{...defaultState.school,...(saved.school||{})}}}catch{return structuredClone(defaultState)}}
+function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
 function fmtMin(m){const h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
