@@ -61,7 +61,12 @@ async function run(){
 
     let spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));
     if(!spacer)throw new Error('activity missing');
-    spacer.click();d.getElementById('activityDuration').value='25';d.getElementById('activityNote').value='pierwszy wpis';d.getElementById('saveEntryBtn').click();await sleep(80);
+    spacer.click();
+    const ninety=d.querySelector('[data-duration="90"]');
+    if(!ninety)throw new Error('quick duration preset missing');
+    ninety.click();
+    if(d.getElementById('activityDuration').value!=='90')throw new Error('quick duration preset failed');
+    d.getElementById('activityDuration').value='25';d.getElementById('activityNote').value='pierwszy wpis';d.getElementById('saveEntryBtn').click();await sleep(80);
     let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.entries?.length!==1||saved.entries[0].status!=='pending'||saved.entries[0].childId!=='child-a')throw new Error('pending child entry failed');
 
@@ -71,6 +76,9 @@ async function run(){
 
     sessionStorage.setItem(SESSION_KEY,String(Date.now()+600000));w.switchMode('parent',true);await sleep(80);
     if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('authorized parent session not shown');
+    if(!d.getElementById('paperImportCard'))throw new Error('paper OCR import UI missing');
+    const parsedImport=w.parseDelimitedImport('Data;Aktywność;Czas;Wysiłek;Uwagi\n2026-10-01;Judo;1,5 h;3;trening');
+    if(parsedImport.length!==1||parsedImport[0].minutes!==90||parsedImport[0].activity!=='Judo')throw new Error('paper OCR parser failed');
     d.getElementById('parentAutoLockMinutes').value='10';
     d.getElementById('saveAutoLockBtn').click();
     await sleep(60);
