@@ -1,0 +1,45 @@
+name: Test pilot
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Syntax checks
+        run: |
+          node --check app.js
+          node --check install.js
+          node --check sw.js
+          python3 - <<'PY'
+          import json
+          with open("manifest.webmanifest", encoding="utf-8") as f:
+              manifest=json.load(f)
+          assert manifest["start_url"]=="./app.html"
+          assert len(manifest.get("icons", [])) >= 2
+          print("manifest OK")
+          PY
+
+      - name: Start local server
+        run: |
+          python3 -m http.server 8765 >/tmp/aktywnik-http.log 2>&1 &
+          echo $! > /tmp/aktywnik-http.pid
+          sleep 2
+
+      - name: Browser smoke test
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          "$CHROME"             --headless=new             --no-sandbox             --disable-gpu             --user-data-dir=/tmp/aktywnik-chrome             --virtual-time-budget=10000             --dump-dom             http://127.0.0.1:8765/tests/smoke.html             > /tmp/aktywnik-smoke.html
+          grep -q 'data-test="pass"' /tmp/aktywnik-smoke.html
+          grep -q 'PASS: pilot, activity, approval, report, local class demo, backup, service worker, cache, manifest and persistence' /tmp/aktywnik-smoke.html
+          echo "Aktywnik+ browser smoke PASS"
