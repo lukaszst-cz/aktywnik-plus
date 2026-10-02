@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aktywnik+ — formularz papierowy</title>
+<style>
+body{font-family:Arial,sans-serif;color:#111;margin:24px}.top{display:flex;justify-content:space-between;gap:24px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin:18px 0}.line{border-bottom:1px solid #555;min-width:180px;display:inline-block}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #555;padding:5px;text-align:left;height:24px}th{background:#eee}.notes{margin-top:16px}.notes p{border-bottom:1px solid #777;height:22px}.print{margin-bottom:15px}@media print{.print{display:none}body{margin:10mm}@page{size:A4;margin:10mm}}
+</style>
+</head>
+<body>
+<button class="print" onclick="print()">Drukuj / Zapisz jako PDF</button>
+<div class="top"><div><h1>Aktywnik+</h1><strong>Dziennik dodatkowej aktywności</strong></div><div>Tryb: □ papierowy □ hybrydowy</div></div>
+<div class="meta"><div>Dziecko: <span class="line"></span></div><div>Klasa: <span class="line"></span></div><div>Szkoła: <span class="line"></span></div><div>Okres: <span class="line"></span></div></div>
+<table><thead><tr><th>Lp.</th><th>Data</th><th>Aktywność</th><th>Czas</th><th>Wysiłek 1–5 (opc.)</th><th>Potwierdzenie / uwaga rodzica</th></tr></thead><tbody id="rows"></tbody></table>
+<div class="notes"><h3>Podsumowanie okresu</h3><p></p><h3>Uwagi nauczyciela / wychowawcy</h3><p></p><p></p><h3>Plusy / ocena — według zasad nauczyciela</h3><p></p></div>
+<script>document.querySelector('#rows').innerHTML=Array.from({length:30},(_,i)=>`<tr><td>${i+1}</td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')</script>
+</body></html>
