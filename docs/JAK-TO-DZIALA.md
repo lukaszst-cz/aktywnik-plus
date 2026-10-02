@@ -1,26 +1,36 @@
 # Jak działa Aktywnik+
 
+## Najpierw rodzic konfiguruje rodzinę
+
+1. Rodzic tworzy pierwszy profil dziecka i ustawia PIN strefy rodzica.
+2. Może później dodać kolejne dzieci.
+3. Na urządzeniu dziecka aktywny jest tylko jeden profil. Jego zmiana wymaga odblokowania strefy rodzica.
+4. Strefa rodzica blokuje się automatycznie po ustawionym czasie bezczynności.
+
+
 Aktywnik+ ma być prosty dla dziecka, rodzica i nauczyciela.
 
 ## Dla dziecka
 
 1. Dziecko wybiera aktywność z ulubionych albo z pełnej listy.
 2. Wpisuje czas aktywności i opcjonalnie poziom wysiłku lub krótką notatkę.
-3. Wpis zapisuje się jako **„czeka na akceptację rodzica”**, jeśli szkoła wymaga takiego potwierdzenia.
-4. Po zatwierdzeniu aktywność trafia do dziennika i raportów.
-5. Dziecko widzi wyłącznie własne statystyki i własny postęp.
+3. Wpis zapisuje się jako **„czeka na akceptację rodzica”**, jeśli dla danego dziecka wymagane jest potwierdzenie.
+4. Dopóki wpis oczekuje, dziecko może go poprawić.
+5. Po odrzuceniu przez rodzica dziecko widzi powód, poprawia wpis i wysyła go ponownie.
+6. Po zatwierdzeniu aktywność trafia do dziennika i raportów.
+7. Dziecko widzi wyłącznie własne statystyki i własny postęp.
 
 Nie ma rankingów między dziećmi.
 
 ## Dla rodzica
 
-Na koniec dnia aplikacja może pokazać jedną listę wpisów dziecka:
+Rodzic wybiera w swojej strefie konkretne dziecko. Dla tego profilu widzi listę oczekujących wpisów:
 
-- **Akceptuj** — wpis jest poprawny;
-- **Popraw** — np. czas lub rodzaj aktywności;
-- **Odrzuć** — wpis został dodany przez pomyłkę.
+- **Zatwierdź** — wpis jest poprawny;
+- **Popraw i zatwierdź** — rodzic koryguje np. czas lub notatkę;
+- **Odrzuć** — wpis wraca do dziecka z powodem.
 
-Rodzic może wygenerować raport miesięczny, kwartalny, półroczny lub roczny.
+Każda decyzja trafia do lokalnej historii. Rodzic może wygenerować osobny raport miesięczny, kwartalny, półroczny lub roczny dla każdego dziecka.
 
 Jeśli rodzic nie chce korzystać z aplikacji, może wybrać wersję papierową. Dziecko nadal uczestniczy w programie na tych samych zasadach.
 
