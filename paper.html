@@ -42,7 +42,7 @@ th{background:#eee;text-align:center;font-weight:700}
 </head>
 <body>
 <div class="toolbar">
-  <button onclick="window.print()">Drukuj / Zapisz jako PDF</button>
+  <button id="printPaperBtn" type="button">Drukuj / Zapisz jako PDF</button>
   <a href="app.html">Wróć do Aktywnik+</a>
   <a href="faq.html">FAQ</a>
   <a href="https://github.com/lukaszst-cz/aktywnik-plus" target="_blank" rel="noopener">GitHub</a>
@@ -50,7 +50,7 @@ th{background:#eee;text-align:center;font-weight:700}
 
 <section class="intro">
   <h1>Dziennik Dodatkowej Aktywności Fizycznej — 70 wpisów</h1>
-  <p><strong>Autor arkusza: Ewa Gębska.</strong> Publiczna wersja do druku / zapisania jako PDF została przygotowana w Aktywnik+ na podstawie zaakceptowanego szkolnego wzoru.</p>
+  <p><strong>Wzór źródłowy pilota.</strong> Arkusz został opracowany na podstawie arkusza autorstwa Pani Ewy Gębskiej ze <strong>Szkoły Podstawowej Nr 3 im. Pomnik Zwycięstwa 1920 roku w Markach</strong>. Aktywnik+ jest niezależnym projektem rodzicielskim i nie jest oficjalnym systemem szkoły.</p><p>Dla innych klas i szkół dostępny jest również <a href="paper-uniwersalny.html">neutralny wzór Aktywnik+</a>, bez przypisywania autorstwa lokalnego arkusza Pani Ewie.</p>
   <p>Każdy może otworzyć tę stronę w przeglądarce, wybrać <strong>Drukuj / Zapisz jako PDF</strong> i zachować własną kopię. Układ: 1–35 na stronie 1 oraz 36–70 na stronie 2.</p>
 </section>
 
@@ -61,7 +61,7 @@ th{background:#eee;text-align:center;font-weight:700}
       <p>jeden wiersz = jedna aktywność</p>
     </div>
     <div class="credit">
-      <strong>Autor arkusza: Ewa Gębska</strong><br>
+      <strong>Arkusz źródłowy: Ewa Gębska · SP3 Marki</strong><br>
       wersja cyfrowa / techniczna: Aktywnik+ — Łukasz St-cz
     </div>
   </div>
@@ -84,7 +84,7 @@ th{background:#eee;text-align:center;font-weight:700}
       <p>kontynuacja — wpisy 36–70</p>
     </div>
     <div class="credit">
-      <strong>Autor arkusza: Ewa Gębska</strong><br>
+      <strong>Arkusz źródłowy: Ewa Gębska · SP3 Marki</strong><br>
       wersja cyfrowa / techniczna: Aktywnik+ — Łukasz St-cz
     </div>
   </div>
@@ -108,10 +108,6 @@ th{background:#eee;text-align:center;font-weight:700}
   <div class="footer"><span>Strona 2/2 · wpisy 36–70</span><span>Twórca Aktywnik+: Łukasz St-cz · GitHub: lukaszst-cz/aktywnik-plus</span></div>
 </section>
 
-<script>
-function rows(from,to){return Array.from({length:to-from+1},(_,i)=>`<tr><td>${from+i}</td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')}
-document.getElementById('rows1').innerHTML=rows(1,35);
-document.getElementById('rows2').innerHTML=rows(36,70);
-</script>
+<script src="paper.js" defer></script>
 </body>
 </html>
