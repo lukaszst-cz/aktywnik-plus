@@ -70,6 +70,34 @@ async function run(){
     selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(selfSaved.entries?.[0]?.activity!=='Prace w ogrodzie'||selfSaved.entries?.[0]?.status!=='approved')throw new Error('self custom activity failed');
 
+    const cloudBridge=w.AktywnikCloudBridge;
+    if(!cloudBridge?.mergePersonalEntries)throw new Error('personal cloud merge bridge missing');
+    const remoteId='33333333-3333-4333-8333-333333333333';
+    const syncDay=new Date().toISOString().slice(0,10),syncBase=Date.now();
+    let mergeResult=cloudBridge.mergePersonalEntries([{
+      client_entry_id:remoteId,activity_date:syncDay,activity_type:'Rower',minutes:44,effort:3,note:'cloud test',
+      source:'manual',client_updated_at:new Date(syncBase+1000).toISOString(),updated_at:new Date(syncBase+1000).toISOString()
+    }]);
+    if(mergeResult.added!==1)throw new Error('cloud pull did not add missing personal entry');
+    let mergedState=JSON.parse(localStorage.getItem(KEY)||'{}'),mergedEntry=mergedState.entries?.find(e=>e.id===remoteId);
+    if(!mergedEntry||mergedEntry.minutes!==44||mergedEntry.status!=='approved')throw new Error('cloud-added entry mismatch');
+
+    mergeResult=cloudBridge.mergePersonalEntries([{
+      client_entry_id:remoteId,activity_date:syncDay,activity_type:'Rower',minutes:10,effort:1,note:'older cloud',
+      source:'manual',client_updated_at:new Date(syncBase-1000).toISOString(),updated_at:new Date(syncBase-1000).toISOString()
+    }]);
+    if(mergeResult.localNewer!==1)throw new Error('older cloud version did not preserve local entry');
+    mergedState=JSON.parse(localStorage.getItem(KEY)||'{}');mergedEntry=mergedState.entries?.find(e=>e.id===remoteId);
+    if(mergedEntry?.minutes!==44)throw new Error('older cloud version overwrote newer local entry');
+
+    mergeResult=cloudBridge.mergePersonalEntries([{
+      client_entry_id:remoteId,activity_date:syncDay,activity_type:'Rower',minutes:50,effort:4,note:'newer cloud',
+      source:'manual',client_updated_at:new Date(syncBase+3000).toISOString(),updated_at:new Date(syncBase+3000).toISOString()
+    }]);
+    if(mergeResult.updated!==1)throw new Error('newer cloud version did not update local entry');
+    mergedState=JSON.parse(localStorage.getItem(KEY)||'{}');mergedEntry=mergedState.entries?.find(e=>e.id===remoteId);
+    if(mergedEntry?.minutes!==50||mergedEntry?.effort!==4)throw new Error('newer cloud merge mismatch');
+
     localStorage.removeItem(KEY);sessionStorage.clear();
     const childA={id:'child-a',displayName:'Dziecko A',favorites:['Spacer','Rower'],requireParentApproval:true,createdAt:new Date().toISOString()};
     const seeded={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:true},parentAuth:{pinSalt:'test-salt',pinHash:'test-hash',iterations:120000,autoLockMinutes:5},children:[childA],activeChildId:childA.id,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
