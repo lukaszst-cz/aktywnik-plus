@@ -21,12 +21,23 @@ jobs:
           node --check install.js
           node --check sw.js
           python3 - <<'PY'
-          import json
+          import json, os, re
           with open("manifest.webmanifest", encoding="utf-8") as f:
               manifest=json.load(f)
           assert manifest["start_url"]=="./app.html"
           assert len(manifest.get("icons", [])) >= 2
-          print("manifest OK")
+          for icon in manifest["icons"]:
+              assert os.path.exists(icon["src"]), icon["src"]
+          with open("sw.js", encoding="utf-8") as f:
+              sw=f.read()
+          assets=re.findall(r"'(\./[^']+)'", sw)
+          assert assets, "service worker asset list missing"
+          for asset in assets:
+              path=asset[2:] or "index.html"
+              if path in ("", "."):
+                  continue
+              assert os.path.exists(path), f"missing cached asset: {path}"
+          print("manifest and service-worker assets OK")
           PY
 
       - name: Start local server
