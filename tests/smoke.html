@@ -118,6 +118,22 @@ async function run(){
     const restored=w.safeBackupState(payload);
     if(restored.entries?.length!==2 || restored.pilot?.childDisplayName!=='Test D.') throw new Error('backup validation failed');
 
+    const malformed=w.safeBackupState({format:'aktywnik-plus-backup',data:{entries:[
+      {id:'bad',date:'not-a-date',activity:'Spacer',minutes:20,status:'approved'},
+      {id:'huge',date:'2030-01-01',activity:'Spacer',minutes:99999,status:'approved'},
+      {id:'ok',date:'2026-10-01',activity:'Spacer',minutes:30,effort:2,status:'approved'}
+    ]}});
+    if(malformed.entries.length!==2) throw new Error('malformed backup filtering failed');
+    if(malformed.entries.find(x=>x.id==='huge')?.minutes!==600) throw new Error('backup minute clamp failed');
+
+    const futureState=JSON.parse(localStorage.getItem(KEY)||'{}');
+    futureState.entries.unshift({id:'future-test',date:'2030-01-01',activity:'Spacer',minutes:60,effort:2,note:'',status:'approved',createdAt:new Date().toISOString()});
+    localStorage.setItem(KEY,JSON.stringify(futureState));
+    ({w,d}=await loadApp('future-report'));
+    if(w.stats('year').es.some(x=>x.id==='future-test')) throw new Error('future entry included in report');
+    futureState.entries=futureState.entries.filter(x=>x.id!=='future-test');
+    localStorage.setItem(KEY,JSON.stringify(futureState));
+
     if(!skipPwaChecks){
       if(!('serviceWorker' in navigator)) throw new Error('service worker API unavailable');
       let regs=[];
@@ -147,7 +163,7 @@ async function run(){
     if(persisted.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name did not persist');
     if(!d.getElementById('childDisplayName').textContent.includes('Test D.')) throw new Error('reloaded UI did not restore pilot name');
 
-    pass(skipPwaChecks?'pilot, timer, manual activity, approval, report, multi-item class handlers, backup, manifest and persistence':'pilot, timer, manual activity, approval, report, multi-item class handlers, backup, service worker, cache, manifest and persistence');
+    pass(skipPwaChecks?'pilot, timer, validation, manual activity, approval, report, multi-item class handlers, backup, manifest and persistence':'pilot, timer, validation, manual activity, approval, report, multi-item class handlers, backup, service worker, cache, manifest and persistence');
     localStorage.removeItem(KEY);
   }catch(e){
     fail(e.message);
