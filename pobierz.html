@@ -38,6 +38,16 @@
   </div>
 
   <section class="section action">
+    <h2>Udostępnij rodzicowi</h2>
+    <p>Po uruchomieniu publicznego adresu wystarczy wysłać jeden link. Rodzic otwiera go na telefonie i wybiera instalację PWA albo pracę bez instalacji.</p>
+    <div class="cta">
+      <button id="sharePilotBtn" class="primary install-button" type="button">Udostępnij link</button>
+      <button id="copyPilotLinkBtn" class="secondary install-button" type="button">Kopiuj link</button>
+    </div>
+    <small id="shareStatus"></small>
+  </section>
+
+  <section class="section action">
     <h2>Instrukcja instalacji</h2>
     <p><strong>Android:</strong> przycisk instalacji lub menu przeglądarki → Zainstaluj aplikację / Dodaj do ekranu głównego.</p>
     <p><strong>iPhone/iPad:</strong> Safari → Udostępnij → Dodaj do ekranu początkowego.</p>
@@ -53,5 +63,6 @@
 </main>
 <footer>Aktywnik+ • bezpłatny projekt rodzicielski — pilot</footer>
 <script src="install.js"></script>
+<script src="share.js"></script>
 </body>
 </html>
