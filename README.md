@@ -38,9 +38,10 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.2.0 — Family Roles Pilot**
+**Aktywnik+ 0.2.1 — Family Roles Pilot**
 
 - [Release notes 0.2.0](docs/RELEASE-0.2.0.md)
+- [Zmiany 0.2.1](CHANGELOG.md#021--monthly-report-hardening)
 - [Changelog](CHANGELOG.md)
 - [Pobierz / zainstaluj](pobierz.html)
 - [FAQ](faq.html)
@@ -58,6 +59,8 @@ Przeczytaj przed pilotażem:
 - rodzic może **zatwierdzić / poprawić i zatwierdzić / odrzucić z powodem**;
 - lokalna historia decyzji rodzica i ponownych wysłań;
 - raporty: miesięczny, kwartalny, półroczny i roczny;
+- wybór konkretnego miesiąca odniesienia dla raportów rodzica;
+- drukowany **Dziennik A4 1–70+** z automatycznym wypełnieniem zatwierdzonych wpisów i kolejnymi stronami co 35 wpisów;
 - **Eksport CSV** zatwierdzonych wpisów dla nauczyciela;
 - **Skan/import kart papierowych** — CSV/JSON/TXT lub wklejony OCR, z podglądem i poprawkami;
 - przygotowana integracja **DocPilot → OCR → Aktywnik+**;
@@ -170,4 +173,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.2.0 Family Roles Pilot` — lokalny pilot rodzinny z PIN-em rodzica i wieloma profilami dzieci. Dane pozostają lokalnie na urządzeniu. Osobne konta dziecka, synchronizacja między telefonami i prawdziwe role szkoły pozostają wyłączone do czasu uruchomienia backendu.
+`0.2.1 Family Roles Pilot` — lokalny pilot rodzinny z PIN-em rodzica i wieloma profilami dzieci. Dane pozostają lokalnie na urządzeniu. Osobne konta dziecka, synchronizacja między telefonami i prawdziwe role szkoły pozostają wyłączone do czasu uruchomienia backendu.
