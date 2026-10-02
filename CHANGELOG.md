@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.1 — Monthly report hardening
+
+### Raporty
+- rodzic może wybrać konkretny miesiąc odniesienia zamiast być ograniczonym do bieżącego miesiąca;
+- raport miesięczny, kwartalny, półroczny i roczny liczy okres względem wybranego miesiąca;
+- eksport CSV zapisuje miesiąc odniesienia w nazwie pliku;
+- nowy wydruk **Dziennik A4 1–70+** automatycznie wypełnia zatwierdzone aktywności;
+- wydruk używa 35 wpisów na stronę i automatycznie tworzy kolejne strony powyżej 70 wpisów;
+- ostatnia strona zawiera podsumowanie miesiąca oraz miejsce na uwagi rodzica, nauczyciela i plus/ocenę.
+
+### Testy i PWA
+- smoke test sprawdza wybór miesiąca i paginację raportu A4;
+- podniesiono wersję cache service workera, aby urządzenia pobrały aktualne pliki aplikacji.
+
 ## 0.2.0 — Secure family roles
 
 ### Rodzina
