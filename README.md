@@ -14,6 +14,14 @@ Aktywnik+ to prosty dziennik aktywności dziecka z szybkim wpisem na telefonie, 
 - raport zawiera miejsce na uwagi rodzica oraz nauczyciela / wychowawcy;
 - aplikacja nie śledzi masy ciała, kalorii ani wyglądu dziecka.
 
+## Jak to działa
+
+Prosty schemat dla dziecka, rodzica i nauczyciela jest tutaj:
+
+**[Jak działa Aktywnik+ — rodzice i nauczyciele](docs/JAK-TO-DZIALA.md)**
+
+Obecne założenie szkolnego systemu motywacyjnego: **3 plusy = ocena 6 z WF**. Reguła pozostanie konfigurowalna, ponieważ szkoły mogą stosować inne zasady.
+
 ## Prototyp
 
 Pierwsza wersja działa bez backendu. Dane są zapisywane lokalnie w przeglądarce (`localStorage`), dzięki czemu można od razu przetestować interfejs i przepływ.
