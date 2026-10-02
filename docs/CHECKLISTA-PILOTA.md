@@ -23,14 +23,14 @@
 
 ## Do wykonania przed udostępnieniem publicznego linku klasie
 
-- [ ] włączyć GitHub Pages: Settings → Pages → Source → GitHub Actions
-- [ ] potwierdzić poprawny deployment
+- [x] stały deployment Vercel: https://aktywnik-plus.vercel.app
+- [x] potwierdzony poprawny deployment produkcyjny
 - [ ] otworzyć publiczny URL na Androidzie
 - [ ] zainstalować PWA i sprawdzić ponowne uruchomienie
-- [ ] sprawdzić zapis aktywności po zamknięciu aplikacji
-- [ ] wykonać eksport kopii i jej przywrócenie
+- [x] sprawdzony zapis aktywności i Start/Stop po ponownym otwarciu
+- [x] eksport/import kopii objęty testem
 - [ ] wydrukować / zapisać przykładowy raport PDF
-- [ ] sprawdzić formularz papierowy
+- [x] formularz papierowy + arkusz 70 wpisów sprawdzony
 - [ ] przeprowadzić 3–7 dni testu na jednej rodzinie przed szerszym pilotem
 
 ## Nie uruchamiać jeszcze w pilocie jako funkcji produkcyjnych
