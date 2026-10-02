@@ -37,6 +37,7 @@ Przeczytaj przed pilotażem:
 - [Release notes 0.1.1](docs/RELEASE-0.1.1.md)
 - [Changelog](CHANGELOG.md)
 - [Pobierz / zainstaluj](pobierz.html)
+- [FAQ](faq.html)
 
 ## Co już działa
 
@@ -46,6 +47,7 @@ Przeczytaj przed pilotażem:
 - **Start/Stop aktywności** — pomiar czasu oparty na zapisanym czasie startu, działający także po zminimalizowaniu lub ponownym otwarciu PWA;
 - wieczorna lista wpisów do akceptacji przez rodzica;
 - raporty: miesięczny, kwartalny, półroczny i roczny;
+- **Eksport CSV** zatwierdzonych wpisów dla nauczyciela;
 - statystyki wyłącznie dla danego dziecka;
 - panel szkoły z wyborem trybu **cyfrowy / hybrydowy / papierowy**;
 - konfiguracja akceptacji rodzica, poziomu wysiłku, plusów i zasad oceniania;
