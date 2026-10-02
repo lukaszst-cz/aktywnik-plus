@@ -21,29 +21,30 @@
   <header class="nav">
     <a class="logo" href="./">Aktywnik+</a>
     <nav>
-      <a href="#jak-dziala">Jak działa</a>
-      <a href="#dla-kogo">Dla kogo</a>
-      <a href="o-projekcie.html">O projekcie</a>
-      <a href="faq.html">FAQ</a>
-      <a href="dla-nauczyciela.html">Dla nauczyciela</a>
-      <a href="pobierz.html">Pobierz / zainstaluj</a>
-      <a href="paper.html">Wersja papierowa</a>
+      <a href="#jak-dziala" data-i18n="landing.navHow">Jak działa</a>
+      <a href="#dla-kogo" data-i18n="landing.navForWho">Dla kogo</a>
+      <a href="o-projekcie.html" data-i18n="landing.navAbout">O projekcie</a>
+      <a href="faq.html" data-i18n="landing.navFaq">FAQ</a>
+      <a href="dla-nauczyciela.html" data-i18n="landing.navTeacher">Dla nauczyciela</a>
+      <a href="pobierz.html" data-i18n="landing.navDownload">Pobierz / zainstaluj</a>
+      <a href="paper.html" data-i18n="landing.navPaper">Wersja papierowa</a>
       <a href="https://github.com/lukaszst-cz/aktywnik-plus">GitHub</a>
+      <select class="language-switch" data-language-switch><option value="pl">PL</option><option value="en">EN</option></select>
     </nav>
   </header>
 
   <main>
     <section class="hero">
       <div>
-        <span class="pill">Bezpłatny tracker aktywności • pilot 0.4.0</span>
-        <h1>Aktywność zapisana prosto.</h1>
-        <p>Aktywnik+ pozwala mierzyć czas Start/Stop albo dodać wpis ręcznie. Możesz korzystać samodzielnie lub rodzinnie, a funkcje szkoły i klubu są dodatkowym modułem.</p>
+        <span class="pill" data-i18n="landing.pill">Bezpłatny tracker aktywności • pilot 0.4.0</span>
+        <h1 data-i18n="landing.title">Aktywność zapisana prosto.</h1>
+        <p data-i18n="landing.intro">Aktywnik+ pozwala mierzyć czas Start/Stop albo dodać wpis ręcznie. Możesz korzystać samodzielnie lub rodzinnie, a funkcje szkoły i klubu są dodatkowym modułem.</p>
         <div class="cta">
-          <a class="primary" href="app.html">Zacznij — dla siebie lub rodziny</a>
-          <a class="primary" href="dla-nauczyciela.html">Dla nauczyciela / szkoły</a>
-          <a class="primary" href="pobierz.html">Pobierz / zainstaluj</a>
-          <a class="secondary" href="konto.html">Konta online — planowane</a>
-          <a class="secondary" href="paper.html">Pobierz wersję papierową</a>
+          <a class="primary" href="app.html" data-i18n="landing.start">Zacznij — dla siebie lub rodziny</a>
+          <a class="primary" href="dla-nauczyciela.html" data-i18n="landing.teacher">Dla nauczyciela / szkoły</a>
+          <a class="primary" href="pobierz.html" data-i18n="landing.download">Pobierz / zainstaluj</a>
+          <a class="secondary" href="konto.html" data-i18n="landing.account">Konta online — planowane</a>
+          <a class="secondary" href="paper.html" data-i18n="landing.paper">Pobierz wersję papierową</a>
         </div>
         <small><strong>Bez logowania i hasła.</strong> Wersja demonstracyjna zapisuje dane tylko na urządzeniu. Nie wymaga konta ani własnego serwera. Konta i synchronizacja pojawią się dopiero w wersji produkcyjnej.</small>
       </div>
@@ -115,6 +116,7 @@
   </section>
 
   <footer>Aktywnik+ • bezpłatny projekt aktywności • Twórca i właściciel projektu: Łukasz St‑cz • <a href="https://github.com/lukaszst-cz/aktywnik-plus" target="_blank" rel="noopener">GitHub Łukasza St‑cz</a> • <a href="o-projekcie.html">O projekcie</a> • <a href="faq.html">FAQ</a> • <a href="prywatnosc.html">Prywatność pilota</a></footer>
+  <script src="i18n.js"></script>
   <script src="install.js"></script>
 </body>
 </html>
