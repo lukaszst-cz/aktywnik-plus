@@ -6,8 +6,11 @@ const MAX_BACKUP_BYTES=2*1024*1024;
 const MAX_ENTRIES=5000;
 const MAX_CLASSES=100;
 const MAX_JOIN_REQUESTS=1000;
-const defaultState={schemaVersion:3,pilot:{started:false,childDisplayName:''},activeTimer:null,favorites:['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'],entries:[],rewards:[],classes:[],joinRequests:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
-let state=load(); let selected=null; let reportType='month';
+const PARENT_SESSION_KEY='aktywnik-plus-parent-unlocked-until';
+const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
+const PIN_ITERATIONS=120000;
+const defaultState={schemaVersion:4,pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
+let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null;
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
@@ -17,6 +20,25 @@ function cleanText(v,max=160){return String(v??'').trim().slice(0,max)}
 function clampInt(v,min,max,fallback){const n=Math.round(Number(v));return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback}
 function validDate(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(v??'')))return false;return !Number.isNaN(new Date(String(v)+'T12:00:00').getTime())}
 function allowedActivityDate(v){return validDate(v)&&v<=today()}
+function uuid(){return crypto.randomUUID()}
+function nowIso(){return new Date().toISOString()}
+function getChild(id){return state.children.find(c=>c.id===id)||null}
+function activeChild(){return getChild(state.activeChildId)||state.children[0]||null}
+function parentChild(){return getChild(parentSelectedChildId)||activeChild()}
+function childEntries(childId){return state.entries.filter(e=>e.childId===childId)}
+function childRewards(childId){return state.rewards.filter(r=>r.childId===childId)}
+function approvalRequired(child){return child?.requireParentApproval!==false}
+function pinConfigured(){return !!state.parentAuth?.pinHash&&!!state.parentAuth?.pinSalt}
+function appReady(){return state.children.length>0&&pinConfigured()}
+function bytesToB64(bytes){let out='';bytes.forEach(b=>out+=String.fromCharCode(b));return btoa(out)}
+function b64ToBytes(value){const raw=atob(value);return Uint8Array.from(raw,c=>c.charCodeAt(0))}
+async function derivePin(pin,saltB64,iterations=PIN_ITERATIONS){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:b64ToBytes(saltB64),iterations},key,256);return bytesToB64(new Uint8Array(bits))}
+async function setParentPin(pin){const salt=crypto.getRandomValues(new Uint8Array(16)),pinSalt=bytesToB64(salt),pinHash=await derivePin(pin,pinSalt,PIN_ITERATIONS);state.parentAuth={pinSalt,pinHash,iterations:PIN_ITERATIONS,autoLockMinutes:5}}
+async function verifyParentPin(pin){if(!pinConfigured())return false;return await derivePin(pin,state.parentAuth.pinSalt,state.parentAuth.iterations||PIN_ITERATIONS)===state.parentAuth.pinHash}
+function parentUnlocked(){return Number(sessionStorage.getItem(PARENT_SESSION_KEY)||0)>Date.now()}
+function touchParentSession(){const mins=clampInt(state.parentAuth?.autoLockMinutes,1,30,5);sessionStorage.setItem(PARENT_SESSION_KEY,String(Date.now()+mins*60*1000))}
+function addApprovalEvent(action,entry,actor,note='',before=null,after=null){state.approvalEvents=state.approvalEvents||[];state.approvalEvents.unshift({id:uuid(),entryId:entry?.id||'',childId:entry?.childId||parentChild()?.id||activeChild()?.id||'',action,actor,note:cleanText(note,240),before,after,at:nowIso()});state.approvalEvents=state.approvalEvents.slice(0,10000)}
+
 function pickActivity(name){selected=name;$('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'})}
 function activityButton([name,emoji]){const b=document.createElement('button');b.className='activity';b.innerHTML=`<span class="emoji">${emoji}</span>${name}`;b.onclick=()=>pickActivity(name);return b}
 function renderActivities(){const fav=$('#favoriteActivities');fav.innerHTML='';ACTIVITIES.filter(a=>state.favorites.includes(a[0])).forEach(a=>fav.append(activityButton(a)));const q=$('#activitySearch').value.toLowerCase();const all=$('#allActivities');all.innerHTML='';ACTIVITIES.filter(a=>a[0].toLowerCase().includes(q)).forEach(a=>all.append(activityButton(a)))}
