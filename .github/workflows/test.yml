@@ -28,7 +28,9 @@ jobs:
           node --check api/health.js
           node --check api/capabilities.js
           node --check api/_lib/backend.js
+          node --check api/_lib/supabase.js
           node --check api/v1/classes.js
+          node --check api/v1/me.js
           node --check api/v1/sync.js
           python3 - <<'PY'
           import json, os, re
