@@ -1,5 +1,7 @@
 'use strict';
 
+const {cloudReady}=require('./_lib/backend');
+
 module.exports = function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -8,20 +10,21 @@ module.exports = function handler(req,res){
     return res.status(405).json({ok:false,error:'method_not_allowed'});
   }
 
-  const databaseConfigured=Boolean(process.env.DATABASE_URL || process.env.SUPABASE_URL);
-  const authConfigured=process.env.AUTH_MODE && process.env.AUTH_MODE!=='disabled';
-  const cloudSyncEnabled=process.env.AKTYWNIK_CLOUD_SYNC==='true' && databaseConfigured && authConfigured;
+  const cloud=cloudReady();
 
   return res.status(200).json({
     localPilot:true,
-    passwordlessPilot:true,
+    parentPinLocal:true,
     reports:{pdf:true,csv:true,jsonBackup:true},
     paperImport:{csv:true,json:true,textOcr:true},
     cloud:{
-      enabled:Boolean(cloudSyncEnabled),
-      classes:Boolean(cloudSyncEnabled),
-      crossDeviceSync:Boolean(cloudSyncEnabled),
-      serverBackups:Boolean(cloudSyncEnabled)
+      enabled:cloud.enabled,
+      databaseConfigured:cloud.databaseConfigured,
+      authenticationConfigured:cloud.authConfigured,
+      rowLevelSecurityVerified:cloud.rlsVerified,
+      classes:cloud.enabled,
+      crossDeviceSync:cloud.enabled,
+      serverBackups:cloud.enabled
     }
   });
 };
