@@ -187,7 +187,7 @@
       </section>
 
       <section class="card">
-        <div class="section-head"><h2>Dodaj dziecko w trybie papierowym</h2><a class="button-link ghost" href="paper.html" target="_blank" rel="noopener">Formularz</a></div>
+        <div class="section-head"><h2>Dodaj dziecko w trybie papierowym</h2><a class="button-link ghost" href="paper.html" target="_blank" rel="noopener">Arkusz — autor: Ewa Gębska</a></div>
         <div class="form-grid">
           <label>Klasa<select id="paperClassId"></select></label>
           <label>Nazwa dziecka / identyfikator<input id="paperChildName" maxlength="60" placeholder="np. Julia R." /></label>
@@ -195,8 +195,34 @@
         <div class="actions"><button id="addPaperChildBtn" class="primary">Dodaj do klasy</button></div>
       </section>
 
+      <section id="paperImportCard" class="card">
+        <div class="section-head"><h2>📷 Skan / import karty papierowej</h2><span class="badge">lokalny pilot</span></div>
+        <p><strong>Najprostszy wariant:</strong> zeskanuj kartę w DocPilot, wykonaj OCR, wyeksportuj CSV/JSON i wczytaj tutaj. Możesz też wkleić tekst OCR ręcznie.</p>
+        <div class="prototype-warning"><strong>Import w pilocie działa lokalnie na tym urządzeniu.</strong> Przed rzeczywistym wdrożeniem szkolnym potrzebny będzie backend i konta nauczycieli.</div>
+        <div class="form-grid">
+          <label>Klasa<select id="importClassId"></select></label>
+          <label>Dziecko / identyfikator<input id="importChildName" maxlength="60" placeholder="np. Daniel S." /></label>
+          <label>Plik CSV / JSON / TXT<input id="paperImportFile" type="file" accept=".csv,.json,.txt,text/csv,application/json,text/plain" /></label>
+          <label class="wide">Wklej tekst po OCR
+            <textarea id="ocrPaste" rows="6" placeholder="Data;Aktywność;Czas;Wysiłek;Uwagi&#10;2026-10-01;Judo;90;3;trening klubowy"></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="parsePaperImportBtn" class="ghost">Pokaż podgląd</button>
+          <button id="savePaperImportBtn" class="primary" disabled>Zapisz import</button>
+        </div>
+        <div id="paperImportStatus"></div>
+        <div id="paperImportPreview" class="import-preview"></div>
+        <small>DocPilot → skan / zdjęcie → OCR → eksport CSV/JSON → Aktywnik+ → podgląd → poprawki → zatwierdzenie.</small>
+      </section>
+
       <section class="card">
-        <div class="section-head"><h2>Tryb pracy</h2><a class="button-link ghost" href="paper.html" target="_blank" rel="noopener">Wersja papierowa</a></div>
+        <div class="section-head"><h2>Zaimportowane karty</h2><a class="button-link ghost" href="dla-nauczyciela.html" target="_blank" rel="noopener">Instrukcja dla nauczyciela</a></div>
+        <div id="paperImportHistory" class="list"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head"><h2>Tryb pracy</h2><a class="button-link ghost" href="paper.html" target="_blank" rel="noopener">Arkusz Pani Ewy Gębskiej</a></div>
         <div class="form-grid">
           <label>Model wdrożenia
             <select id="deploymentModel">
