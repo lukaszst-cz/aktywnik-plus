@@ -2,6 +2,8 @@ const ACTIVITIES=[
 ['Spacer','🚶'],['Spacer z psem','🐕'],['Rower','🚲'],['Hulajnoga','🛴'],['Rolki','🛼'],['Deskorolka','🛹'],['Basen','🏊'],['Bieganie','🏃'],['Marsz','🥾'],['Piłka nożna','⚽'],['Koszykówka','🏀'],['Siatkówka','🏐'],['Tenis','🎾'],['Badminton','🏸'],['Tenis stołowy','🏓'],['Judo','🥋'],['Karate','🥋'],['Taniec','💃'],['Gimnastyka','🤸'],['Ćwiczenia w domu','🏠'],['SKS','🏫'],['Trening klubowy','🏅'],['Plac zabaw','🛝'],['Zabawa na podwórku','🌳'],['Trampolina','🤸'],['Wspinaczka','🧗'],['Park linowy','🌲'],['Wycieczka piesza','🥾'],['Góry','⛰️'],['Narty','⛷️'],['Snowboard','🏂'],['Łyżwy','⛸️'],['Kajak','🛶'],['Żagle','⛵'],['Frisbee','🥏'],['Rzutki / celność','🎯'],['Gra terenowa','🧭'],['Zabawy ruchowe','🎈'],['Rozciąganie','🧘'],['Trening siłowy','🏋️'],['Fitness','🏃'],['Joga','🧘'],['Pilates','🤸'],['Nordic walking','🥾'],['Prace w ogrodzie','🌿'],['Inna aktywność','➕']
 ];
 const KEY='aktywnik-plus-data-v1';
+const ENTRY_DRAFT_KEY='aktywnik-plus-entry-draft-v1';
+const ENTRY_DRAFT_MAX_AGE_MS=7*24*60*60*1000;
 const MAX_BACKUP_BYTES=2*1024*1024;
 const MAX_ENTRIES=5000;
 const MAX_CLASSES=100;
@@ -25,7 +27,7 @@ function persist(){
     lastPersistOk=false;
     console.error('Aktywnik+: local save failed',err);
   }
-  renderAll();
+  renderAll();restoreEntryDraft();
 }
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
 function fmtMin(m){const h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
@@ -82,10 +84,50 @@ function registerPinFailure(){
 function touchParentSession(){const mins=clampInt(state.parentAuth?.autoLockMinutes,1,30,5);sessionStorage.setItem(PARENT_SESSION_KEY,String(Date.now()+mins*60*1000))}
 function addApprovalEvent(action,entry,actor,note='',before=null,after=null){state.approvalEvents=state.approvalEvents||[];state.approvalEvents.unshift({id:uuid(),entryId:entry?.id||'',childId:entry?.childId||parentChild()?.id||activeChild()?.id||'',action,actor,note:cleanText(note,240),before,after,at:nowIso()});state.approvalEvents=state.approvalEvents.slice(0,10000)}
 
+function clearEntryDraft(){try{localStorage.removeItem(ENTRY_DRAFT_KEY)}catch{}}
+function readEntryDraft(){
+  try{
+    const draft=JSON.parse(localStorage.getItem(ENTRY_DRAFT_KEY)||'null');
+    if(!draft||draft.version!==1||!draft.savedAt||Date.now()-new Date(draft.savedAt).getTime()>ENTRY_DRAFT_MAX_AGE_MS){clearEntryDraft();return null}
+    return draft;
+  }catch{clearEntryDraft();return null}
+}
+function saveEntryDraft(){
+  const child=activeChild();
+  if(!appReady()||!child||editingEntryId||state.activeTimer||!selected)return;
+  const draft={
+    version:1,savedAt:nowIso(),childId:child.id,selected:cleanText(selected,80),
+    date:allowedActivityDate($('#activityDate')?.value)?$('#activityDate').value:today(),
+    minutes:clampInt($('#activityDuration')?.value,1,600,30),
+    effort:clampInt($('#activityEffort')?.value,1,5,2),
+    customName:cleanText($('#customActivityName')?.value,80),
+    note:cleanText($('#activityNote')?.value,120)
+  };
+  try{localStorage.setItem(ENTRY_DRAFT_KEY,JSON.stringify(draft))}catch{}
+}
+function restoreEntryDraft(){
+  const child=activeChild(),draft=readEntryDraft();
+  if(!appReady()||!child||state.activeTimer||!draft)return false;
+  if(draft.childId!==child.id||!cleanText(draft.selected,80)){clearEntryDraft();return false}
+  selected=cleanText(draft.selected,80);editingEntryId=null;
+  $('#selectedActivityTitle').textContent=selected;
+  $('#activityDate').value=allowedActivityDate(draft.date)?draft.date:today();
+  $('#activityDuration').value=String(clampInt(draft.minutes,1,600,30));
+  $('#activityEffort').value=String(clampInt(draft.effort,1,5,2));
+  if($('#customActivityName'))$('#customActivityName').value=cleanText(draft.customName,80);
+  $('#activityNote').value=cleanText(draft.note,120);
+  $('#saveEntryBtn').textContent='Zapisz ręcznie';
+  $('#startTimerBtn').classList.remove('hidden');
+  $('#entryCard').classList.remove('hidden');
+  $('#entryCard').dataset.restoredDraft='true';
+  setQuickDuration($('#activityDuration').value);
+  return true;
+}
+
 function pickActivity(name){
   if(!activeChild())return;selected=name;editingEntryId=null;
   $('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#activityDuration').value='30';$('#activityEffort').value='2';if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';
-  $('#saveEntryBtn').textContent='Zapisz ręcznie';$('#startTimerBtn').classList.remove('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
+  $('#saveEntryBtn').textContent='Zapisz ręcznie';$('#startTimerBtn').classList.remove('hidden');$('#entryCard').classList.remove('hidden');delete $('#entryCard').dataset.restoredDraft;saveEntryDraft();$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function activityButton([name,emoji]){const b=document.createElement('button');b.className='activity';b.innerHTML=`<span class="emoji">${emoji}</span>${name}`;b.onclick=()=>pickActivity(name);return b}
 function renderActivities(){
@@ -109,7 +151,7 @@ function renderChildOverview(){
 }
 function repeatLastActivity(){
   const child=activeChild(),last=child?latestActivityEntry(child.id):null;if(!last)return;
-  pickActivity(last.activity);setQuickDuration(last.minutes);$('#activityEffort').value=String(clampInt(last.effort,1,5,2));$('#activityNote').value='';
+  pickActivity(last.activity);setQuickDuration(last.minutes);$('#activityEffort').value=String(clampInt(last.effort,1,5,2));$('#activityNote').value='';saveEntryDraft();
 }
 function backupAgeLabel(){
   const iso=safeIso(state.meta?.lastBackupAt);if(!iso)return 'kopia: brak';
@@ -124,7 +166,7 @@ function renderParentSnapshot(){
   badge.textContent=backupAgeLabel();
   const backup=$('#backupStatus');if(backup)backup.textContent=backupAgeLabel().replace('kopia: ','');
 }
-function setQuickDuration(minutes){const input=$('#activityDuration');if(!input)return;input.value=String(minutes);$$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(minutes)))}
+function setQuickDuration(minutes){const input=$('#activityDuration');if(!input)return;input.value=String(minutes);$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(minutes)));saveEntryDraft()}
 
 function startActivityTimer(){
   const child=activeChild();if(!selected||!child||state.activeTimer)return;
@@ -133,7 +175,7 @@ function startActivityTimer(){
   if(selected==='Inna aktywność'&&!customName){alert('Podaj własną nazwę aktywności.');return}
   const date=$('#activityDate').value||today();if(!allowedActivityDate(date)){alert('Data aktywności nie może być z przyszłości.');return}
   state.activeTimer={childId:child.id,activity:activityName,startAt:nowIso(),date,effort:clampInt($('#activityEffort').value,1,5,2),note:cleanText($('#activityNote').value,120)};
-  selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';$('#entryCard').classList.add('hidden');persist();
+  clearEntryDraft();selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';$('#entryCard').classList.add('hidden');persist();
 }
 function timerElapsedSeconds(){
   if(!state.activeTimer?.startAt)return 0;
@@ -163,10 +205,10 @@ function cancelActivityTimer(){
 }
 function editChildEntry(id){
   const child=activeChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id);if(!e||!['pending','rejected'].includes(e.status))return;
-  editingEntryId=e.id;selected=e.activity;$('#selectedActivityTitle').textContent=e.status==='rejected'?'Popraw odrzucony wpis':'Edytuj oczekujący wpis';
+  clearEntryDraft();editingEntryId=e.id;selected=e.activity;$('#selectedActivityTitle').textContent=e.status==='rejected'?'Popraw odrzucony wpis':'Edytuj oczekujący wpis';
   $('#activityDate').value=e.date;$('#activityDuration').value=e.minutes;$('#activityEffort').value=e.effort;if($('#customActivityName'))$('#customActivityName').value=ACTIVITIES.some(a=>a[0]===e.activity)?'':e.activity;$('#activityNote').value=e.note||'';$('#saveEntryBtn').textContent=e.status==='rejected'?'Popraw i wyślij ponownie':'Zapisz poprawkę';$('#startTimerBtn').classList.add('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
 }
-function cancelEntry(){editingEntryId=null;selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#entryCard').classList.add('hidden');$('#startTimerBtn').classList.remove('hidden');$('#saveEntryBtn').textContent='Zapisz ręcznie'}
+function cancelEntry(){clearEntryDraft();editingEntryId=null;selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';$('#entryCard').classList.add('hidden');delete $('#entryCard').dataset.restoredDraft;$('#startTimerBtn').classList.remove('hidden');$('#saveEntryBtn').textContent='Zapisz ręcznie'}
 function saveEntry(){
   const child=activeChild();if(!child)return;const minutes=Number($('#activityDuration').value),date=$('#activityDate').value||today();
   if(!selected||!Number.isFinite(minutes)||minutes<1||minutes>600){alert('Podaj czas od 1 do 600 minut.');return}
@@ -600,7 +642,7 @@ async function importBackup(file){
 }
 async function requestPersistentStorage(){if(!canManageLocalData())return;try{const ok=await navigator.storage?.persist?.();setStorageMessage(ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.')}catch{setStorageMessage('Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.')}}
 async function renderStorageStatus(){if(!isSelfMode()&&!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();setStorageMessage(persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.')}catch{setStorageMessage('Dane są zapisane lokalnie w tej przeglądarce.')}}
-function deleteLocalData(){if(!canManageLocalData())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;localStorage.removeItem(KEY);sessionStorage.removeItem(PARENT_SESSION_KEY);location.reload()}
+function deleteLocalData(){if(!canManageLocalData())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;localStorage.removeItem(KEY);clearEntryDraft();sessionStorage.removeItem(PARENT_SESSION_KEY);location.reload()}
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
 function renderAll(){
@@ -618,6 +660,7 @@ function renderAll(){
   $('#schoolPanel').classList.toggle('hidden',currentMode!=='school');
 }
 $('#activitySearch').oninput=renderActivities;
+['activityDate','activityDuration','activityEffort','customActivityName','activityNote'].forEach(id=>{const el=$('#'+id);if(!el)return;el.addEventListener('input',saveEntryDraft);el.addEventListener('change',saveEntryDraft)});
 $('#repeatLastActivityBtn').onclick=repeatLastActivity;
 $$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
 $('#setupMode').onchange=renderSetupMode;
