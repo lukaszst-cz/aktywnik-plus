@@ -74,7 +74,7 @@ Prawdziwe dane uczniów nie powinny trafiać do repozytorium, testów ani public
 
 ## Egzekwowanie ról
 
-Plik `backend/rls.sql` zawiera szkic polityk Supabase RLS. Interfejs nie jest granicą bezpieczeństwa.
+Plik `backend/migrations/004_family_rls.sql` zawiera szkic polityk Supabase RLS. Interfejs nie jest granicą bezpieczeństwa.
 
 W produkcji:
 - dziecko ma dostęp wyłącznie przez `child_accounts`;
@@ -83,3 +83,11 @@ W produkcji:
 - zatwierdzony wpis może być czytelny dla nauczyciela tylko w przypisanej klasie;
 - kod parowania jest jednorazowy, haszowany i wygasa;
 - administracyjne modyfikacje szkoły powinny przechodzić przez kontrolowane endpointy/server actions, a nie bezpośredni zapis z klienta.
+
+
+## Migracje rodzinne 0.2.0
+
+- `backend/migrations/003_family_roles.sql` — konta dziecka, wiele dzieci na opiekuna, pairing codes i append-only historia decyzji;
+- `backend/migrations/004_family_rls.sql` — rozszerzenie RLS dla dziecka, opiekuna i parowania urządzeń.
+
+Migracje uruchamia się po `001_core.sql` i `002_supabase_rls.sql`.
