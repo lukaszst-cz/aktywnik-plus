@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<title>Aktywnik+ smoke 0.2.0</title>
+<title>Aktywnik+ smoke 0.2.1</title>
 <style>body{font-family:system-ui;margin:20px}#result{padding:12px;border:1px solid #ccc}.pass{background:#e8fff0}.fail{background:#ffecec}iframe{width:100%;height:900px;border:1px solid #ddd;margin-top:12px}</style>
 </head>
 <body>
@@ -94,6 +94,10 @@ async function run(){
     correct.click();d.getElementById('parentEditMinutes').value='35';d.getElementById('saveParentCorrectionBtn').click();await sleep(80);
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');const first=saved.entries.find(x=>x.childId==='child-a');
     if(first.status!=='approved'||first.minutes!==35||!first.correctedByParent)throw new Error('parent correction failed');
+    d.getElementById('parentReportMonth').value='2026-10';d.getElementById('parentReportMonth').dispatchEvent(new w.Event('change',{bubbles:true}));await sleep(60);
+    if(!d.getElementById('parentReport').textContent.includes('35 min'))throw new Error('selected-month report missing approved entry');
+    const printPages=w.buildSchoolPrintPages('child-a',new w.Date('2026-10-15T12:00:00'));
+    if(printPages.length!==2||printPages[0].rows[0].entry?.minutes!==35||printPages[0].rows.length!==35)throw new Error('A4 monthly report pagination failed');
 
     d.getElementById('parentChildSelect').value=childB.id;d.getElementById('parentChildSelect').dispatchEvent(new w.Event('change',{bubbles:true}));d.getElementById('setDeviceChildBtn').click();await sleep(70);
     d.getElementById('lockParentBtn').click();await sleep(70);
@@ -130,7 +134,7 @@ async function run(){
     w.clearPinFailures();
     if(w.pinLockRemainingMs()>0)throw new Error('PIN lockout reset failed');
 
-    pass('PIN roles, PIN lockout, multi-child isolation, child edit, parent correction/rejection, audit, migration, backup and PWA');
+    pass('PIN roles, PIN lockout, multi-child isolation, child edit, parent correction/rejection, month selection, A4 pagination, audit, migration, backup and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
