@@ -1,28 +1,117 @@
 <!doctype html>
 <html lang="pl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Aktywnik+ — formularz papierowy</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<title>Aktywnik+ — dziennik papierowy 70 wpisów</title>
 <style>
-body{font-family:Arial,sans-serif;color:#111;margin:24px}.top{display:flex;justify-content:space-between;gap:24px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin:18px 0}.line{border-bottom:1px solid #555;min-width:180px;display:inline-block}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #555;padding:5px;text-align:left;height:24px}th{background:#eee}.notes{margin-top:16px}.notes p{border-bottom:1px solid #777;height:22px}.print{margin-bottom:15px}@media print{.print{display:none}body{margin:10mm}@page{size:A4;margin:10mm}}
+:root{font-family:Arial,sans-serif;color:#111;background:#f1f5f9}
+*{box-sizing:border-box}
+body{margin:0}
+.toolbar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:12px;background:#0f172a}
+.toolbar button,.toolbar a{border:0;border-radius:10px;padding:10px 14px;font-weight:700;text-decoration:none;cursor:pointer}
+.toolbar button{background:#22c55e;color:#052e16}.toolbar a{background:#e2e8f0;color:#0f172a}
+.intro{max-width:940px;margin:18px auto;padding:16px 18px;background:white;border-radius:16px}
+.intro h1{margin:.1rem 0 .5rem}.intro p{line-height:1.5}
+.sheet{width:210mm;min-height:297mm;margin:14px auto;background:#fff;padding:9mm 10mm;box-shadow:0 5px 24px rgba(15,23,42,.12);page-break-after:always}
+.sheet:last-of-type{page-break-after:auto}
+.sheet-head{display:flex;justify-content:space-between;gap:14px;border-bottom:2px solid #111;padding-bottom:7px;margin-bottom:8px}
+.sheet-head h1{font-size:18px;margin:0 0 4px}.sheet-head p{margin:2px 0;font-size:10px}
+.credit{text-align:right;font-size:10px;line-height:1.4}
+.meta{display:grid;grid-template-columns:1.2fr .7fr 1fr;gap:8px;margin:7px 0 9px;font-size:10px}
+.meta span{display:inline-block;border-bottom:1px solid #555;min-width:85px;height:14px;vertical-align:bottom}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.5px}
+th,td{border:1px solid #444;padding:2px 3px;height:6.15mm;vertical-align:middle}
+th{background:#eee;text-align:center;font-weight:700}
+.col-lp{width:6%}.col-date{width:13%}.col-act{width:27%}.col-time{width:12%}.col-effort{width:13%}.col-note{width:29%}
+.summary{margin-top:7px;font-size:9px}
+.summary h3{font-size:10px;margin:6px 0 3px}.line{border-bottom:1px solid #666;height:15px}
+.school-note{margin-top:7px;padding:6px 8px;border:1px solid #aaa;background:#fafafa;font-size:8.5px;line-height:1.35}
+.footer{margin-top:6px;display:flex;justify-content:space-between;gap:10px;color:#555;font-size:7.5px}
+@media(max-width:900px){.sheet{width:100%;min-height:auto;margin:10px 0;box-shadow:none}.intro{margin:10px}.toolbar{position:static}}
+@media print{
+  :root{background:#fff}
+  .toolbar,.intro{display:none!important}
+  body{margin:0}
+  .sheet{margin:0;box-shadow:none;width:210mm;height:297mm;min-height:297mm;padding:9mm 10mm;page-break-after:always}
+  .sheet:last-of-type{page-break-after:auto}
+  @page{size:A4 portrait;margin:0}
+}
 </style>
 </head>
 <body>
-<button class="print" onclick="print()">Drukuj / Zapisz jako PDF</button>
-<div class="top"><div><h1>Aktywnik+</h1><strong>Dziennik dodatkowej aktywności</strong></div><div>Tryb: □ papierowy □ hybrydowy</div></div>
-<div class="meta"><div>Dziecko: <span class="line"></span></div><div>Klasa: <span class="line"></span></div><div>Szkoła: <span class="line"></span></div><div>Okres: <span class="line"></span></div></div>
-<table><thead><tr><th>Lp.</th><th>Data</th><th>Aktywność</th><th>Czas</th><th>Wysiłek 1–5 (opc.)</th><th>Potwierdzenie / uwaga rodzica</th></tr></thead><tbody id="rows"></tbody></table>
-<div class="notes"><h3>Podsumowanie okresu</h3><p></p><h3>Uwagi nauczyciela / wychowawcy</h3><p></p><p></p><h3>Plusy / ocena — według zasad nauczyciela</h3><p></p></div>
-<script>document.querySelector('#rows').innerHTML=Array.from({length:30},(_,i)=>`<tr><td>${i+1}</td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')</script>
-<footer>Aktywnik+ • bezpłatny projekt rodzicielski • Twórca i właściciel projektu: Łukasz St‑cz • <a href="https://github.com/lukaszst-cz/aktywnik-plus" target="_blank" rel="noopener">GitHub Łukasza St‑cz</a></footer>
+<div class="toolbar">
+  <button onclick="window.print()">Drukuj / Zapisz jako PDF</button>
+  <a href="app.html">Wróć do Aktywnik+</a>
+  <a href="faq.html">FAQ</a>
+  <a href="https://github.com/lukaszst-cz/aktywnik-plus" target="_blank" rel="noopener">GitHub</a>
+</div>
 
-<style>
-.creator-support-strip{max-width:1100px;margin:0 auto;padding:16px 20px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;border-top:1px solid rgba(127,127,127,.22);font:600 13px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center}
-.creator-support-strip a{font-weight:800;color:inherit;text-decoration:underline;text-underline-offset:3px}
-@media print{.creator-support-strip{display:none!important}}
-</style>
-<aside class="creator-support-strip" aria-label="Wsparcie autora i Zielona Marka">
-  <span>☕ Aktywnik+ jest darmowy — możesz <a href="https://buymeacoffee.com/nalesnik_plus_plus" target="_blank" rel="noopener noreferrer">postawić Naleśnikowi++ kawę</a>.</span>
-  <span>Potrzebujesz własnej strony lub prostego systemu? <a href="https://zielona-marka.pl" target="_blank" rel="noopener noreferrer">Zobacz Zielona Marka ↗</a></span>
-</aside>
-</body></html>
+<section class="intro">
+  <h1>Dziennik Dodatkowej Aktywności Fizycznej — 70 wpisów</h1>
+  <p><strong>Autor arkusza: Ewa Gębska.</strong> Publiczna wersja do druku / zapisania jako PDF została przygotowana w Aktywnik+ na podstawie zaakceptowanego szkolnego wzoru.</p>
+  <p>Każdy może otworzyć tę stronę w przeglądarce, wybrać <strong>Drukuj / Zapisz jako PDF</strong> i zachować własną kopię. Układ: 1–35 na stronie 1 oraz 36–70 na stronie 2.</p>
+</section>
+
+<section class="sheet">
+  <div class="sheet-head">
+    <div>
+      <h1>Dziennik Dodatkowej Aktywności Fizycznej</h1>
+      <p>jeden wiersz = jedna aktywność</p>
+    </div>
+    <div class="credit">
+      <strong>Autor arkusza: Ewa Gębska</strong><br>
+      wersja cyfrowa / techniczna: Aktywnik+ — Łukasz St-cz
+    </div>
+  </div>
+  <div class="meta">
+    <div>Imię i nazwisko: <span></span></div>
+    <div>Klasa: <span></span></div>
+    <div>Miesiąc / rok: <span></span></div>
+  </div>
+  <table>
+    <thead><tr><th class="col-lp">Lp.</th><th class="col-date">Data</th><th class="col-act">Rodzaj aktywności</th><th class="col-time">Czas trwania</th><th class="col-effort">Poziom zmęczenia 1–5</th><th class="col-note">Podpis / uwagi opiekuna</th></tr></thead>
+    <tbody id="rows1"></tbody>
+  </table>
+  <div class="footer"><span>Strona 1/2 · wpisy 1–35</span><span>Aktywnik+ · github.com/lukaszst-cz/aktywnik-plus</span></div>
+</section>
+
+<section class="sheet">
+  <div class="sheet-head">
+    <div>
+      <h1>Dziennik Dodatkowej Aktywności Fizycznej</h1>
+      <p>kontynuacja — wpisy 36–70</p>
+    </div>
+    <div class="credit">
+      <strong>Autor arkusza: Ewa Gębska</strong><br>
+      wersja cyfrowa / techniczna: Aktywnik+ — Łukasz St-cz
+    </div>
+  </div>
+  <div class="meta">
+    <div>Imię i nazwisko: <span></span></div>
+    <div>Klasa: <span></span></div>
+    <div>Miesiąc / rok: <span></span></div>
+  </div>
+  <table>
+    <thead><tr><th class="col-lp">Lp.</th><th class="col-date">Data</th><th class="col-act">Rodzaj aktywności</th><th class="col-time">Czas trwania</th><th class="col-effort">Poziom zmęczenia 1–5</th><th class="col-note">Podpis / uwagi opiekuna</th></tr></thead>
+    <tbody id="rows2"></tbody>
+  </table>
+  <div class="summary">
+    <h3>Podsumowanie miesiąca / uwagi rodzica</h3><div class="line"></div><div class="line"></div>
+    <h3>Uwagi nauczyciela / wychowawcy</h3><div class="line"></div><div class="line"></div>
+    <h3>Plus / ocena — według zasad nauczyciela</h3><div class="line"></div>
+  </div>
+  <div class="school-note">
+    Wersja papierowa jest równoważną ścieżką pilota Aktywnik+. Nie wymaga konta ani instalacji aplikacji. Arkusz może być wypełniany ręcznie i przekazywany nauczycielowi po zakończeniu miesiąca.
+  </div>
+  <div class="footer"><span>Strona 2/2 · wpisy 36–70</span><span>Twórca Aktywnik+: Łukasz St-cz · GitHub: lukaszst-cz/aktywnik-plus</span></div>
+</section>
+
+<script>
+function rows(from,to){return Array.from({length:to-from+1},(_,i)=>`<tr><td>${from+i}</td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')}
+document.getElementById('rows1').innerHTML=rows(1,35);
+document.getElementById('rows2').innerHTML=rows(36,70);
+</script>
+</body>
+</html>
