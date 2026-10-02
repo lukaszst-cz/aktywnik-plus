@@ -594,7 +594,7 @@ function renderAll(){
 }
 $('#activitySearch').oninput=renderActivities;
 $('#repeatLastActivityBtn').onclick=repeatLastActivity;
-$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
+$$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
 $('#startPilotBtn').onclick=startPilot;
 $('#parentAccessBtn').onclick=openParentGate;
 $('#unlockParentBtn').onclick=unlockParent;
