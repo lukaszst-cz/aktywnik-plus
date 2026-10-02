@@ -2,9 +2,9 @@ const ACTIVITIES=[
 ['Spacer','🚶'],['Spacer z psem','🐕'],['Rower','🚲'],['Hulajnoga','🛴'],['Rolki','🛼'],['Deskorolka','🛹'],['Basen','🏊'],['Bieganie','🏃'],['Marsz','🥾'],['Piłka nożna','⚽'],['Koszykówka','🏀'],['Siatkówka','🏐'],['Tenis','🎾'],['Badminton','🏸'],['Tenis stołowy','🏓'],['Judo','🥋'],['Karate','🥋'],['Taniec','💃'],['Gimnastyka','🤸'],['Ćwiczenia w domu','🏠'],['SKS','🏫'],['Trening klubowy','🏅'],['Plac zabaw','🛝'],['Zabawa na podwórku','🌳'],['Trampolina','🤸'],['Wspinaczka','🧗'],['Park linowy','🌲'],['Wycieczka piesza','🥾'],['Góry','⛰️'],['Narty','⛷️'],['Snowboard','🏂'],['Łyżwy','⛸️'],['Kajak','🛶'],['Żagle','⛵'],['Frisbee','🥏'],['Rzutki / celność','🎯'],['Gra terenowa','🧭'],['Zabawy ruchowe','🎈'],['Rozciąganie','🧘'],['Inna aktywność','➕']
 ];
 const KEY='aktywnik-plus-data-v1';
-const defaultState={schemaVersion:2,pilot:{started:false,childDisplayName:''},favorites:['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'],entries:[],rewards:[],classes:[],joinRequests:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
+const defaultState={schemaVersion:3,pilot:{started:false,childDisplayName:''},activeTimer:null,favorites:['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'],entries:[],rewards:[],classes:[],joinRequests:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
 let state=load(); let selected=null; let reportType='month';
-function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return {...structuredClone(defaultState),...saved,pilot:{...defaultState.pilot,...(saved.pilot||{})},favorites:Array.isArray(saved.favorites)?saved.favorites:defaultState.favorites,entries:Array.isArray(saved.entries)?saved.entries:[],rewards:Array.isArray(saved.rewards)?saved.rewards:[],classes:Array.isArray(saved.classes)?saved.classes:[],joinRequests:Array.isArray(saved.joinRequests)?saved.joinRequests:[],school:{...defaultState.school,...(saved.school||{})}}}catch{return structuredClone(defaultState)}}
+function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return {...structuredClone(defaultState),...saved,pilot:{...defaultState.pilot,...(saved.pilot||{})},activeTimer:saved.activeTimer||null,favorites:Array.isArray(saved.favorites)?saved.favorites:defaultState.favorites,entries:Array.isArray(saved.entries)?saved.entries:[],rewards:Array.isArray(saved.rewards)?saved.rewards:[],classes:Array.isArray(saved.classes)?saved.classes:[],joinRequests:Array.isArray(saved.joinRequests)?saved.joinRequests:[],school:{...defaultState.school,...(saved.school||{})}}}catch{return structuredClone(defaultState)}}
 function persist(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
 function fmtMin(m){const h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
@@ -12,6 +12,67 @@ function today(){const d=new Date();const y=d.getFullYear(),m=String(d.getMonth(
 function pickActivity(name){selected=name;$('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'})}
 function activityButton([name,emoji]){const b=document.createElement('button');b.className='activity';b.innerHTML=`<span class="emoji">${emoji}</span>${name}`;b.onclick=()=>pickActivity(name);return b}
 function renderActivities(){const fav=$('#favoriteActivities');fav.innerHTML='';ACTIVITIES.filter(a=>state.favorites.includes(a[0])).forEach(a=>fav.append(activityButton(a)));const q=$('#activitySearch').value.toLowerCase();const all=$('#allActivities');all.innerHTML='';ACTIVITIES.filter(a=>a[0].toLowerCase().includes(q)).forEach(a=>all.append(activityButton(a)))}
+function startActivityTimer(){
+  if(!selected||state.activeTimer)return;
+  state.activeTimer={
+    activity:selected,
+    startAt:new Date().toISOString(),
+    date:$('#activityDate').value||today(),
+    effort:Number($('#activityEffort').value),
+    note:$('#activityNote').value.trim()
+  };
+  selected=null;
+  $('#activityNote').value='';
+  $('#entryCard').classList.add('hidden');
+  persist();
+}
+function timerElapsedSeconds(){
+  if(!state.activeTimer?.startAt)return 0;
+  return Math.max(0,Math.floor((Date.now()-new Date(state.activeTimer.startAt).getTime())/1000));
+}
+function fmtClock(seconds){
+  const h=Math.floor(seconds/3600),m=Math.floor((seconds%3600)/60),s=seconds%60;
+  return [h,m,s].map(v=>String(v).padStart(2,'0')).join(':');
+}
+function renderTimer(){
+  const card=$('#timerStatusCard');
+  if(!card)return;
+  const active=state.activeTimer;
+  card.classList.toggle('hidden',!active);
+  if(!active)return;
+  $('#timerActivityName').textContent=active.activity;
+  $('#timerElapsed').textContent=fmtClock(timerElapsedSeconds());
+  $('#timerStartedAt').textContent='Start: '+new Date(active.startAt).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+}
+function stopActivityTimer(){
+  const t=state.activeTimer;
+  if(!t)return;
+  const seconds=timerElapsedSeconds();
+  const minutes=Math.max(1,Math.round(seconds/60));
+  state.entries.unshift({
+    id:crypto.randomUUID(),
+    date:t.date||today(),
+    activity:t.activity,
+    minutes,
+    effort:Number(t.effort)||2,
+    note:t.note||'',
+    status:'pending',
+    source:'timer',
+    startedAt:t.startAt,
+    stoppedAt:new Date().toISOString(),
+    measuredSeconds:seconds,
+    createdAt:new Date().toISOString()
+  });
+  state.activeTimer=null;
+  persist();
+}
+function cancelActivityTimer(){
+  if(!state.activeTimer)return;
+  if(confirm('Anulować trwający pomiar? Czas nie zostanie zapisany.')){
+    state.activeTimer=null;
+    persist();
+  }
+}
 function saveEntry(){const minutes=Number($('#activityDuration').value);if(!selected||!minutes||minutes<1)return;state.entries.unshift({id:crypto.randomUUID(),date:$('#activityDate').value||today(),activity:selected,minutes,effort:Number($('#activityEffort').value),note:$('#activityNote').value.trim(),status:'pending',createdAt:new Date().toISOString()});selected=null;$('#activityNote').value='';$('#entryCard').classList.add('hidden');persist()}
 function statusLabel(e){return e.status==='approved'?'<span class="status-approved">✓ zatwierdzone</span>':'<span class="status-pending">⏳ czeka na rodzica</span>'}
 function renderChildEntries(){const box=$('#childEntries');box.innerHTML='';state.entries.slice(0,12).forEach(e=>{const el=document.createElement('div');el.className='entry';el.innerHTML=`<div><strong>${escapeHtml(e.activity)} · ${fmtMin(e.minutes)}</strong><small>${escapeHtml(e.date)} · wysiłek ${e.effort}/5${e.note?` · ${escapeHtml(e.note)}`:''}<br>${statusLabel(e)}</small></div>`;box.append(el)});if(!state.entries.length)box.innerHTML='<small>Jeszcze nie ma wpisów.</small>';const pending=state.entries.filter(e=>e.status==='pending').length;$('#pendingChildBadge').textContent=pending?`${pending} do zatwierdzenia`:'';$('#todayMinutes').textContent=state.entries.filter(e=>e.date===today()).reduce((s,e)=>s+e.minutes,0)}
@@ -41,8 +102,8 @@ function renderJoinRequests(){const pending=(state.joinRequests||[]).filter(r=>r
 
 function startPilot(){const name=$('#pilotChildName').value.trim();state.pilot={started:true,childDisplayName:name||'Profil dziecka'};persist()}
 function renderPilot(){const card=$('#pilotSetupCard');if(!card)return;card.classList.toggle('hidden',!!state.pilot?.started);const label=$('#childDisplayName');if(label)label.textContent=state.pilot?.childDisplayName?`· ${state.pilot.childDisplayName}`:''}
-function safeBackupState(raw){const base=structuredClone(defaultState);if(!raw||typeof raw!=='object')throw new Error('Nieprawidłowy plik kopii.');const d=raw.data&&typeof raw.data==='object'?raw.data:raw;return {...base,schemaVersion:2,pilot:{...base.pilot,...(d.pilot||{})},favorites:Array.isArray(d.favorites)?d.favorites:base.favorites,entries:Array.isArray(d.entries)?d.entries:[],rewards:Array.isArray(d.rewards)?d.rewards:[],classes:Array.isArray(d.classes)?d.classes:[],joinRequests:Array.isArray(d.joinRequests)?d.joinRequests:[],reminderHour:Number.isFinite(Number(d.reminderHour))?Number(d.reminderHour):base.reminderHour,reminderMinute:Number.isFinite(Number(d.reminderMinute))?Number(d.reminderMinute):base.reminderMinute,school:{...base.school,...(d.school||{})}}}
-function exportBackup(){const payload={format:'aktywnik-plus-backup',version:2,exportedAt:new Date().toISOString(),data:state};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`aktywnik-plus-kopia-${today()}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);const s=$('#backupStatus');if(s)s.textContent='kopia zapisana'}
+function safeBackupState(raw){const base=structuredClone(defaultState);if(!raw||typeof raw!=='object')throw new Error('Nieprawidłowy plik kopii.');const d=raw.data&&typeof raw.data==='object'?raw.data:raw;return {...base,schemaVersion:3,pilot:{...base.pilot,...(d.pilot||{})},activeTimer:d.activeTimer||null,favorites:Array.isArray(d.favorites)?d.favorites:base.favorites,entries:Array.isArray(d.entries)?d.entries:[],rewards:Array.isArray(d.rewards)?d.rewards:[],classes:Array.isArray(d.classes)?d.classes:[],joinRequests:Array.isArray(d.joinRequests)?d.joinRequests:[],reminderHour:Number.isFinite(Number(d.reminderHour))?Number(d.reminderHour):base.reminderHour,reminderMinute:Number.isFinite(Number(d.reminderMinute))?Number(d.reminderMinute):base.reminderMinute,school:{...base.school,...(d.school||{})}}}
+function exportBackup(){const payload={format:'aktywnik-plus-backup',version:3,exportedAt:new Date().toISOString(),data:state};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`aktywnik-plus-kopia-${today()}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);const s=$('#backupStatus');if(s)s.textContent='kopia zapisana'}
 async function importBackup(file){if(!file)return;try{const parsed=JSON.parse(await file.text());if(parsed.format&&parsed.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');state=safeBackupState(parsed);persist();const s=$('#backupStatus');if(s)s.textContent='kopia przywrócona';alert('Kopia danych została przywrócona.')}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{$('#importBackupInput').value=''}}
 async function requestPersistentStorage(){const el=$('#storageStatus');if(!navigator.storage?.persist){if(el)el.textContent='Ta przeglądarka nie udostępnia funkcji trwałej pamięci.';return}try{const granted=await navigator.storage.persist();if(el)el.textContent=granted?'Przeglądarka przyznała trwałą pamięć dla danych Aktywnik+.':'Przeglądarka nie przyznała trwałej pamięci. Regularnie eksportuj kopię.'}catch{if(el)el.textContent='Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.'}}
 async function renderStorageStatus(){const el=$('#storageStatus');if(!el||!navigator.storage?.persisted)return;try{const persisted=await navigator.storage.persisted();if(persisted)el.textContent='Dane mają przyznaną trwałą pamięć na tym urządzeniu.'}catch{}}
@@ -50,7 +111,9 @@ function deleteLocalData(){if(!confirm('Usunąć wszystkie lokalne dane Aktywnik
 
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
-function renderAll(){renderPilot();renderActivities();renderChildEntries();renderApprovals();renderStats();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderStorageStatus()}
-$('#activitySearch').oninput=renderActivities;$('#startPilotBtn').onclick=startPilot;$('#exportBackupBtn').onclick=exportBackup;$('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);$('#requestPersistentStorageBtn').onclick=requestPersistentStorage;$('#deleteLocalDataBtn').onclick=deleteLocalData;$('#createClassBtn').onclick=createClass;$('#sendJoinRequestBtn').onclick=sendJoinRequest;$('#addPaperChildBtn').onclick=addPaperChild;$('#saveEntryBtn').onclick=saveEntry;$('#cancelEntryBtn').onclick=()=>$('#entryCard').classList.add('hidden');$('#childModeBtn').onclick=()=>switchMode('child');$('#parentModeBtn').onclick=()=>switchMode('parent');$('#schoolModeBtn').onclick=()=>switchMode('school');$('#saveSchoolSettingsBtn').onclick=saveSchoolSettings;$('#saveRewardBtn').onclick=saveReward;$('#reportPeriod').onchange=renderStats;$('#approveAllBtn').onclick=()=>{state.entries.forEach(e=>{if(e.status==='pending')e.status='approved'});persist()};$('#editFavoritesBtn').onclick=()=>{renderFavoritesEditor();$('#favoritesDialog').showModal()};$$('[data-report]').forEach(b=>b.onclick=()=>{reportType=b.dataset.report;renderParentReport()});$('#printReportBtn').onclick=()=>window.print();
+function renderAll(){renderPilot();renderTimer();renderActivities();renderChildEntries();renderApprovals();renderStats();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderStorageStatus()}
+$('#activitySearch').oninput=renderActivities;$('#startPilotBtn').onclick=startPilot;$('#exportBackupBtn').onclick=exportBackup;$('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);$('#requestPersistentStorageBtn').onclick=requestPersistentStorage;$('#deleteLocalDataBtn').onclick=deleteLocalData;$('#createClassBtn').onclick=createClass;$('#sendJoinRequestBtn').onclick=sendJoinRequest;$('#addPaperChildBtn').onclick=addPaperChild;$('#saveEntryBtn').onclick=saveEntry;$('#startTimerBtn').onclick=startActivityTimer;$('#stopTimerBtn').onclick=stopActivityTimer;$('#cancelTimerBtn').onclick=cancelActivityTimer;$('#cancelEntryBtn').onclick=()=>$('#entryCard').classList.add('hidden');$('#childModeBtn').onclick=()=>switchMode('child');$('#parentModeBtn').onclick=()=>switchMode('parent');$('#schoolModeBtn').onclick=()=>switchMode('school');$('#saveSchoolSettingsBtn').onclick=saveSchoolSettings;$('#saveRewardBtn').onclick=saveReward;$('#reportPeriod').onchange=renderStats;$('#approveAllBtn').onclick=()=>{state.entries.forEach(e=>{if(e.status==='pending')e.status='approved'});persist()};$('#editFavoritesBtn').onclick=()=>{renderFavoritesEditor();$('#favoritesDialog').showModal()};$$('[data-report]').forEach(b=>b.onclick=()=>{reportType=b.dataset.report;renderParentReport()});$('#printReportBtn').onclick=()=>window.print();
+setInterval(renderTimer,1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderTimer()});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 renderAll();
