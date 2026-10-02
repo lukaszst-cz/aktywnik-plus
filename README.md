@@ -34,20 +34,27 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.1.2 — Pilot**
+**Aktywnik+ 0.2.0 — Family Roles Pilot**
 
-- [Release notes 0.1.2](docs/RELEASE-0.1.2.md)
+- [Release notes 0.2.0](docs/RELEASE-0.2.0.md)
 - [Changelog](CHANGELOG.md)
 - [Pobierz / zainstaluj](pobierz.html)
 - [FAQ](faq.html)
 
 ## Co już działa
 
+- **strefa dziecka bez przełącznika do rodzica/szkoły**;
+- **strefa rodzica chroniona PIN-em** z automatycznym blokowaniem po bezczynności;
+- **wiele profili dzieci pod jednym rodzicem**;
+- wybór jednego aktywnego profilu dziecka na danym urządzeniu — zmiana wymaga strefy rodzica;
 - panel dziecka z dużą listą aktywności;
 - ulubione aktywności do szybkiego wyboru;
 - wpis aktywności z datą, czasem, wysiłkiem i notatką;
 - **Start/Stop aktywności** — pomiar czasu oparty na zapisanym czasie startu, działający także po zminimalizowaniu lub ponownym otwarciu PWA;
-- wieczorna lista wpisów do akceptacji przez rodzica;
+- dziecko może poprawić wpis oczekujący lub odrzucony i wysłać go ponownie;
+- rodzic może **zatwierdzić / poprawić / odrzucić** wpis oraz podać powód odrzucenia;
+- lokalna historia decyzji rodzica i zmian wpisu;
+- możliwość ustawienia dla każdego dziecka: akceptacja rodzica wymagana albo automatyczne zatwierdzanie;
 - raporty: miesięczny, kwartalny, półroczny i roczny;
 - **Eksport CSV** zatwierdzonych wpisów dla nauczyciela;
 - statystyki wyłącznie dla danego dziecka;
@@ -103,12 +110,17 @@ Dokumentacja:
 ## Bezpieczeństwo danych pilota
 
 Obecna PWA ma:
+- lokalny PIN rodzica przechowywany jako skrót PBKDF2 z losową solą;
+- automatyczne blokowanie strefy rodzica po bezczynności;
+- izolację danych pomiędzy profilami dzieci w interfejsie;
 - eksport kopii lokalnych danych do pliku JSON;
 - przywracanie kopii z pliku;
 - możliwość poproszenia przeglądarki o trwałą pamięć;
 - jasne oznaczenie funkcji klas jako **demo lokalne** do czasu uruchomienia backendu.
 
 Przed czyszczeniem danych przeglądarki, zmianą telefonu lub ważnym raportem warto wykonać eksport kopii.
+
+**Ważne:** PIN w 0.2.0 jest zabezpieczeniem lokalnego pilota na jednym urządzeniu, a nie pełnym uwierzytelnianiem serwerowym. Osoba z technicznym dostępem do profilu przeglądarki nadal może odczytać lokalne dane. Pełne bezpieczeństwo między urządzeniami wymaga backendu, kont i RLS.
 
 ## Prototyp
 
@@ -124,7 +136,9 @@ Następnie otwórz `http://localhost:8080`.
 
 ## Wersja produkcyjna
 
-Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + reguły dostępu po stronie backendu. Planowany stos: Next.js / TypeScript / Supabase. Powiadomienie końca dnia będzie korzystać z Web Push.
+Docelowo: PWA + osobne konta rodzic/dziecko + synchronizacja między urządzeniami + reguły dostępu po stronie backendu. Rodzic będzie mógł mieć wiele dzieci, wygenerować dla każdego jednorazowy kod lub QR do sparowania urządzenia dziecka, a dziecko zobaczy wyłącznie swój profil. Planowany stos: Next.js / TypeScript / Supabase z Row Level Security. Powiadomienie końca dnia będzie korzystać z Web Push.
+
+Szczegóły: **[Rodzina, urządzenia i synchronizacja](docs/FAMILY-SYNC.md)**.
 
 ## Demo i pobieranie
 
@@ -134,4 +148,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.1.2 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
+`0.2.0 Family Roles Pilot` — wersja do testu rodzinnego z rozdzieleniem dziecko/rodzic, wieloma profilami dzieci i PIN-em rodzica. Dane nadal pozostają lokalnie; prawdziwe konta i synchronizacja między urządzeniami wymagają backendu.
