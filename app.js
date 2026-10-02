@@ -27,7 +27,7 @@ function persist(){
     lastPersistOk=false;
     console.error('Aktywnik+: local save failed',err);
   }
-  renderAll();restoreEntryDraft();
+  renderAll();
 }
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
 function fmtMin(m){const h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
@@ -719,4 +719,4 @@ setInterval(()=>{if((currentMode==='parent'||currentMode==='school')&&!parentUnl
 ['pointerdown','keydown','touchstart'].forEach(evt=>document.addEventListener(evt,()=>{if((currentMode==='parent'||currentMode==='school')&&parentUnlocked())touchParentSession()},{passive:true}));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderTimer();if((currentMode==='parent'||currentMode==='school')&&!parentUnlocked())lockParent()}});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
-renderAll();
+renderAll();restoreEntryDraft();
