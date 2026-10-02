@@ -264,11 +264,24 @@ function setDeviceChild(){
   if(state.activeTimer&&state.activeTimer.childId!==child.id){alert('Najpierw zakończ trwający pomiar aktywności na obecnym profilu.');return}
   state.activeChildId=child.id;persist();
 }
+function purgeChildLocalData(childId){
+  state.entries=state.entries.filter(e=>e.childId!==childId);
+  state.rewards=state.rewards.filter(r=>r.childId!==childId);
+  state.approvalEvents=state.approvalEvents.filter(ev=>ev.childId!==childId);
+  state.joinRequests=state.joinRequests.filter(r=>r.childId!==childId);
+  state.paperImports=(state.paperImports||[]).filter(x=>x.familyChildId!==childId);
+  state.classes.forEach(klass=>{
+    klass.children=(klass.children||[]).filter(c=>c.familyChildId!==childId);
+  });
+  if(state.activeTimer?.childId===childId)state.activeTimer=null;
+}
 function removeChild(){
   if(!guardParent())return;const child=parentChild();if(!child)return;if(state.children.length<=1){alert('Musi pozostać co najmniej jeden profil dziecka.');return}
-  if(!confirm('Usunąć profil '+child.displayName+' oraz jego lokalne wpisy, historię i oceny?'))return;
-  state.children=state.children.filter(c=>c.id!==child.id);state.entries=state.entries.filter(e=>e.childId!==child.id);state.rewards=state.rewards.filter(r=>r.childId!==child.id);state.approvalEvents=state.approvalEvents.filter(ev=>ev.childId!==child.id);state.joinRequests=state.joinRequests.filter(r=>r.childId!==child.id);
-  if(state.activeTimer?.childId===child.id)state.activeTimer=null;if(state.activeChildId===child.id)state.activeChildId=state.children[0].id;parentSelectedChildId=state.activeChildId;persist();
+  if(!confirm('Usunąć profil '+child.displayName+' oraz wszystkie jego lokalne powiązania?'))return;
+  purgeChildLocalData(child.id);
+  state.children=state.children.filter(c=>c.id!==child.id);
+  if(state.activeChildId===child.id)state.activeChildId=state.children[0].id;
+  parentSelectedChildId=state.activeChildId;persist();
 }
 function saveApprovalMode(){if(!guardParent())return;const child=parentChild();if(!child)return;child.requireParentApproval=$('#childApprovalMode').value==='required';persist()}
 function saveAutoLockSetting(){
@@ -384,8 +397,16 @@ function collectPaperImportPreview(){
 function savePaperImport(){
   if(!guardParent())return;const rows=collectPaperImportPreview(),childName=cleanText($('#importChildName').value,60),classId=$('#importClassId').value;
   if(!rows.length||!childName){$('#paperImportStatus').innerHTML='<p class="status-pending">Podaj dziecko i co najmniej jeden poprawny wiersz.</p>';return}
-  state.paperImports=state.paperImports||[];state.paperImports.unshift({id:uuid(),classId,childName,rows,source:'paper_ocr',createdAt:nowIso()});
-  const klass=state.classes.find(c=>c.id===classId);if(klass){klass.children=klass.children||[];let child=klass.children.find(c=>String(c.name||'').toLowerCase()===childName.toLowerCase());if(!child){child={id:uuid(),familyChildId:null,name:childName,mode:'paper',reportStatus:'submitted',joinedAt:nowIso()};klass.children.push(child)}else child.reportStatus='submitted'}
+  const klass=state.classes.find(c=>c.id===classId);let familyChildId=null;
+  if(klass){
+    klass.children=klass.children||[];
+    let child=klass.children.find(c=>String(c.name||'').toLowerCase()===childName.toLowerCase());
+    if(!child){child={id:uuid(),familyChildId:null,name:childName,mode:'paper',reportStatus:'submitted',joinedAt:nowIso()};klass.children.push(child)}
+    else child.reportStatus='submitted';
+    familyChildId=child.familyChildId||null;
+  }
+  state.paperImports=state.paperImports||[];
+  state.paperImports.unshift({id:uuid(),classId,childName,familyChildId,rows,source:'paper_ocr',createdAt:nowIso()});
   pendingPaperImportRows=[];$('#ocrPaste').value='';$('#paperImportFile').value='';$('#savePaperImportBtn').disabled=true;persist();$('#paperImportStatus').innerHTML='<p class="status-approved">Karta zapisana lokalnie i oznaczona jako oddana.</p>';
 }
 function renderPaperImports(){
