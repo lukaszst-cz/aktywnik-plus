@@ -1,13 +1,13 @@
 'use strict';
 
 function cloudReady(){
-  const directDatabaseConfigured=Boolean(process.env.DATABASE_URL);
   const supabaseConfigured=Boolean(
     process.env.SUPABASE_URL &&
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_PUBLISHABLE_KEY
   );
-  const databaseConfigured=directDatabaseConfigured || supabaseConfigured;
-  const authConfigured=Boolean(process.env.AUTH_MODE && process.env.AUTH_MODE!=='disabled');
+  const directDatabaseConfigured=Boolean(process.env.DATABASE_URL);
+  const databaseConfigured=supabaseConfigured || directDatabaseConfigured;
+  const authConfigured=process.env.AUTH_MODE==='supabase';
   const rlsVerified=process.env.AKTYWNIK_RLS_VERIFIED==='true';
   const explicitEnable=process.env.AKTYWNIK_CLOUD_SYNC==='true';
 
@@ -17,7 +17,7 @@ function cloudReady(){
     authConfigured,
     rlsVerified,
     explicitEnable,
-    enabled:explicitEnable && databaseConfigured && authConfigured && rlsVerified
+    enabled:explicitEnable && supabaseConfigured && authConfigured && rlsVerified
   };
 }
 
@@ -34,7 +34,7 @@ function requireCloud(res){
       error:'cloud_sync_disabled',
       message:'Synchronizacja chmurowa nie jest jeszcze aktywna.',
       requires:{
-        database:!state.databaseConfigured,
+        supabase:!state.supabaseConfigured,
         authentication:!state.authConfigured,
         rowLevelSecurityVerification:!state.rlsVerified,
         explicitEnable:!state.explicitEnable
@@ -45,4 +45,19 @@ function requireCloud(res){
   return state;
 }
 
-module.exports={cloudReady,noStore,requireCloud};
+function getBearerToken(req){
+  const raw=req.headers?.authorization || req.headers?.Authorization || '';
+  const match=String(raw).match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || '';
+}
+
+function requireBearer(req,res){
+  const token=getBearerToken(req);
+  if(!token){
+    res.status(401).json({ok:false,error:'authentication_required'});
+    return null;
+  }
+  return token;
+}
+
+module.exports={cloudReady,noStore,requireCloud,getBearerToken,requireBearer};
