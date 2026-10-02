@@ -1,15 +1,18 @@
-const CACHE='aktywnik-plus-v20';
+const CACHE='aktywnik-plus-v21';
 const ASSETS=[
   './',
   './index.html',
   './app.html',
   './konto.html',
   './paper.html',
+  './paper-uniwersalny.html',
+  './paper.js',
   './pobierz.html',
   './prywatnosc.html',
   './o-projekcie.html',
   './faq.html',
   './dla-nauczyciela.html',
+  './teacher.js',
   './404.html',
   './landing.css',
   './styles.css',
@@ -42,6 +45,11 @@ self.addEventListener('activate',event=>{
 
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET') return;
+  const url=new URL(event.request.url);
+  if(url.origin===self.location.origin && url.pathname.startsWith('/api/')){
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   if(event.request.mode==='navigate'){
     event.respondWith(
