@@ -24,6 +24,7 @@ jobs:
           node --check share.js
           node --check auth-config.js
           node --check auth.js
+          node --check sync-client.js
           node --check paper.js
           node --check teacher.js
           node --check sw.js
@@ -72,6 +73,10 @@ jobs:
               vercel=json.load(f)
           assert 'auth-config.js' in account and 'auth.js' in account, "account auth scripts missing"
           assert 'SUPABASE_SERVICE_ROLE_KEY' not in auth and 'SUPABASE_SECRET_KEY' not in auth, "server key leaked to client auth"
+          with open("sync-client.js", encoding="utf-8") as f:
+              sync_client=f.read()
+          assert "markDirty" in sync_client and "/api/v1/sync" in sync_client, "sync queue client missing"
+          assert "SUPABASE_SECRET_KEY" not in sync_client and "SUPABASE_SERVICE_ROLE_KEY" not in sync_client, "server key leaked to sync client"
           assert 'sb_publishable_' in auth_config, "publishable key missing"
           csp=next(h["value"] for x in vercel["headers"] if x["source"]=="/(.*)" for h in x["headers"] if h["key"]=="Content-Security-Policy")
           assert "https://rgvmjglahubbglkolwug.supabase.co" in csp, "Supabase connect-src missing"
