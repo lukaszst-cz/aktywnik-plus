@@ -6,7 +6,7 @@ const MAX_BACKUP_BYTES=2*1024*1024;
 const MAX_ENTRIES=5000;
 const MAX_CLASSES=100;
 const MAX_JOIN_REQUESTS=1000;
-const defaultState={schemaVersion:3,pilot:{started:false,childDisplayName:''},activeTimer:null,favorites:['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'],entries:[],rewards:[],classes:[],joinRequests:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
+const defaultState={schemaVersion:4,pilot:{started:false,childDisplayName:''},activeTimer:null,favorites:['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'],entries:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
 let state=load(); let selected=null; let reportType='month';
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
@@ -124,8 +124,119 @@ function acceptJoinRequest(id){const req=(state.joinRequests||[]).find(r=>r.id==
 function rejectJoinRequest(id){const req=(state.joinRequests||[]).find(r=>r.id===id);if(req){req.status='rejected';persist()}}
 function addPaperChild(){const classId=$('#paperClassId').value,name=cleanText($('#paperChildName').value,60);const klass=(state.classes||[]).find(c=>c.id===classId);if(!klass||!name)return;klass.children=klass.children||[];if(klass.children.some(c=>String(c.name||'').toLowerCase()===name.toLowerCase())){alert('To dziecko jest już na liście tej klasy.');return}klass.children.push({id:crypto.randomUUID(),name,mode:'paper',reportStatus:'missing',joinedAt:new Date().toISOString()});$('#paperChildName').value='';persist()}
 function setReportStatus(classId,childId,status){const klass=(state.classes||[]).find(c=>c.id===classId);const child=klass?.children?.find(c=>c.id===childId);if(child){child.reportStatus=status;persist()}}
-function renderClasses(){const classes=(state.classes||[]).filter(c=>!c.archived);const box=$('#classList');if(!box)return;box.innerHTML='';classes.forEach(c=>{const children=c.children||[];const el=document.createElement('div');el.className='entry';const childRows=children.map(ch=>`<div class="class-child"><span><strong>${escapeHtml(ch.name)}</strong> · ${ch.mode==='paper'?'papier':ch.mode==='hybrid'?'hybrydowo':'cyfrowo'}</span><select data-report-class="${escapeAttr(c.id)}" data-report-child="${escapeAttr(ch.id)}"><option value="missing" ${ch.reportStatus==='missing'?'selected':''}>brak raportu</option><option value="preparing" ${ch.reportStatus==='preparing'?'selected':''}>w przygotowaniu</option><option value="submitted" ${ch.reportStatus==='submitted'?'selected':''}>oddany</option><option value="reviewed" ${ch.reportStatus==='reviewed'?'selected':''}>sprawdzony</option></select></div>`).join('');el.innerHTML=`<div style="width:100%"><strong>${escapeHtml(c.name)}</strong><small>${escapeHtml(c.schoolYear)} · kod klasy: <b>${escapeHtml(c.code)}</b> · ${children.length} dzieci</small>${childRows?'<div class="class-children">'+childRows+'</div>':'<small>Brak dzieci w klasie.</small>'}</div>`;box.append(el)});if(!classes.length)box.innerHTML='<small>Nie utworzono jeszcze żadnej klasy.</small>';const select=$('#paperClassId');if(select)select.innerHTML=classes.map(c=>`<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)} — ${escapeHtml(c.schoolYear)}</option>`).join('');$$('[data-report-child]').forEach(s=>s.onchange=()=>setReportStatus(s.dataset.reportClass,s.dataset.reportChild,s.value))}
+function renderClasses(){const classes=(state.classes||[]).filter(c=>!c.archived);const box=$('#classList');if(!box)return;box.innerHTML='';classes.forEach(c=>{const children=c.children||[];const el=document.createElement('div');el.className='entry';const childRows=children.map(ch=>`<div class="class-child"><span><strong>${escapeHtml(ch.name)}</strong> · ${ch.mode==='paper'?'papier':ch.mode==='hybrid'?'hybrydowo':'cyfrowo'}</span><select data-report-class="${escapeAttr(c.id)}" data-report-child="${escapeAttr(ch.id)}"><option value="missing" ${ch.reportStatus==='missing'?'selected':''}>brak raportu</option><option value="preparing" ${ch.reportStatus==='preparing'?'selected':''}>w przygotowaniu</option><option value="submitted" ${ch.reportStatus==='submitted'?'selected':''}>oddany</option><option value="reviewed" ${ch.reportStatus==='reviewed'?'selected':''}>sprawdzony</option></select></div>`).join('');el.innerHTML=`<div style="width:100%"><strong>${escapeHtml(c.name)}</strong><small>${escapeHtml(c.schoolYear)} · kod klasy: <b>${escapeHtml(c.code)}</b> · ${children.length} dzieci</small>${childRows?'<div class="class-children">'+childRows+'</div>':'<small>Brak dzieci w klasie.</small>'}</div>`;box.append(el)});if(!classes.length)box.innerHTML='<small>Nie utworzono jeszcze żadnej klasy.</small>';const select=$('#paperClassId');if(select)select.innerHTML=classes.map(c=>`<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)} — ${escapeHtml(c.schoolYear)}</option>`).join('');const importSelect=$('#importClassId');if(importSelect)importSelect.innerHTML=classes.map(c=>`<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)} — ${escapeHtml(c.schoolYear)}</option>`).join('');$('[data-report-child]').forEach(s=>s.onchange=()=>setReportStatus(s.dataset.reportClass,s.dataset.reportChild,s.value))}
 function renderJoinRequests(){const pending=(state.joinRequests||[]).filter(r=>r.status==='pending');const box=$('#classJoinRequests');if(!box)return;$('#classRequestBadge').textContent=pending.length?`${pending.length} oczekuje`:'';box.innerHTML='';pending.forEach(r=>{const klass=(state.classes||[]).find(c=>c.id===r.classId);const el=document.createElement('div');el.className='entry';el.innerHTML=`<div><strong>${escapeHtml(r.childName)}</strong><small>${escapeHtml(klass?.name||'Klasa')} · ${r.mode==='paper'?'papier':r.mode==='hybrid'?'hybrydowo':'cyfrowo'}</small></div><div class="entry-actions"><button class="primary" data-join-accept="${escapeAttr(r.id)}">Akceptuj</button><button class="ghost" data-join-reject="${escapeAttr(r.id)}">Odrzuć</button></div>`;box.append(el)});if(!pending.length)box.innerHTML='<small>Brak oczekujących zgłoszeń.</small>';$$('[data-join-accept]').forEach(b=>b.onclick=()=>acceptJoinRequest(b.dataset.joinAccept));$$('[data-join-reject]').forEach(b=>b.onclick=()=>rejectJoinRequest(b.dataset.joinReject))}
+
+
+let pendingPaperImportRows=[];
+
+function parseDurationValue(value){
+  const raw=cleanText(value,40).toLowerCase().replace(',', '.');
+  if(!raw)return 0;
+  const hhmm=raw.match(/^(\d{1,2})\s*:\s*(\d{1,2})$/);
+  if(hhmm)return clampInt(Number(hhmm[1])*60+Number(hhmm[2]),1,600,0);
+  const h=raw.match(/(\d+(?:\.\d+)?)\s*h/);
+  const m=raw.match(/(\d+)\s*min/);
+  if(h||m){
+    const total=(h?Number(h[1])*60:0)+(m?Number(m[1]):0);
+    return clampInt(total,1,600,0);
+  }
+  return clampInt(raw.replace(/[^0-9.]/g,''),1,600,0);
+}
+function normalizeImportRow(row){
+  if(Array.isArray(row))row={date:row[0],activity:row[1],minutes:row[2],effort:row[3],note:row[4]};
+  if(!row||typeof row!=='object')return null;
+  const map={};Object.entries(row).forEach(([k,v])=>map[String(k).toLowerCase().trim()]=v);
+  const date=cleanText(map.date??map.data??map['data aktywności'],20);
+  const activity=cleanText(map.activity??map.aktywnosc??map['aktywność']??map['rodzaj aktywności']??map.rodzaj,80);
+  const minutes=parseDurationValue(map.minutes??map.minuty??map.czas??map['czas trwania']);
+  const effort=clampInt(map.effort??map.wysilek??map['wysiłek']??map['poziom zmęczenia'],1,5,2);
+  const note=cleanText(map.note??map.uwagi??map['uwaga']??map['podpis / uwagi opiekuna'],160);
+  if(!allowedActivityDate(date)||!activity||!minutes)return null;
+  return {date,activity,minutes,effort,note};
+}
+function parseDelimitedImport(text){
+  const lines=String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  if(!lines.length)return [];
+  const first=lines[0];
+  const delimiter=first.includes(';')?';':first.includes('\t')?'\t':first.includes('|')?'|':',';
+  const split=line=>line.split(delimiter).map(x=>x.trim().replace(/^"|"$/g,''));
+  let start=0,headers=null;
+  const firstCols=split(lines[0]);
+  if(firstCols.some(x=>/data|aktywn|czas|minutes|activity/i.test(x))){
+    headers=firstCols.map(x=>x.toLowerCase().trim());start=1;
+  }
+  return lines.slice(start).map(line=>{
+    const cols=split(line);
+    if(headers){const o={};headers.forEach((h,i)=>o[h]=cols[i]??'');return normalizeImportRow(o)}
+    return normalizeImportRow(cols);
+  }).filter(Boolean);
+}
+function parseImportText(text){
+  const raw=String(text||'').trim();if(!raw)return [];
+  if(raw.startsWith('{')||raw.startsWith('[')){
+    try{const parsed=JSON.parse(raw);const rows=Array.isArray(parsed)?parsed:(Array.isArray(parsed.rows)?parsed.rows:[]);return rows.map(normalizeImportRow).filter(Boolean)}catch{}
+  }
+  return parseDelimitedImport(raw);
+}
+async function loadPaperImportFile(file){
+  if(!file)return;
+  try{
+    const text=await file.text();
+    $('#ocrPaste').value=text;
+    $('#paperImportStatus').innerHTML='<p class="status-approved">Plik wczytany. Sprawdź podgląd przed zapisem.</p>';
+  }catch{$('#paperImportStatus').innerHTML='<p class="status-pending">Nie udało się odczytać pliku.</p>'}
+}
+function renderPaperImportPreview(){
+  pendingPaperImportRows=parseImportText($('#ocrPaste').value);
+  const box=$('#paperImportPreview');
+  if(!pendingPaperImportRows.length){
+    box.innerHTML='<p class="status-pending">Nie znaleziono poprawnych wierszy. Użyj CSV/JSON lub formatu: data; aktywność; czas; wysiłek; uwagi.</p>';
+    $('#savePaperImportBtn').disabled=true;return;
+  }
+  box.innerHTML='<div class="import-table"><div class="import-head">Data</div><div class="import-head">Aktywność</div><div class="import-head">Min</div><div class="import-head">Wysiłek</div><div class="import-head">Uwagi</div>'+pendingPaperImportRows.map((r,i)=>`
+    <input data-import-field="date" data-import-row="${i}" value="${escapeAttr(r.date)}">
+    <input data-import-field="activity" data-import-row="${i}" value="${escapeAttr(r.activity)}">
+    <input data-import-field="minutes" data-import-row="${i}" type="number" min="1" max="600" value="${r.minutes}">
+    <input data-import-field="effort" data-import-row="${i}" type="number" min="1" max="5" value="${r.effort}">
+    <input data-import-field="note" data-import-row="${i}" value="${escapeAttr(r.note)}">
+  `).join('')+'</div>';
+  $('#savePaperImportBtn').disabled=false;
+  $('#paperImportStatus').innerHTML='<p class="status-approved">Rozpoznano '+pendingPaperImportRows.length+' wierszy. Możesz je poprawić przed zapisem.</p>';
+}
+function collectPaperImportPreview(){
+  const rows=pendingPaperImportRows.map((r,i)=>{
+    const get=f=>document.querySelector(`[data-import-row="${i}"][data-import-field="${f}"]`)?.value??'';
+    return normalizeImportRow({date:get('date'),activity:get('activity'),minutes:get('minutes'),effort:get('effort'),note:get('note')});
+  }).filter(Boolean);
+  return rows;
+}
+function savePaperImport(){
+  const rows=collectPaperImportPreview(),childName=cleanText($('#importChildName').value,60),classId=$('#importClassId').value;
+  if(!rows.length||!childName){$('#paperImportStatus').innerHTML='<p class="status-pending">Podaj dziecko i co najmniej jeden poprawny wiersz.</p>';return}
+  state.paperImports=state.paperImports||[];
+  state.paperImports.unshift({id:crypto.randomUUID(),classId,childName,rows,source:'paper_ocr',createdAt:new Date().toISOString()});
+  const klass=(state.classes||[]).find(c=>c.id===classId);
+  if(klass){
+    klass.children=klass.children||[];
+    let child=klass.children.find(c=>String(c.name||'').toLowerCase()===childName.toLowerCase());
+    if(!child){child={id:crypto.randomUUID(),name:childName,mode:'paper',reportStatus:'submitted',joinedAt:new Date().toISOString()};klass.children.push(child)}
+    else child.reportStatus='submitted';
+  }
+  pendingPaperImportRows=[];
+  $('#ocrPaste').value='';$('#paperImportFile').value='';$('#savePaperImportBtn').disabled=true;
+  persist();
+  $('#paperImportStatus').innerHTML='<p class="status-approved">Karta zapisana lokalnie i oznaczona jako oddana.</p>';
+}
+function renderPaperImports(){
+  const box=$('#paperImportHistory');if(!box)return;
+  const imports=state.paperImports||[];
+  box.innerHTML=imports.slice(0,20).map(x=>{
+    const klass=(state.classes||[]).find(c=>c.id===x.classId);
+    const total=(x.rows||[]).reduce((s,r)=>s+Number(r.minutes||0),0);
+    return `<div class="entry"><div><strong>${escapeHtml(x.childName)} · ${(x.rows||[]).length} wpisów</strong><small>${escapeHtml(klass?.name||'bez klasy')} · ${fmtMin(total)} · import OCR/DocPilot</small></div></div>`;
+  }).join('')||'<small>Nie zaimportowano jeszcze żadnej karty papierowej.</small>';
+}
 
 function startPilot(){const name=$('#pilotChildName').value.trim();state.pilot={started:true,childDisplayName:name||'Profil dziecka'};persist()}
 function renderPilot(){const card=$('#pilotSetupCard');if(!card)return;card.classList.toggle('hidden',!!state.pilot?.started);const label=$('#childDisplayName');if(label)label.textContent=state.pilot?.childDisplayName?`· ${state.pilot.childDisplayName}`:''}
@@ -140,11 +251,12 @@ function safeBackupState(raw){
   }).filter(Boolean);
   const classes=(Array.isArray(d.classes)?d.classes:[]).slice(0,MAX_CLASSES);
   const joinRequests=(Array.isArray(d.joinRequests)?d.joinRequests:[]).slice(0,MAX_JOIN_REQUESTS);
+  const paperImports=(Array.isArray(d.paperImports)?d.paperImports:[]).slice(0,500);
   const allowed=new Set(ACTIVITIES.map(a=>a[0]));
   const favorites=(Array.isArray(d.favorites)?d.favorites:base.favorites).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20);
-  return {...base,schemaVersion:3,pilot:{...base.pilot,...(d.pilot||{}),childDisplayName:cleanText(d.pilot?.childDisplayName,60)},activeTimer:d.activeTimer&&typeof d.activeTimer==='object'?d.activeTimer:null,favorites:favorites.length?favorites:base.favorites,entries,rewards:Array.isArray(d.rewards)?d.rewards.slice(0,1000):[],classes,joinRequests,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
+  return {...base,schemaVersion:4,pilot:{...base.pilot,...(d.pilot||{}),childDisplayName:cleanText(d.pilot?.childDisplayName,60)},activeTimer:d.activeTimer&&typeof d.activeTimer==='object'?d.activeTimer:null,favorites:favorites.length?favorites:base.favorites,entries,rewards:Array.isArray(d.rewards)?d.rewards.slice(0,1000):[],classes,joinRequests,paperImports:paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
-function exportBackup(){const payload={format:'aktywnik-plus-backup',version:3,exportedAt:new Date().toISOString(),data:state};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`aktywnik-plus-kopia-${today()}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);const s=$('#backupStatus');if(s)s.textContent='kopia zapisana'}
+function exportBackup(){const payload={format:'aktywnik-plus-backup',version:4,exportedAt:new Date().toISOString(),data:state};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`aktywnik-plus-kopia-${today()}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);const s=$('#backupStatus');if(s)s.textContent='kopia zapisana'}
 async function importBackup(file){if(!file)return;try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());if(parsed.format&&parsed.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');state=safeBackupState(parsed);persist();const s=$('#backupStatus');if(s)s.textContent='kopia przywrócona';alert('Kopia danych została przywrócona.')}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{$('#importBackupInput').value=''}}
 async function requestPersistentStorage(){const el=$('#storageStatus');if(!navigator.storage?.persist){if(el)el.textContent='Ta przeglądarka nie udostępnia funkcji trwałej pamięci.';return}try{const granted=await navigator.storage.persist();if(el)el.textContent=granted?'Przeglądarka przyznała trwałą pamięć dla danych Aktywnik+.':'Przeglądarka nie przyznała trwałej pamięci. Regularnie eksportuj kopię.'}catch{if(el)el.textContent='Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.'}}
 async function renderStorageStatus(){const el=$('#storageStatus');if(!el||!navigator.storage?.persisted)return;try{const persisted=await navigator.storage.persisted();if(persisted)el.textContent='Dane mają przyznaną trwałą pamięć na tym urządzeniu.'}catch{}}
@@ -152,8 +264,8 @@ function deleteLocalData(){if(!confirm('Usunąć wszystkie lokalne dane Aktywnik
 
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
-function renderAll(){renderPilot();renderTimer();renderActivities();renderChildEntries();renderApprovals();renderStats();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderStorageStatus()}
-$('#activitySearch').oninput=renderActivities;$$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(Number(b.dataset.duration)));$('#activityDuration').oninput=()=>$$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number($('#activityDuration').value)));$('#startPilotBtn').onclick=startPilot;$('#exportBackupBtn').onclick=exportBackup;$('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);$('#requestPersistentStorageBtn').onclick=requestPersistentStorage;$('#deleteLocalDataBtn').onclick=deleteLocalData;$('#createClassBtn').onclick=createClass;$('#sendJoinRequestBtn').onclick=sendJoinRequest;$('#addPaperChildBtn').onclick=addPaperChild;$('#saveEntryBtn').onclick=saveEntry;$('#startTimerBtn').onclick=startActivityTimer;$('#stopTimerBtn').onclick=stopActivityTimer;$('#cancelTimerBtn').onclick=cancelActivityTimer;$('#cancelEntryBtn').onclick=()=>$('#entryCard').classList.add('hidden');$('#childModeBtn').onclick=()=>switchMode('child');$('#parentModeBtn').onclick=()=>switchMode('parent');$('#schoolModeBtn').onclick=()=>switchMode('school');$('#saveSchoolSettingsBtn').onclick=saveSchoolSettings;$('#saveRewardBtn').onclick=saveReward;$('#reportPeriod').onchange=renderStats;$('#approveAllBtn').onclick=()=>{state.entries.forEach(e=>{if(e.status==='pending')e.status='approved'});persist()};$('#editFavoritesBtn').onclick=()=>{renderFavoritesEditor();$('#favoritesDialog').showModal()};$$('[data-report]').forEach(b=>b.onclick=()=>{reportType=b.dataset.report;renderParentReport()});$('#exportCsvBtn').onclick=exportReportCsv;$('#printReportBtn').onclick=()=>window.print();
+function renderAll(){renderPilot();renderTimer();renderActivities();renderChildEntries();renderApprovals();renderStats();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus()}
+$('#activitySearch').oninput=renderActivities;$('#paperImportFile').onchange=e=>loadPaperImportFile(e.target.files?.[0]);$('#parsePaperImportBtn').onclick=renderPaperImportPreview;$('#savePaperImportBtn').onclick=savePaperImport;$$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(Number(b.dataset.duration)));$('#activityDuration').oninput=()=>$$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number($('#activityDuration').value)));$('#startPilotBtn').onclick=startPilot;$('#exportBackupBtn').onclick=exportBackup;$('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);$('#requestPersistentStorageBtn').onclick=requestPersistentStorage;$('#deleteLocalDataBtn').onclick=deleteLocalData;$('#createClassBtn').onclick=createClass;$('#sendJoinRequestBtn').onclick=sendJoinRequest;$('#addPaperChildBtn').onclick=addPaperChild;$('#saveEntryBtn').onclick=saveEntry;$('#startTimerBtn').onclick=startActivityTimer;$('#stopTimerBtn').onclick=stopActivityTimer;$('#cancelTimerBtn').onclick=cancelActivityTimer;$('#cancelEntryBtn').onclick=()=>$('#entryCard').classList.add('hidden');$('#childModeBtn').onclick=()=>switchMode('child');$('#parentModeBtn').onclick=()=>switchMode('parent');$('#schoolModeBtn').onclick=()=>switchMode('school');$('#saveSchoolSettingsBtn').onclick=saveSchoolSettings;$('#saveRewardBtn').onclick=saveReward;$('#reportPeriod').onchange=renderStats;$('#approveAllBtn').onclick=()=>{state.entries.forEach(e=>{if(e.status==='pending')e.status='approved'});persist()};$('#editFavoritesBtn').onclick=()=>{renderFavoritesEditor();$('#favoritesDialog').showModal()};$$('[data-report]').forEach(b=>b.onclick=()=>{reportType=b.dataset.report;renderParentReport()});$('#exportCsvBtn').onclick=exportReportCsv;$('#printReportBtn').onclick=()=>window.print();
 setInterval(renderTimer,1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderTimer()});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
