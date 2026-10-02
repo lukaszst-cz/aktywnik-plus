@@ -45,6 +45,7 @@ Przeczytaj przed pilotażem:
 
 - **strefa dziecka bez przełącznika do rodzica/szkoły**;
 - **strefa rodzica chroniona PIN-em** z automatycznym blokowaniem po bezczynności;
+- zmiana PIN-u rodzica oraz wybór czasu automatycznej blokady;
 - **wiele profili dzieci pod jednym rodzicem**;
 - wybór jednego aktywnego profilu dziecka na danym urządzeniu — zmiana wymaga strefy rodzica;
 - panel dziecka z dużą listą aktywności;
