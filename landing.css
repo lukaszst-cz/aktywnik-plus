@@ -3,3 +3,8 @@
 .platform-cards{grid-template-columns:repeat(3,1fr)}
 footer a{color:inherit;font-weight:700}
 @media(max-width:780px){.platform-cards{grid-template-columns:1fr}}
+
+.support-section{text-align:center}
+.support-section>div{max-width:760px;margin:auto;padding:28px;background:#fff7ed;border:1px solid #fed7aa;border-radius:24px}
+.support-section h2{margin:14px 0}
+.support-section p{margin:0 auto 20px;line-height:1.7;color:#475569}
