@@ -115,3 +115,12 @@ Przed produkcyjnym wdrożeniem szkolnym należy wykonać co najmniej formalny sc
 ## Tryb papierowy
 
 Rodzic może pozostać przy papierowym dzienniku, jeśli szkoła dopuszcza taki wariant. Dziecko nie powinno być przez to gorzej traktowane. Dane papierowe nie muszą być przepisywane do systemu poza informacjami potrzebnymi nauczycielowi, np. statusem raportu, plusem lub oceną.
+
+
+## Oficjalne punkty odniesienia
+
+- UODO — administrator danych w placówce oświatowej: https://uodo.gov.pl/pl/file/1388
+- RODO, art. 28 — podmiot przetwarzający i umowa powierzenia: https://eur-lex.europa.eu/eli/reg/2016/679
+- UODO — ocena skutków dla ochrony danych (DPIA): https://uodo.gov.pl/pl/598/3617
+
+Przed wdrożeniem produkcyjnym szkoła powinna uzgodnić model z dyrektorem i IOD oraz dobrać podstawę prawną i okresy retencji do konkretnego sposobu używania systemu.
