@@ -121,9 +121,8 @@ async function run(){
     purgeState.classes=[{id:'class-purge',name:'TEST',children:[{id:'row',familyChildId:'purge-child',name:'Purge'}]}];
     purgeState.paperImports=[{id:'import-purge',familyChildId:'purge-child',rows:[]}];
     purgeState.entries.push({id:'entry-purge',childId:'purge-child',date:'2026-10-01',activity:'Spacer',minutes:10,status:'approved'});
-    w.state=purgeState;
-    w.purgeChildLocalData('purge-child');
-    if(w.state.entries.some(x=>x.childId==='purge-child')||w.state.classes[0].children.length||w.state.paperImports.length)throw new Error('cascade purge failed');
+    w.purgeChildLocalData('purge-child',purgeState);
+    if(purgeState.entries.some(x=>x.childId==='purge-child')||purgeState.classes[0].children.length||purgeState.paperImports.length)throw new Error('cascade purge failed');
 
     w.clearPinFailures();
     for(let i=0;i<5;i++)w.registerPinFailure();
