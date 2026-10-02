@@ -86,6 +86,17 @@
         <div class="form-grid">
           <label>Data<input id="activityDate" type="date" /></label>
           <label>Czas (min)<input id="activityDuration" type="number" min="1" max="600" value="30" /></label>
+          <div class="wide duration-box">
+            <span class="duration-label">Szybki czas zajęć</span>
+            <div class="duration-presets" role="group" aria-label="Szybki wybór czasu">
+              <button type="button" data-duration="30">30 min</button>
+              <button type="button" data-duration="45">45 min</button>
+              <button type="button" data-duration="60">1 h</button>
+              <button type="button" data-duration="90">1,5 h</button>
+              <button type="button" data-duration="120">2 h</button>
+            </div>
+            <small>Wybierz rzeczywisty czas treningu albo wpisz własną liczbę minut. To zapis zajęć, nie cel do osiągnięcia.</small>
+          </div>
           <label>Wysiłek 1–5<input id="activityEffort" type="range" min="1" max="5" value="2" /></label>
           <label class="wide">Notatka (opcjonalnie)<input id="activityNote" maxlength="120" placeholder="np. z tatą, z kolegami, trening" /></label>
         </div>
