@@ -216,6 +216,36 @@ function switchMode(mode,bypass=false){
   if(mode==='parent'||mode==='school')touchParentSession();
   renderAll();
 }
+function renderParentChildren(){
+  const select=$('#parentChildSelect');if(!select)return;if(!parentUnlocked()){select.innerHTML='';return}
+  if(!getChild(parentSelectedChildId))parentSelectedChildId=state.activeChildId||state.children[0]?.id||null;
+  select.innerHTML=state.children.map(c=>'<option value="'+escapeAttr(c.id)+'" '+(c.id===parentSelectedChildId?'selected':'')+'>'+escapeHtml(c.displayName)+(c.id===state.activeChildId?' — profil urządzenia':'')+'</option>').join('');
+  const child=parentChild();$('#childApprovalMode').value=approvalRequired(child)?'required':'automatic';$('#joinChildName').value=child?.displayName||'';renderRewardChildSelect();
+}
+function addChild(){
+  if(!guardParent())return;const name=cleanText($('#newChildName').value,60);if(!name)return;
+  const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:true,createdAt:nowIso()};state.children.push(child);parentSelectedChildId=child.id;$('#newChildName').value='';persist();
+}
+function renameChild(){
+  if(!guardParent())return;const child=parentChild();if(!child)return;const name=cleanText(prompt('Nowa nazwa profilu dziecka:',child.displayName),60);if(!name)return;child.displayName=name;persist();
+}
+function setDeviceChild(){
+  if(!guardParent())return;const child=parentChild();if(!child)return;
+  if(state.activeTimer&&state.activeTimer.childId!==child.id){alert('Najpierw zakończ trwający pomiar aktywności na obecnym profilu.');return}
+  state.activeChildId=child.id;persist();
+}
+function removeChild(){
+  if(!guardParent())return;const child=parentChild();if(!child)return;if(state.children.length<=1){alert('Musi pozostać co najmniej jeden profil dziecka.');return}
+  if(!confirm('Usunąć profil '+child.displayName+' oraz jego lokalne wpisy, historię i oceny?'))return;
+  state.children=state.children.filter(c=>c.id!==child.id);state.entries=state.entries.filter(e=>e.childId!==child.id);state.rewards=state.rewards.filter(r=>r.childId!==child.id);state.approvalEvents=state.approvalEvents.filter(ev=>ev.childId!==child.id);state.joinRequests=state.joinRequests.filter(r=>r.childId!==child.id);
+  if(state.activeTimer?.childId===child.id)state.activeTimer=null;if(state.activeChildId===child.id)state.activeChildId=state.children[0].id;parentSelectedChildId=state.activeChildId;persist();
+}
+function saveApprovalMode(){if(!guardParent())return;const child=parentChild();if(!child)return;child.requireParentApproval=$('#childApprovalMode').value==='required';persist()}
+function renderRewardChildSelect(){
+  const sel=$('#rewardChildId');if(!sel)return;const previous=sel.value;sel.innerHTML=state.children.map(c=>'<option value="'+escapeAttr(c.id)+'">'+escapeHtml(c.displayName)+'</option>').join('');
+  if(getChild(previous))sel.value=previous;else if(parentChild())sel.value=parentChild().id;
+}
+
 function renderSchoolSettings(){const c=state.school||defaultState.school;$('#deploymentModel').value=c.deploymentModel||'school_saas';$('#schoolMode').value=c.mode;$('#requireParentApproval').value=c.requireParentApproval?'yes':'no';$('#useEffort').value=c.useEffort?'yes':'no';$('#usePluses').value=c.usePluses?'yes':'no';$('#gradeRule').value=c.gradeRule||'manual';$('#maxCountedMinutes').value=c.maxCountedMinutes??'';$('#rewardDate').value=$('#rewardDate').value||today();const box=$('#rewardHistory');box.innerHTML='';[...(state.rewards||[])].sort((a,b)=>String(b.date??'').localeCompare(String(a.date??''))).forEach(r=>{const el=document.createElement('div');el.className='entry';el.innerHTML=`<div><strong>${r.type==='plus'?'Plus':'Ocena'} · ${escapeHtml(r.value)}</strong><small>${escapeHtml(r.date)}${r.note?` · ${escapeHtml(r.note)}`:''}</small></div>`;box.append(el)});if(!(state.rewards||[]).length)box.innerHTML='<small>Brak zapisanych plusów i ocen.</small>'}
 function saveSchoolSettings(){state.school={deploymentModel:$('#deploymentModel').value,mode:$('#schoolMode').value,requireParentApproval:$('#requireParentApproval').value==='yes',useEffort:$('#useEffort').value==='yes',usePluses:$('#usePluses').value==='yes',gradeRule:$('#gradeRule').value,maxCountedMinutes:$('#maxCountedMinutes').value?Number($('#maxCountedMinutes').value):null};persist()}
 function saveReward(){const value=$('#rewardValue').value.trim();if(!value)return;state.rewards=state.rewards||[];state.rewards.unshift({id:crypto.randomUUID(),type:$('#rewardType').value,value,date:$('#rewardDate').value||today(),note:$('#rewardNote').value.trim(),createdAt:new Date().toISOString()});$('#rewardValue').value='';$('#rewardNote').value='';persist()}
