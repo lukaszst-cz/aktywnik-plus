@@ -160,6 +160,7 @@ jobs:
       - name: Backend API unit smoke
         run: |
           node - <<'NODE'
+          (async()=>{
           function mock(){
             const out={statusCode:200,headers:{},body:null};
             return {
@@ -239,4 +240,5 @@ jobs:
           if(!calls.some(x=>x.url.includes('/rest/v1/personal_activities'))) throw new Error('personal sync write missing');
           global.fetch=originalFetch;
           console.log('personal sync beta smoke OK');
+          })().catch(err=>{console.error(err);process.exit(1)});
           NODE
