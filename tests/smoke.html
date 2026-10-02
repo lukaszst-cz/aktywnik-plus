@@ -17,8 +17,7 @@ function pass(msg){result.className='pass';result.textContent='PASS: '+msg;docum
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 async function loadApp(label){
   const f=document.getElementById('appFrame');
-  f.src='../app.html?smoke='+label+'-'+Date.now();
-  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('app load timeout')),5000);f.onload=()=>{clearTimeout(timer);resolve()}});
+  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('app load timeout')),5000);f.onload=()=>{clearTimeout(timer);resolve()};f.src='../app.html?smoke='+label+'-'+Date.now()});
   await sleep(220);
   return {w:f.contentWindow,d:f.contentDocument};
 }
