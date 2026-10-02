@@ -2,31 +2,41 @@
 
 Aktywnik+ to prosty dziennik aktywności dziecka z szybkim wpisem na telefonie, akceptacją rodzica i raportami okresowymi.
 
-## Założenia
+## Co już działa
 
-- dziecko dodaje aktywność w kilku kliknięciach;
-- ulubione aktywności są zawsze na górze i można je dowolnie dopasować;
-- pełna lista obejmuje sport, ruch codzienny, zabawę i aktywności rodzinne;
-- wpis dziecka trafia do kolejki `do zatwierdzenia`;
-- rodzic dostaje jedną listę do akceptacji na koniec dnia;
+- panel dziecka z dużą listą aktywności;
+- ulubione aktywności do szybkiego wyboru;
+- wpis aktywności z datą, czasem, wysiłkiem i notatką;
+- wieczorna lista wpisów do akceptacji przez rodzica;
 - raporty: miesięczny, kwartalny, półroczny i roczny;
-- statystyki dotyczą wyłącznie własnej historii dziecka — bez rankingów między dziećmi;
-- raport zawiera miejsce na uwagi rodzica oraz nauczyciela / wychowawcy;
-- aplikacja zapamiętuje plusy i oceny przyznane przez nauczyciela;
-- zasady przeliczania plusów na oceny ustala nauczyciel lub szkoła;
-- aplikacja nie śledzi masy ciała, kalorii ani wyglądu dziecka.
+- statystyki wyłącznie dla danego dziecka;
+- panel szkoły z wyborem trybu **cyfrowy / hybrydowy / papierowy**;
+- konfiguracja akceptacji rodzica, poziomu wysiłku, plusów i zasad oceniania;
+- historia plusów i ocen przyznanych przez nauczyciela;
+- formularz papierowy dla rodzin, które nie chcą korzystać z aplikacji.
 
 ## Jak to działa
 
-Prosty schemat dla dziecka, rodzica i nauczyciela jest tutaj:
+- **[Instrukcja dla dziecka, rodzica i nauczyciela](docs/JAK-TO-DZIALA.md)**
+- **[Konfiguracja szkoły i tryb papierowy](docs/KONFIGURACJA-SZKOLY.md)**
+- **[Plusy i oceny](docs/PLUSY-I-OCENY.md)**
+- **[Formularz papierowy](paper.html)**
 
-**[Jak działa Aktywnik+ — rodzice i nauczyciele](docs/JAK-TO-DZIALA.md)**
+Aktywnik+ nie narzuca szkolnego przelicznika plusów na oceny. Nauczyciel lub szkoła ustalają własne reguły, a aplikacja zapamiętuje przyznane plusy, oceny i uwagi.
 
-Aktywnik+ nie narzuca szkolnego przelicznika plusów na oceny. Nauczyciel może przyznawać plusy i oceny według własnych zasad, a aplikacja przechowuje ich historię przy profilu dziecka.
+Rodzic, który nie chce korzystać z aplikacji, może wybrać ścieżkę papierową. Dziecko nadal uczestniczy w tym samym programie aktywności i podlega tym samym zasadom ustalonym przez nauczyciela.
+
+## Prywatność i podejście
+
+- brak rankingów między dziećmi;
+- brak śledzenia masy ciała, kalorii i wyglądu;
+- dane demonstracyjne nie powinny zawierać prawdziwych danych dzieci;
+- rodzic powinien móc eksportować i usuwać dane dziecka;
+- cyfrowa i papierowa ścieżka mają być równoważne.
 
 ## Prototyp
 
-Pierwsza wersja działa bez backendu. Dane są zapisywane lokalnie w przeglądarce (`localStorage`), dzięki czemu można od razu przetestować interfejs i przepływ.
+Obecny prototyp zapisuje dane lokalnie w przeglądarce (`localStorage`). To pozwala testować interfejs bez zakładania konta i bez wysyłania danych na serwer.
 
 Uruchom lokalnie:
 
@@ -36,24 +46,16 @@ python -m http.server 8080
 
 Następnie otwórz `http://localhost:8080`.
 
-## Kierunek wersji produkcyjnej
+## Wersja produkcyjna
 
-Docelowo: PWA + konto rodzica + profil dziecka + synchronizacja i reguły dostępu po stronie backendu. Planowany stos: Next.js / TypeScript / Supabase. Powiadomienie końca dnia powinno w wersji produkcyjnej korzystać z Web Push, aby działało także wtedy, gdy aplikacja nie jest otwarta.
-
-## Prywatność
-
-Repozytorium nie powinno zawierać prawdziwych danych dzieci. Wersje demonstracyjne korzystają wyłącznie z danych testowych. Rodzic powinien mieć możliwość eksportu i usunięcia danych dziecka.
+Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + reguły dostępu po stronie backendu. Planowany stos: Next.js / TypeScript / Supabase. Powiadomienie końca dnia będzie korzystać z Web Push.
 
 ## Demo i pobieranie
 
-Po publikacji repozytorium:
-
 - demo PWA: `https://lukaszst-cz.github.io/aktywnik-plus/`
 - repozytorium: `https://github.com/lukaszst-cz/aktywnik-plus`
-- gotowe paczki: `https://github.com/lukaszst-cz/aktywnik-plus/releases`
-
-Projekt jest przygotowany tak, aby można było wysłać jeden publiczny link jako przykład własnej pracy i jednocześnie pozwolić innym rodzicom przetestować aplikację.
+- wydania: `https://github.com/lukaszst-cz/aktywnik-plus/releases`
 
 ## Status
 
-`0.1 prototype` — działający interfejs PWA, lokalne dane, ulubione aktywności, kolejka akceptacji rodzica oraz raporty okresowe. Następny etap to konta i synchronizacja między urządzeniami.
+`0.1 prototype` — mobilny interfejs, lokalne dane, ulubione aktywności, akceptacja rodzica, raporty okresowe, konfiguracja szkoły, plusy/oceny i alternatywa papierowa.
