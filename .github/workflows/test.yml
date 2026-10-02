@@ -34,6 +34,7 @@ jobs:
 
           with open("sw.js", encoding="utf-8") as f:
               sw=f.read()
+          assert "event.request.mode==='navigate'" in sw, "navigation fallback missing"
           assets=re.findall(r"'(\./[^']+)'", sw)
           assert assets, "service worker asset list missing"
           for asset in assets:
