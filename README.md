@@ -26,6 +26,21 @@ Aktywnik+ nie narzuca szkolnego przelicznika plusów na oceny. Nauczyciel lub sz
 
 Rodzic, który nie chce korzystać z aplikacji, może wybrać ścieżkę papierową. Dziecko nadal uczestniczy w tym samym programie aktywności i podlega tym samym zasadom ustalonym przez nauczyciela.
 
+## Modele wdrożenia
+
+Aktywnik+ jest przygotowany pod trzy warianty:
+
+- **Rodzinny** — rodzic prowadzi profil dziecka niezależnie od szkoły;
+- **Szkolny SaaS** — szkoła zarządza swoją przestrzenią danych, a Aktywnik+ dostarcza usługę techniczną;
+- **School Self-Hosted** — szkoła lub organ prowadzący uruchamia własną instancję i własną bazę.
+
+Dokumentacja:
+- **[Modele wdrożenia](docs/MODELE-WDROZENIA.md)**
+- **[Role i uprawnienia](docs/ROLE-I-UPRAWNIENIA.md)**
+- **[Dane i prywatność](docs/DANE-I-PRYWATNOSC.md)**
+- **[Architektura backendu](docs/ARCHITEKTURA-BACKENDU.md)**
+- **[Klasy i dołączanie dzieci](docs/KLASY-I-DOLACZANIE.md)**
+
 ## Prywatność i podejście
 
 - brak rankingów między dziećmi;
