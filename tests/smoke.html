@@ -117,7 +117,13 @@ async function run(){
     if(migrated.children.length!==1||migrated.entries[0].childId!==migrated.children[0].id)throw new Error('legacy migration failed');
     const restored=w.safeBackupState({format:'aktywnik-plus-backup',version:4,data:saved});if(restored.children.length!==2)throw new Error('multi-child backup failed');
 
-    pass('PIN roles, multi-child isolation, child edit, parent correction/rejection, audit, migration, backup and PWA');
+    w.clearPinFailures();
+    for(let i=0;i<5;i++)w.registerPinFailure();
+    if(w.pinLockRemainingMs()<=0)throw new Error('PIN lockout failed');
+    w.clearPinFailures();
+    if(w.pinLockRemainingMs()>0)throw new Error('PIN lockout reset failed');
+
+    pass('PIN roles, PIN lockout, multi-child isolation, child edit, parent correction/rejection, audit, migration, backup and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
