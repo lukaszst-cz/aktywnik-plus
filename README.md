@@ -58,6 +58,8 @@ Przeczytaj przed pilotażem:
 - możliwość ustawienia dla każdego dziecka: akceptacja rodzica wymagana albo automatyczne zatwierdzanie;
 - raporty: miesięczny, kwartalny, półroczny i roczny;
 - **Eksport CSV** zatwierdzonych wpisów dla nauczyciela;
+- **Skan/import kart papierowych** — CSV/JSON/TXT lub tekst OCR z podglądem i poprawkami;
+- przygotowany przepływ **DocPilot → OCR → Aktywnik+**;
 - statystyki wyłącznie dla danego dziecka;
 - panel szkoły z wyborem trybu **cyfrowy / hybrydowy / papierowy**;
 - konfiguracja akceptacji rodzica, poziomu wysiłku, plusów i zasad oceniania;
@@ -135,6 +137,18 @@ python -m http.server 8080
 
 Następnie otwórz `http://localhost:8080`.
 
+## Dostęp bez tarcia
+
+W pilocie 0.2.0 nie ma kont serwerowych, ale strefa rodzica wymaga lokalnego PIN-u. Dziecko nie potrzebuje e-maila ani klasycznego hasła.
+
+W przyszłej wersji synchronizowanej:
+- rodzic: preferowany passkey lub magic link;
+- dziecko: jednorazowe parowanie kodem/QR bez własnego e-maila;
+- nauczyciel: konto szkoły / Google / Microsoft SSO albo magic link;
+- konto jest potrzebne dopiero do synchronizacji między urządzeniami, klas online i kopii chmurowej.
+
+Szczegóły: [Logowanie bez tarcia](docs/LOGOWANIE-BEZ-TARCIA.md) oraz [Rodzina, urządzenia i synchronizacja](docs/FAMILY-SYNC.md).
+
 ## Wersja produkcyjna
 
 Docelowo: PWA + osobne konta rodzic/dziecko + synchronizacja między urządzeniami + reguły dostępu po stronie backendu. Rodzic będzie mógł mieć wiele dzieci, wygenerować dla każdego jednorazowy kod lub QR do sparowania urządzenia dziecka, a dziecko zobaczy wyłącznie swój profil. Planowany stos: Next.js / TypeScript / Supabase z Row Level Security. Powiadomienie końca dnia będzie korzystać z Web Push.
@@ -143,7 +157,8 @@ Szczegóły: **[Rodzina, urządzenia i synchronizacja](docs/FAMILY-SYNC.md)**.
 
 ## Demo i pobieranie
 
-- demo PWA: publikowane przez Vercel; stały adres zostanie wpisany po przypisaniu deploymentu do konta
+- **wersja publiczna / PWA:** https://aktywnik-plus.vercel.app
+- **instrukcja dla nauczyciela:** https://aktywnik-plus.vercel.app/dla-nauczyciela.html
 - repozytorium: `https://github.com/lukaszst-cz/aktywnik-plus`
 - wydania: `https://github.com/lukaszst-cz/aktywnik-plus/releases`
 
