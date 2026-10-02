@@ -366,9 +366,60 @@ async function renderStorageStatus(){const el=$('#storageStatus');if(!el||!paren
 function deleteLocalData(){if(!guardParent())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;localStorage.removeItem(KEY);sessionStorage.removeItem(PARENT_SESSION_KEY);location.reload()}
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
-function renderAll(){renderPilot();renderTimer();renderActivities();renderChildEntries();renderApprovals();renderStats();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderStorageStatus()}
-$('#activitySearch').oninput=renderActivities;$('#startPilotBtn').onclick=startPilot;$('#exportBackupBtn').onclick=exportBackup;$('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);$('#requestPersistentStorageBtn').onclick=requestPersistentStorage;$('#deleteLocalDataBtn').onclick=deleteLocalData;$('#createClassBtn').onclick=createClass;$('#sendJoinRequestBtn').onclick=sendJoinRequest;$('#addPaperChildBtn').onclick=addPaperChild;$('#saveEntryBtn').onclick=saveEntry;$('#startTimerBtn').onclick=startActivityTimer;$('#stopTimerBtn').onclick=stopActivityTimer;$('#cancelTimerBtn').onclick=cancelActivityTimer;$('#cancelEntryBtn').onclick=()=>$('#entryCard').classList.add('hidden');$('#childModeBtn').onclick=()=>switchMode('child');$('#parentModeBtn').onclick=()=>switchMode('parent');$('#schoolModeBtn').onclick=()=>switchMode('school');$('#saveSchoolSettingsBtn').onclick=saveSchoolSettings;$('#saveRewardBtn').onclick=saveReward;$('#reportPeriod').onchange=renderStats;$('#approveAllBtn').onclick=()=>{state.entries.forEach(e=>{if(e.status==='pending')e.status='approved'});persist()};$('#editFavoritesBtn').onclick=()=>{renderFavoritesEditor();$('#favoritesDialog').showModal()};$$('[data-report]').forEach(b=>b.onclick=()=>{reportType=b.dataset.report;renderParentReport()});$('#exportCsvBtn').onclick=exportReportCsv;$('#printReportBtn').onclick=()=>window.print();
+function renderAll(){
+  renderPilot();
+  if(!appReady())return;
+  const child=activeChild();if(!child)return;
+  renderTimer();renderActivities();renderChildEntries();renderChildRewards();renderStats();
+  if(parentUnlocked()){
+    renderParentChildren();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderStorageStatus();
+  }else{
+    $('#approvalList').innerHTML='';$('#approvalHistory').innerHTML='';$('#pendingCount').textContent='0';$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(currentMode!=='child')currentMode='child';
+  }
+  $('#childPanel').classList.toggle('hidden',currentMode!=='child');
+  $('#parentPanel').classList.toggle('hidden',currentMode!=='parent');
+  $('#schoolPanel').classList.toggle('hidden',currentMode!=='school');
+}
+$('#activitySearch').oninput=renderActivities;
+$('#startPilotBtn').onclick=startPilot;
+$('#parentAccessBtn').onclick=openParentGate;
+$('#unlockParentBtn').onclick=unlockParent;
+$('#parentPinInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();unlockParent()}};
+$('#lockParentBtn').onclick=lockParent;
+$('#openSchoolDemoBtn').onclick=()=>switchMode('school');
+$('#schoolExitBtn').onclick=()=>switchMode('parent');
+$('#parentChildSelect').onchange=e=>{if(!guardParent())return;parentSelectedChildId=e.target.value;renderAll()};
+$('#childApprovalMode').onchange=saveApprovalMode;
+$('#addChildBtn').onclick=addChild;
+$('#renameChildBtn').onclick=renameChild;
+$('#setDeviceChildBtn').onclick=setDeviceChild;
+$('#removeChildBtn').onclick=removeChild;
+$('#exportBackupBtn').onclick=exportBackup;
+$('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
+$('#requestPersistentStorageBtn').onclick=requestPersistentStorage;
+$('#deleteLocalDataBtn').onclick=deleteLocalData;
+$('#createClassBtn').onclick=createClass;
+$('#sendJoinRequestBtn').onclick=sendJoinRequest;
+$('#addPaperChildBtn').onclick=addPaperChild;
+$('#saveEntryBtn').onclick=saveEntry;
+$('#startTimerBtn').onclick=startActivityTimer;
+$('#stopTimerBtn').onclick=stopActivityTimer;
+$('#cancelTimerBtn').onclick=cancelActivityTimer;
+$('#cancelEntryBtn').onclick=cancelEntry;
+$('#saveParentCorrectionBtn').onclick=saveParentCorrection;
+$('#confirmRejectBtn').onclick=confirmReject;
+$('#saveSchoolSettingsBtn').onclick=saveSchoolSettings;
+$('#saveRewardBtn').onclick=saveReward;
+$('#rewardChildId').onchange=renderSchoolSettings;
+$('#reportPeriod').onchange=renderStats;
+$('#approveAllBtn').onclick=approveAllVisible;
+$('#editFavoritesBtn').onclick=()=>{renderFavoritesEditor();$('#favoritesDialog').showModal()};
+$$('[data-report]').forEach(b=>b.onclick=()=>{reportType=b.dataset.report;renderParentReport()});
+$('#exportCsvBtn').onclick=exportReportCsv;
+$('#printReportBtn').onclick=()=>{if(guardParent())window.print()};
 setInterval(renderTimer,1000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderTimer()});
+setInterval(()=>{if((currentMode==='parent'||currentMode==='school')&&!parentUnlocked())lockParent()},10000);
+['pointerdown','keydown','touchstart'].forEach(evt=>document.addEventListener(evt,()=>{if((currentMode==='parent'||currentMode==='school')&&parentUnlocked())touchParentSession()},{passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderTimer();if((currentMode==='parent'||currentMode==='school')&&!parentUnlocked())lockParent()}});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 renderAll();
