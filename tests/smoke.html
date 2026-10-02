@@ -64,9 +64,19 @@ async function run(){
     if(restored.entries?.length!==1 || restored.pilot?.childDisplayName!=='Test D.') throw new Error('backup validation failed');
 
     if(!('serviceWorker' in navigator)) throw new Error('service worker API unavailable');
-    const reg=await navigator.serviceWorker.ready;
-    if(!reg) throw new Error('service worker not ready');
-    const cacheNames=await caches.keys();
+    let regs=[];
+    for(let i=0;i<20;i++){
+      regs=await navigator.serviceWorker.getRegistrations();
+      if(regs.length) break;
+      await sleep(100);
+    }
+    if(!regs.length) throw new Error('service worker not registered');
+    let cacheNames=[];
+    for(let i=0;i<20;i++){
+      cacheNames=await caches.keys();
+      if(cacheNames.some(n=>n.startsWith('aktywnik-plus-'))) break;
+      await sleep(100);
+    }
     if(!cacheNames.some(n=>n.startsWith('aktywnik-plus-'))) throw new Error('PWA cache missing');
 
     const manifest=await fetch('../manifest.webmanifest').then(r=>r.json());
