@@ -5,6 +5,8 @@
 Aktualizacja przygotowująca Aktywnik+ do wygodniejszego testowania przez dziecko, rodzica i nauczyciela.
 
 ### Nowe
+- eksport raportu do CSV dla nauczyciela;
+- strona FAQ z odpowiedziami o instalacji, przeglądarce, PWA, offline, danych i raportach;
 - Start/Stop aktywności dziecka z licznikiem czasu;
 - timer przetrwa zminimalizowanie lub ponowne otwarcie PWA, ponieważ zapisuje moment rozpoczęcia;
 - możliwość ręcznego wpisu pozostaje równolegle;
