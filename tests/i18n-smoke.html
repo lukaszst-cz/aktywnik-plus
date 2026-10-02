@@ -5,6 +5,7 @@
 <select data-language-switch><option value="pl">PL</option><option value="en">EN</option></select>
 <h1 id="sample" data-i18n="app.whatDid">Co robiłeś/aś?</h1>
 <input id="sampleInput" data-i18n-placeholder="app.search" placeholder="Szukaj aktywności">
+<p id="draftSample" data-i18n="app.draftLocal">Niedokończony wpis zapisuje się automatycznie tylko na tym urządzeniu.</p>
 <h2 id="parentSample" data-i18n="parent.children">Moje dzieci</h2>
 <input id="parentPlaceholder" data-i18n-placeholder="parent.childPlaceholder" placeholder="np. Ola S.">
 <div id="result">RUNNING</div>
@@ -19,15 +20,17 @@ setTimeout(()=>{
     const select=document.querySelector('[data-language-switch]');
     if(document.documentElement.lang!=='pl')throw new Error('initial lang is not pl');
     if(document.getElementById('sample').textContent!=='Co robiłeś/aś?')throw new Error('PL text missing');
+    if(!document.getElementById('draftSample').textContent.includes('automatycznie'))throw new Error('PL draft text missing');
     select.value='en';
     select.dispatchEvent(new Event('change',{bubbles:true}));
     if(document.documentElement.lang!=='en')throw new Error('lang did not change to en');
     if(document.getElementById('sample').textContent!=='What did you do?')throw new Error('EN text missing');
     if(document.getElementById('sampleInput').placeholder!=='Search activities')throw new Error('EN placeholder missing');
+    if(document.getElementById('draftSample').textContent!=='Your unfinished entry is saved automatically on this device only.')throw new Error('EN draft text missing');
     if(document.getElementById('parentSample').textContent!=='My children')throw new Error('parent EN text missing');
     if(document.getElementById('parentPlaceholder').placeholder!=='e.g. Olivia S.')throw new Error('parent EN placeholder missing');
     if(localStorage.getItem('aktywnik_plus_lang')!=='en')throw new Error('language preference not saved');
-    pass('PL/EN switch, core + parent text, placeholders and persistence');
+    pass('PL/EN switch, core + parent + draft text, placeholders and persistence');
   }catch(e){fail(e.message||String(e))}
 },100);
 </script>
