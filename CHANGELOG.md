@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.2.0 — Family roles & multi-child
+
+Największa aktualizacja rodzinnego pilota: realne rozdzielenie interfejsu dziecka i rodzica oraz obsługa wielu dzieci.
+
+### Dziecko
+- brak widocznych przełączników do panelu rodzica i szkoły;
+- jeden aktywny profil dziecka na urządzeniu;
+- wpisy, timer, statystyki, plusy i oceny filtrowane per dziecko;
+- edycja wpisu oczekującego;
+- poprawa wpisu odrzuconego i ponowne wysłanie do rodzica;
+- czytelny status: oczekuje / zatwierdzony / do poprawy.
+
+### Rodzic
+- strefa rodzica chroniona PIN-em;
+- PIN przechowywany lokalnie jako PBKDF2 + losowa sól;
+- automatyczne blokowanie strefy po bezczynności;
+- możliwość prowadzenia wielu profili dzieci;
+- wybór dziecka zarządzanego w panelu rodzica;
+- ustawienie jednego profilu dziecka jako aktywnego na urządzeniu;
+- per-dziecko: akceptacja wymagana albo automatyczne zatwierdzanie;
+- decyzje: zatwierdź / popraw i zatwierdź / odrzuć z powodem;
+- lokalna historia decyzji i zmian;
+- usuwanie profilu dziecka wraz z jego lokalnymi danymi bez naruszania pozostałych profili.
+
+### Szkoła
+- panel szkoły nie jest dostępny bezpośrednio z widoku dziecka;
+- lokalna demonstracja szkoły dostępna dopiero z odblokowanej strefy rodzica;
+- plusy i oceny przypisywane do konkretnego dziecka;
+- przygotowany model produkcyjny: osobne konto nauczyciela, RLS i izolacja klas.
+
+### Dane i migracja
+- schemat lokalny podniesiony do wersji 4;
+- automatyczna migracja danych 0.1.x do pierwszego profilu dziecka;
+- backup 0.2.0 obejmuje wszystkie dzieci, historię decyzji i ustawienia rodzica;
+- import pokazuje podsumowanie liczby profili i wpisów przed nadpisaniem danych.
+
+### Testy
+- nowy smoke test ról rodzinnych;
+- test izolacji danych rodzeństwa;
+- test edycji przez dziecko, korekty i odrzucenia przez rodzica;
+- test historii decyzji;
+- test migracji starego formatu i backupu wielodzietnego;
+- runner Chrome DevTools Protocol czekający na faktyczny PASS/FAIL.
+
 ## 0.1.2 — Support & hardening
 
 Aktualizacja stabilizująca publiczny pilot i ujednolicająca informacje o autorze.
