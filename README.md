@@ -61,6 +61,7 @@ Przeczytaj przed pilotażem:
 - panel dziecka z dużą listą aktywności;
 - szybki podgląd tygodnia bez celów, rankingów i porównywania dzieci;
 - przycisk „Powtórz ostatnią aktywność” wypełniający ostatni typ, czas i poziom wysiłku;
+- lokalny autosave niedokończonego wpisu z bezpiecznym przywracaniem osobno dla każdego profilu;
 - widoczny status lokalnego zapisu i informacja o świeżości kopii danych w strefie rodzica;
 - ulubione aktywności do szybkiego wyboru;
 - wpis aktywności z datą, czasem, wysiłkiem i notatką;
