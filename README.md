@@ -12,13 +12,14 @@ Na tym etapie:
 - nie ma opłat;
 - dostępny jest tryb **Dla siebie** bez PIN-u rodzica i bez procesu zatwierdzania;
 - dostępny jest tryb **Rodzina** z profilem dziecka, PIN-em i zatwierdzaniem wpisów;
-- nie trzeba zakładać konta;
+- konto jest opcjonalne; tryb lokalny nadal działa bez logowania;
 - dziecko korzysta z własnego, uproszczonego widoku;
 - strefa rodzica jest chroniona lokalnym PIN-em i automatycznie się blokuje;
 - jeden rodzic może prowadzić wiele profili dzieci;
 - zmiana aktywnego profilu dziecka na urządzeniu wymaga odblokowanej strefy rodzica;
 - nie potrzeba własnego serwera;
-- dane prototypu pozostają lokalnie na urządzeniu;
+- dane nadal zapisują się lokalnie jako pierwsze;
+- w 0.5 beta istnieje bezpieczny fundament Magic Link i synchronizacji trybu osobistego;
 - rodzina może wybrać aplikację, tryb hybrydowy albo papier.
 
 Przed formalnym wdrożeniem szkolnym należy przejść do wersji z backendem, kontami, uprawnieniami i uzgodnionym modelem ochrony danych.
@@ -40,8 +41,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.4.0 — Universal**
+**Aktywnik+ 0.5.0-beta.1 — Sync Foundation**
 
+- [Release notes 0.5.0-beta.1](docs/RELEASE-0.5.0-beta.1.md)
 - [Release notes 0.4.0](docs/RELEASE-0.4.0.md)
 - [Release notes 0.3.0](docs/RELEASE-0.3.0.md)
 
@@ -152,7 +154,7 @@ Następnie otwórz `http://localhost:8080`.
 
 ## Logowanie bez tarcia
 
-W pilocie nie ma logowania. W przyszłej wersji synchronizowanej:
+W 0.5 beta logowanie jest opcjonalne i realizowane przez Magic Link. Docelowy model:
 - dziecko nie dostaje własnego e-maila ani klasycznego hasła;
 - rodzic: preferowany passkey lub magic link;
 - nauczyciel: konto szkoły / Google / Microsoft SSO albo magic link;
@@ -161,18 +163,19 @@ W pilocie nie ma logowania. W przyszłej wersji synchronizowanej:
 
 Szczegóły: [Logowanie bez tarcia](docs/LOGOWANIE-BEZ-TARCIA.md).
 
-## Backend 0.1.3
+## Backend 0.5 Sync Foundation
 
-Backendowy fundament jest już w repo:
-- `/api/health`;
-- `/api/capabilities`;
-- `backend/migrations/001_core.sql`;
-- `backend/migrations/002_supabase_rls.sql`;
-- `backend/migrations/003_family_roles.sql`;
-- `backend/migrations/004_family_rls.sql`;
-- `.env.example`.
+Backendowy fundament jest już połączony z projektem Supabase:
+- `/api/health` i `/api/capabilities`;
+- `/api/v1/sync` — beta synchronizacji trybu osobistego;
+- migracje `001–012`;
+- wszystkie tabele publiczne mają RLS;
+- osobna tabela `personal_activities` dla trybu **Dla siebie**;
+- local-first sync queue po stronie PWA;
+- Magic Link i sesja konta;
+- nowy model kluczy Supabase: publishable po stronie klienta, secret wyłącznie po stronie serwera.
 
-Backend jest domyślnie wyłączony dla synchronizacji chmurowej. Migracje 003/004 przygotowują konta dziecka, wiele dzieci na opiekuna, jednorazowe kody parowania i RLS. Włączenie wymaga prawdziwej bazy, autoryzacji i przejścia testów RLS.
+Chmura nadal jest domyślnie wyłączona przez bezpieczniki `AKTYWNIK_CLOUD_SYNC` i `AKTYWNIK_RLS_VERIFIED`. Włączenie nastąpi dopiero po testach wielu kont, konfliktów offline i synchronizacji usunięć.
 
 ## Wersja produkcyjna
 
@@ -186,4 +189,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.4.0 Universal` — lokalny pilot dla użytkownika samodzielnego i rodziny. Tryb osobisty nie wymaga rodzica ani PIN-u; tryb rodzinny zachowuje wieloprofilowość, akceptację i ochronę strefy rodzica. Dane nadal pozostają lokalnie na urządzeniu. Synchronizacja między urządzeniami i produkcyjne role szkoły pozostają wyłączone do czasu uruchomienia backendu.
+`0.5.0-beta.1 Sync Foundation` — stabilny tryb lokalny + opcjonalne konto Magic Link i bezpieczny fundament synchronizacji trybu osobistego. Local-first pozostaje zasadą: START/STOP i wpisy działają bez internetu. Chmura jest nadal fail-closed do zakończenia testów wielu kont, konfliktów offline i synchronizacji usunięć.

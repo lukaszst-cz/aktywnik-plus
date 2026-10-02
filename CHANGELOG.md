@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.0-beta.1 — Sync Foundation
+
+### Konto i synchronizacja
+- opcjonalne konto przez Magic Link, bez klasycznego hasła;
+- sesja konta z odświeżaniem tokenu i wylogowaniem;
+- local-first sync queue — zapis lokalny jest zawsze pierwszy;
+- pierwszy RLS-scoped endpoint synchronizacji trybu osobistego;
+- idempotentny upsert po `client_entry_id`;
+- synchronizacja usunięć pozostaje wyłączona do osobnego, bezpiecznego modelu konfliktów.
+
+### Supabase
+- projekt `aktywnik-plus` działa w regionie EU;
+- odzyskano do repo wdrożone migracje 008–011;
+- dodano migrację 012 i tabelę `personal_activities`;
+- wszystkie publiczne tabele mają włączony RLS;
+- Security Advisor: brak aktywnych problemów;
+- klient korzysta wyłącznie z publishable key, a klucze serwerowe nie trafiają do przeglądarki.
+
+### Produkt
+- konto/sync dostępne w PL i EN;
+- status chmury jest neutralny dla użytkownika bez konta;
+- tryb lokalny nadal działa bez konta i bez internetu.
+
 ## 0.4.0 — Universal
 
 ### Tryb osobisty

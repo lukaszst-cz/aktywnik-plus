@@ -1,0 +1,21 @@
+-- Aktywnik+ migration 009 — foreign key indexes
+-- Performance hardening based on Supabase Performance Advisor.
+
+create index if not exists idx_activities_tenant on activities(tenant_id);
+create index if not exists idx_activity_approval_events_guardian on activity_approval_events(guardian_id);
+create index if not exists idx_activity_approvals_guardian on activity_approvals(guardian_id);
+create index if not exists idx_audit_actor on audit_events(actor_id);
+create index if not exists idx_class_children_child on class_children(child_id);
+create index if not exists idx_class_teachers_teacher on class_teachers(teacher_id);
+create index if not exists idx_classes_school_year on classes(school_year_id);
+create index if not exists idx_guardians_guardian on guardians(guardian_id);
+create index if not exists idx_memberships_user on memberships(user_id);
+create index if not exists idx_pairing_codes_guardian on pairing_codes(guardian_id);
+create index if not exists idx_reports_child on reports(child_id);
+create index if not exists idx_reports_class on reports(class_id);
+create index if not exists idx_reports_submitted_by on reports(submitted_by);
+create index if not exists idx_rewards_child on rewards(child_id);
+create index if not exists idx_rewards_class on rewards(class_id);
+create index if not exists idx_rewards_teacher on rewards(teacher_id);
+create index if not exists idx_support_access_grants_granted_to on support_access_grants(granted_to);
+create index if not exists idx_support_access_grants_tenant on support_access_grants(tenant_id);
