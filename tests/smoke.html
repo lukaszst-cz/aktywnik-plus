@@ -38,6 +38,19 @@ async function run(){
     await sleep(80);
     if(!await w.verifyParentPin('2468'))throw new Error('correct PIN verification failed');
     if(await w.verifyParentPin('1111'))throw new Error('wrong PIN verification succeeded');
+
+    d.getElementById('parentAccessBtn').click();
+    d.getElementById('parentPinInput').value='1111';
+    await w.unlockParent();
+    await sleep(50);
+    if(!d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('wrong PIN opened parent zone');
+    d.getElementById('parentPinInput').value='2468';
+    await w.unlockParent();
+    await sleep(70);
+    if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('correct PIN did not open parent zone');
+    w.lockParent();
+    await sleep(50);
+
     if(d.getElementById('childPanel').classList.contains('hidden'))throw new Error('child mode not active');
     if(!d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('parent visible without session');
 
