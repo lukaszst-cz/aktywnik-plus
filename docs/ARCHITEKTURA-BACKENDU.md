@@ -19,10 +19,12 @@ Dane szkolne są zawsze powiązane z `tenant_id`. Tryb rodzinny używa osobnej p
 - `classes` — klasy i kod dołączenia;
 - `class_teachers` — przypisanie nauczycieli;
 - `children` — minimalny profil dziecka;
-- `guardians` — powiązanie rodzic–dziecko;
+- `guardians` — relacja wiele-do-wielu rodzic–dziecko;
+- `child_accounts` — konto dziecka sparowane z jednym profilem;
+- `pairing_codes` — jednorazowe, haszowane kody/QR do parowania urządzenia;
 - `class_children` — udział dziecka w klasie i tryb digital/hybrid/paper;
 - `activities` — wpisy aktywności;
-- `activity_approvals` — decyzje rodzica;
+- `activity_approval_events` — append-only historia utworzenia, edycji, akceptacji, korekty i odrzucenia;
 - `reports` — raporty okresowe;
 - `rewards` — plusy, oceny i uwagi nauczyciela;
 - `audit_events` — działania administracyjne;
@@ -68,3 +70,16 @@ W SaaS jedna infrastruktura może obsługiwać wiele szkół, ale izolacja tenan
 - `prod` — dane produkcyjne.
 
 Prawdziwe dane uczniów nie powinny trafiać do repozytorium, testów ani publicznych logów.
+
+
+## Egzekwowanie ról
+
+Plik `backend/rls.sql` zawiera szkic polityk Supabase RLS. Interfejs nie jest granicą bezpieczeństwa.
+
+W produkcji:
+- dziecko ma dostęp wyłącznie przez `child_accounts`;
+- rodzic wyłącznie przez `guardians`;
+- nauczyciel wyłącznie przez przypisanie `class_teachers`;
+- zatwierdzony wpis może być czytelny dla nauczyciela tylko w przypisanej klasie;
+- kod parowania jest jednorazowy, haszowany i wygasa;
+- administracyjne modyfikacje szkoły powinny przechodzić przez kontrolowane endpointy/server actions, a nie bezpośredni zapis z klienta.
