@@ -17,8 +17,11 @@
 ### 1. Projekt i baza
 - utworzyć projekt;
 - zastosować `001_core.sql`;
-- zastosować `002_supabase_rls.sql`;
-- sprawdzić, czy wszystkie tabele mają RLS.
+- zastosować migracje `001` → `007` w kolejności;
+- sprawdzić, czy wszystkie tabele aplikacji mają RLS;
+- sprawdzić jawne GRANT-y Data API;
+- uruchomić `backend/tests/rls_isolation.sql`;
+- uruchomić Security Advisor.
 
 ### 2. Auth
 - magic link / passkey dla rodzica;
@@ -53,7 +56,9 @@ Dopiero po potwierdzeniu lokalne dane mogą zostać przesłane do przypisanego k
 `AKTYWNIK_CLOUD_SYNC=true` dopiero gdy:
 - baza działa;
 - auth działa;
-- RLS przeszedł testy;
+- RLS przeszedł testy izolacji;
+- Security Advisor nie zgłasza krytycznych problemów;
+- `AKTYWNIK_RLS_VERIFIED=true`;
 - backup/restore jest sprawdzony;
 - privacy notice jest zaktualizowany;
 - środowisko produkcyjne ma właściwe sekrety.
