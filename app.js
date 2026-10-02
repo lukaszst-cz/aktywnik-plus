@@ -164,27 +164,32 @@ function renderApprovals(){
   if(!history.children.length)history.innerHTML='<small>Historia decyzji pojawi się po pierwszym wpisie.</small>';
 }
 function startFor(type,d=new Date()){const y=d.getFullYear(),m=d.getMonth();if(type==='month')return new Date(y,m,1);if(type==='quarter')return new Date(y,Math.floor(m/3)*3,1);if(type==='half')return new Date(y,m<6?0:6,1);return new Date(y,0,1)}
-function filtered(type){const start=startFor(type),end=new Date(today()+'T23:59:59');return state.entries.filter(e=>{if(e.status!=='approved'||!validDate(e.date))return false;const d=new Date(e.date+'T12:00:00');return d>=start&&d<=end})}
-function stats(type){const es=filtered(type),minutes=es.reduce((s,e)=>s+e.minutes,0),days=new Set(es.map(e=>e.date)).size,types=new Set(es.map(e=>e.activity)).size;const counts={};es.forEach(e=>counts[e.activity]=(counts[e.activity]||0)+e.minutes);return {es,minutes,days,types,counts}}
-function renderStats(){const s=stats($('#reportPeriod').value);$('#statsGrid').innerHTML=`<div class="stat"><strong>${fmtMin(s.minutes)}</strong><small>łączny czas</small></div><div class="stat"><strong>${s.days}</strong><small>aktywne dni</small></div><div class="stat"><strong>${s.es.length}</strong><small>aktywności</small></div><div class="stat"><strong>${s.types}</strong><small>różne rodzaje</small></div>`;const max=Math.max(1,...Object.values(s.counts));$('#activityBreakdown').innerHTML=Object.entries(s.counts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([n,v])=>`<div class="bar-row"><span>${escapeHtml(n)}</span><div class="bar"><i style="width:${Math.round(v/max*100)}%"></i></div><strong>${fmtMin(v)}</strong></div>`).join('')||'<small>Statystyki pojawią się po zatwierdzeniu aktywności.</small>'}
+function filtered(type,childId=state.activeChildId){
+  const start=startFor(type),end=new Date(today()+'T23:59:59');
+  return state.entries.filter(e=>e.childId===childId&&e.status==='approved'&&validDate(e.date)&&new Date(e.date+'T12:00:00')>=start&&new Date(e.date+'T12:00:00')<=end);
+}
+function stats(type,childId=state.activeChildId){
+  const es=filtered(type,childId),minutes=es.reduce((sum,e)=>sum+e.minutes,0),days=new Set(es.map(e=>e.date)).size,types=new Set(es.map(e=>e.activity)).size,counts={};
+  es.forEach(e=>counts[e.activity]=(counts[e.activity]||0)+e.minutes);return {es,minutes,days,types,counts};
+}
+function renderStats(){
+  const child=activeChild();if(!child)return;const st=stats($('#reportPeriod').value,child.id);
+  $('#statsGrid').innerHTML='<div class="stat"><strong>'+fmtMin(st.minutes)+'</strong><small>łączny czas</small></div><div class="stat"><strong>'+st.days+'</strong><small>aktywne dni</small></div><div class="stat"><strong>'+st.es.length+'</strong><small>aktywności</small></div><div class="stat"><strong>'+st.types+'</strong><small>różne rodzaje</small></div>';
+  const max=Math.max(1,...Object.values(st.counts));$('#activityBreakdown').innerHTML=Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([n,v])=>'<div class="bar-row"><span>'+escapeHtml(n)+'</span><div class="bar"><i style="width:'+Math.round(v/max*100)+'%"></i></div><strong>'+fmtMin(v)+'</strong></div>').join('')||'<small>Statystyki pojawią się po zatwierdzeniu aktywności.</small>';
+}
 function reportTitle(t){return ({month:'Raport miesięczny',quarter:'Raport kwartalny',half:'Raport półroczny',year:'Raport roczny'})[t]}
 function csvCell(v){const s=String(v??'');return '"'+s.replace(/"/g,'""')+'"'}
 function exportReportCsv(){
-  const s=stats(reportType);
-  const rows=[['Dziecko / identyfikator',state.pilot?.childDisplayName||'Profil dziecka'],[],['Data','Aktywność','Czas (min)','Wysiłek 1-5','Źródło','Notatka']];
-  s.es.forEach(e=>rows.push([e.date,e.activity,e.minutes,e.effort,e.source==='timer'?'Start/Stop':'wpis ręczny',e.note||'']));
-  const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='aktywnik-plus-'+reportType+'-'+today()+'.csv';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  if(!guardParent())return;const child=parentChild();if(!child)return;const es=filtered(reportType,child.id);
+  const rows=[['Dziecko','Data','Aktywność','Minuty','Wysiłek','Źródło','Notatka'],...es.map(e=>[child.displayName,e.date,e.activity,e.minutes,e.effort,e.source==='timer'?'Start/Stop':'Ręczny',e.note||''])];
+  const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='aktywnik-'+child.displayName.replace(/[^A-Za-z0-9_-]+/g,'-')+'-'+reportType+'-'+today()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-function renderParentReport(){const s=stats(reportType),child=escapeHtml(state.pilot?.childDisplayName||'Profil dziecka');$('#parentReport').innerHTML=`<div class="parent-only-print"><h2>${reportTitle(reportType)} — Aktywnik+</h2><p><strong>Dziecko / identyfikator:</strong> ${child}</p><p><small>Raport z bezpłatnej wersji pilotażowej — dane prowadzone lokalnie i zatwierdzone przez rodzica.</small></p><p><strong>Łączny czas:</strong> ${fmtMin(s.minutes)} · <strong>Aktywne dni:</strong> ${s.days} · <strong>Liczba aktywności:</strong> ${s.es.length} · <strong>Różne rodzaje:</strong> ${s.types}</p><div class="list">${s.es.map(e=>`<div class="entry"><div><strong>${escapeHtml(e.date)} — ${escapeHtml(e.activity)}</strong><small>${fmtMin(e.minutes)} · wysiłek ${e.effort}/5${e.note?` · ${escapeHtml(e.note)}`:''}</small></div></div>`).join('')||'<small>Brak zatwierdzonych wpisów w tym okresie.</small>'}</div><h3>Uwagi rodzica</h3><p>....................................................................................................</p><h3>Uwagi nauczyciela / wychowawcy</h3><p>....................................................................................................</p><p>....................................................................................................</p></div>`}
+function renderParentReport(){
+  const box=$('#parentReport');if(!box)return;if(!parentUnlocked()||!parentChild()){box.innerHTML='';return}
+  const child=parentChild(),st=stats(reportType,child.id);
+  box.innerHTML='<div class="report-head"><h3>'+reportTitle(reportType)+' — '+escapeHtml(child.displayName)+'</h3><span>'+fmtMin(st.minutes)+'</span></div><div class="report-summary"><div><b>'+st.days+'</b><small>aktywne dni</small></div><div><b>'+st.es.length+'</b><small>wpisy</small></div><div><b>'+st.types+'</b><small>rodzaje</small></div></div><div class="list">'+(st.es.map(e=>'<div class="entry"><div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+(e.note?' · '+escapeHtml(e.note):'')+'</small></div></div>').join('')||'<small>Brak zatwierdzonych wpisów w tym okresie.</small>')+'</div>';
+}
 function renderFavoritesEditor(){
   const child=activeChild();if(!child)return;const box=$('#favoritesEditor');box.innerHTML='';
   ACTIVITIES.forEach(([name,emoji])=>{const label=document.createElement('label');label.className='favorite-check';label.innerHTML='<input type="checkbox" '+(child.favorites.includes(name)?'checked':'')+'> <span>'+emoji+' '+escapeHtml(name)+'</span>';const input=label.querySelector('input');input.onchange=()=>{if(input.checked&&!child.favorites.includes(name))child.favorites.push(name);if(!input.checked)child.favorites=child.favorites.filter(x=>x!==name);persist()};box.append(label)});
