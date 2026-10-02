@@ -30,7 +30,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     if(manifest.start_url!=='./app.html')throw new Error('manifest start_url invalid');
     if(!Array.isArray(manifest.icons)||manifest.icons.length<2)throw new Error('manifest icons missing');
     const cache=await caches.open(names.find(n=>n.startsWith('aktywnik-plus-v')));
-    for(const asset of ['../app.html','../app.js','../styles.css']){
+    for(const asset of ['/app.html','/app.js','/styles.css']){
       const hit=await cache.match(asset);
       if(!hit)throw new Error('cached asset missing: '+asset);
     }
