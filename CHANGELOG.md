@@ -15,7 +15,8 @@ Największa aktualizacja rodzinnego pilota: realne rozdzielenie interfejsu dziec
 ### Rodzic
 - strefa rodzica chroniona PIN-em;
 - PIN przechowywany lokalnie jako PBKDF2 + losowa sól;
-- automatyczne blokowanie strefy po bezczynności;
+- automatyczne blokowanie strefy po bezczynności z wyborem czasu;
+- zmiana PIN-u rodzica po weryfikacji obecnego PIN-u;
 - możliwość prowadzenia wielu profili dzieci;
 - wybór dziecka zarządzanego w panelu rodzica;
 - ustawienie jednego profilu dziecka jako aktywnego na urządzeniu;
@@ -42,7 +43,8 @@ Największa aktualizacja rodzinnego pilota: realne rozdzielenie interfejsu dziec
 - test edycji przez dziecko, korekty i odrzucenia przez rodzica;
 - test historii decyzji;
 - test migracji starego formatu i backupu wielodzietnego;
-- runner Chrome DevTools Protocol czekający na faktyczny PASS/FAIL.
+- runner Chrome DevTools Protocol czekający na faktyczny PASS/FAIL;
+- przygotowany docelowy model parowania dziecka, append-only historii decyzji i RLS.
 
 ## 0.1.2 — Support & hardening
 
