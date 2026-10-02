@@ -19,11 +19,14 @@ jobs:
         run: |
           node --check app.js
           node --check install.js
+          node --check share.js
           node --check sw.js
           python3 - <<'PY'
           import json, os, re
           with open("manifest.webmanifest", encoding="utf-8") as f:
               manifest=json.load(f)
+          with open("vercel.json", encoding="utf-8") as f:
+              json.load(f)
           assert manifest["start_url"]=="./app.html"
           assert len(manifest.get("icons", [])) >= 2
           for icon in manifest["icons"]:
