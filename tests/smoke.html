@@ -113,11 +113,7 @@ async function run(){
     if(saved.entries?.length!==1||saved.entries[0].status!=='pending'||saved.entries[0].childId!=='child-a')throw new Error('pending child entry failed');
     spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));spacer.click();await sleep(30);
     if(d.getElementById('activityDuration').value!=='25')throw new Error('smart duration did not reuse last matching duration');
-    if(!d.getElementById('durationSuggestionHint').textContent.includes('25 min')){
-      let directError='',directText='';
-      try{w.showDurationSuggestion('Spacer');directText=d.getElementById('durationSuggestionHint').textContent}catch(e){directError=e?.message||String(e)}
-      throw new Error('smart duration hint missing: automatic='+JSON.stringify(d.getElementById('durationSuggestionHint').textContent)+' direct='+JSON.stringify(directText)+' directError='+JSON.stringify(directError)+' previous='+JSON.stringify(w.latestMatchingActivityEntry('child-a','Spacer')));
-    }
+    if(!d.getElementById('durationSuggestionHint').textContent.includes('25 min'))throw new Error('smart duration hint missing');
     d.getElementById('cancelEntryBtn').click();
 
     const editBtn=d.querySelector('[data-child-edit]');if(!editBtn)throw new Error('pending edit button missing');
