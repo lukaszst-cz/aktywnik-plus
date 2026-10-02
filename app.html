@@ -25,10 +25,23 @@
   </header>
 
   <main class="shell">
+    <section id="pilotSetupCard" class="card pilot-card hidden">
+      <div>
+        <p class="eyebrow">Pilot bez konta</p>
+        <h2>Start w 30 sekund</h2>
+        <p>Podaj tylko nazwę wyświetlaną na tym urządzeniu. Dane zostają lokalnie w przeglądarce.</p>
+      </div>
+      <div class="pilot-setup">
+        <label>Nazwa dziecka / identyfikator
+          <input id="pilotChildName" maxlength="60" placeholder="np. Daniel S." />
+        </label>
+        <button id="startPilotBtn" class="primary">Rozpocznij bez konta</button>
+      </div>
+    </section>
     <section id="childPanel">
       <div class="hero card">
         <div>
-          <p class="eyebrow">Dzisiaj</p>
+          <p class="eyebrow">Dzisiaj <span id="childDisplayName"></span></p>
           <h1>Co robiłeś/aś?</h1>
           <p>Wybierz ulubioną aktywność albo znajdź inną.</p>
         </div>
@@ -84,14 +97,15 @@
         <div class="metric"><span id="pendingCount">0</span><small>oczekuje</small></div>
       </section>
       <section class="card">
-        <div class="section-head"><h2>Klasa dziecka</h2><span class="badge">dołącz kodem</span></div>
-        <p>Rodzic wpisuje kod otrzymany od nauczyciela. Nauczyciel zatwierdza zgłoszenie przed dodaniem dziecka do klasy.</p>
+        <div class="section-head"><h2>Klasa dziecka</h2><span class="badge">demo lokalne</span></div>
+        <div class="prototype-warning"><strong>Na etapie pilota kod klasy działa tylko na tym urządzeniu.</strong> Synchronizacja rodzic–nauczyciel między różnymi telefonami będzie dostępna dopiero po uruchomieniu backendu.</div>
+        <p>Możesz przetestować cały przepływ lokalnie: utwórz klasę w panelu Szkoła, a następnie użyj jej kodu tutaj.</p>
         <div class="form-grid">
           <label>Nazwa dziecka / identyfikator<input id="joinChildName" maxlength="60" placeholder="np. Daniel S." /></label>
           <label>Kod klasy<input id="joinClassCode" maxlength="12" placeholder="np. 5A-K7P4" /></label>
           <label>Tryb udziału<select id="joinMode"><option value="digital">Cyfrowy</option><option value="hybrid">Hybrydowy</option><option value="paper">Papierowy</option></select></label>
         </div>
-        <div class="actions"><button id="sendJoinRequestBtn" class="primary">Wyślij zgłoszenie</button></div>
+        <div class="actions"><button id="sendJoinRequestBtn" class="primary">Testuj zgłoszenie lokalnie</button></div>
         <div id="joinRequestStatus"></div>
       </section>
 
@@ -106,6 +120,19 @@
         </div>
         <div id="parentReport"></div>
       </section>
+
+      <section class="card">
+        <div class="section-head"><h2>Kopia danych pilota</h2><span id="backupStatus" class="badge">lokalnie</span></div>
+        <p>Przed zmianą telefonu, czyszczeniem przeglądarki lub końcem miesiąca zapisz kopię. Plik pozostaje u Ciebie.</p>
+        <div class="backup-actions">
+          <button id="exportBackupBtn" class="primary">Eksportuj kopię</button>
+          <label class="button-link ghost file-button">Przywróć kopię
+            <input id="importBackupInput" type="file" accept="application/json,.json" hidden />
+          </label>
+          <button id="requestPersistentStorageBtn" class="ghost">Chroń dane na urządzeniu</button>
+        </div>
+        <small id="storageStatus">Dane są zapisane w pamięci tej przeglądarki.</small>
+      </section>
     </section>
 
     <section id="schoolPanel" class="hidden">
@@ -114,7 +141,8 @@
       </section>
 
       <section class="card">
-        <div class="section-head"><h2>Moje klasy</h2><span class="badge">rok szkolny</span></div>
+        <div class="section-head"><h2>Moje klasy</h2><span class="badge">demo lokalne</span></div>
+        <div class="prototype-warning"><strong>To jest demonstracja UX klas na jednym urządzeniu.</strong> Nie wpisuj tu prawdziwej listy klasy. Prawdziwe klasy między urządzeniami uruchomimy dopiero z backendem i kontami.</div>
         <div class="form-grid">
           <label>Nazwa klasy<input id="newClassName" maxlength="40" placeholder="np. 5A — WF" /></label>
           <label>Rok szkolny<input id="newSchoolYear" maxlength="12" value="2026/2027" /></label>
