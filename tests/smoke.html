@@ -16,21 +16,28 @@ function fail(msg){result.className='fail';result.textContent='FAIL: '+msg;docum
 function pass(msg){result.className='pass';result.textContent='PASS: '+msg;document.body.dataset.test='pass'}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 async function loadApp(label){
-  const f=document.getElementById('appFrame');
-  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('app load timeout')),5000);f.onload=()=>{clearTimeout(timer);resolve()};f.src='../app.html?smoke='+label+'-'+Date.now()});
-  await sleep(220);
+  const f=document.getElementById('appFrame'),token=label+'-'+Date.now(),target=new URL('../app.html?smoke='+token,location.href).href;
+  await new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error('app load timeout: '+token)),5000);
+    const done=()=>{
+      try{
+        const current=f.contentWindow.location.href;
+        if(current!==target||f.contentDocument.readyState!=='complete')return;
+        clearTimeout(timer);f.removeEventListener('load',done);resolve();
+      }catch{}
+    };
+    f.addEventListener('load',done);
+    f.src=target;
+    done();
+  });
+  await sleep(120);
   return {w:f.contentWindow,d:f.contentDocument};
 }
 async function run(){
   try{
     localStorage.removeItem(KEY);sessionStorage.clear();
     let ctx=await loadApp('initial'),w=ctx.w,d=ctx.d;
-    if(d.getElementById('pilotSetupCard').classList.contains('hidden')){
-      let diag='renderAll='+typeof w.renderAll;
-      if(typeof w.renderAll==='function'){try{w.renderAll();await sleep(20)}catch(e){diag+='; renderAll error='+String(e?.message||e)}}
-      if(!d.getElementById('pilotSetupCard').classList.contains('hidden'))diag+='; manual render recovered';
-      throw new Error('initial parent setup missing; '+diag);
-    }
+    if(d.getElementById('pilotSetupCard').classList.contains('hidden'))throw new Error('initial parent setup missing');
     if(d.getElementById('childModeBtn')||d.getElementById('parentModeBtn')||d.getElementById('schoolModeBtn'))throw new Error('legacy role switch still visible');
     if(!d.getElementById('parentPinSetup')||!d.getElementById('parentPinConfirm'))throw new Error('PIN setup controls missing');
     if(!d.getElementById('saveStatusBadge')||!d.getElementById('childWeekSnapshot')||!d.getElementById('repeatLastActivityBtn'))throw new Error('0.3.0 daily overview UI missing');
