@@ -62,6 +62,10 @@ async function run(){
 
     spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));
     spacer.click();
+    const ninety=d.querySelector('[data-duration="90"]');
+    if(!ninety) throw new Error('quick duration preset missing');
+    ninety.click();
+    if(d.getElementById('activityDuration').value!=='90') throw new Error('quick duration preset failed');
     d.getElementById('activityDuration').value='25';
     d.getElementById('activityNote').value='smoke test';
     d.getElementById('saveEntryBtn').click();
