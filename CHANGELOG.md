@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.2.0 — Secure family roles
+
+### Rodzina
+- jeden rodzic może prowadzić wiele profili dzieci;
+- jeden aktywny profil dziecka na urządzeniu;
+- dane rodzeństwa są rozdzielone przez `childId`;
+- zmiana aktywnego profilu wymaga odblokowanej strefy rodzica.
+
+### Bezpieczeństwo lokalnego pilota
+- strefa rodzica chroniona PIN-em 4–8 cyfr;
+- PIN zapisywany jako PBKDF2-SHA256 z losową solą, a nie jako tekst jawny;
+- automatyczna blokada po bezczynności z wyborem czasu;
+- możliwość zmiany PIN-u po podaniu obecnego PIN-u;
+- panel szkoły jest niedostępny dla dziecka i otwierany wyłącznie z odblokowanej strefy rodzica.
+
+### Obieg wpisów
+- dziecko może edytować wpis oczekujący;
+- odrzucony wpis wraca do dziecka z powodem i może zostać wysłany ponownie;
+- rodzic ma decyzje: zatwierdź / popraw i zatwierdź / odrzuć;
+- historia decyzji jest zapisywana lokalnie;
+- raporty, CSV, plusy i oceny są przypisane do konkretnego dziecka.
+
+### Backend
+- `003_family_roles.sql`: child accounts, pairing codes i append-only approval events;
+- `004_family_rls.sql`: polityki RLS dla kont dziecka i relacji guardian–child;
+- istniejący backend 0.1.3 pozostaje fail-closed i synchronizacja chmurowa nie włącza się automatycznie.
+
+### Testy
+- test izolacji dziecko/rodzic/szkoła;
+- test wielu dzieci i braku wycieku danych rodzeństwa;
+- test edycji dziecka, korekty/odrzucenia rodzica i historii;
+- test migracji starych danych pilota;
+- runner Chrome DevTools czeka na rzeczywisty PASS/FAIL.
+
 ## 0.1.3 — Backend foundation
 
 ### Backend
