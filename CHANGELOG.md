@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — Entry draft recovery
+
+### Niezawodność formularza
+- niedokończony ręczny wpis aktywności jest automatycznie zapisywany lokalnie na urządzeniu;
+- po przypadkowym odświeżeniu lub ponownym otwarciu PWA formularz przywraca aktywność, datę, czas, wysiłek i notatkę;
+- anulowanie lub zapis wpisu usuwa szkic, a szkice są rozdzielone między profile dzieci;
+- zmiana aktywnego profilu nie przenosi otwartego formularza na inne dziecko;
+- import kopii, usunięcie profilu i usunięcie danych czyszczą nieaktualne szkice;
+- smoke test obejmuje zapis, odtworzenie po przeładowaniu i usunięcie szkicu.
+
+
 ## 0.4.0 — Universal
 
 ### Tryb osobisty
