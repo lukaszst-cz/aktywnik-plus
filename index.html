@@ -82,6 +82,18 @@
         <div class="metric"><span id="pendingCount">0</span><small>oczekuje</small></div>
       </section>
       <section class="card">
+        <div class="section-head"><h2>Klasa dziecka</h2><span class="badge">dołącz kodem</span></div>
+        <p>Rodzic wpisuje kod otrzymany od nauczyciela. Nauczyciel zatwierdza zgłoszenie przed dodaniem dziecka do klasy.</p>
+        <div class="form-grid">
+          <label>Nazwa dziecka / identyfikator<input id="joinChildName" maxlength="60" placeholder="np. Daniel S." /></label>
+          <label>Kod klasy<input id="joinClassCode" maxlength="12" placeholder="np. 5A-K7P4" /></label>
+          <label>Tryb udziału<select id="joinMode"><option value="digital">Cyfrowy</option><option value="hybrid">Hybrydowy</option><option value="paper">Papierowy</option></select></label>
+        </div>
+        <div class="actions"><button id="sendJoinRequestBtn" class="primary">Wyślij zgłoszenie</button></div>
+        <div id="joinRequestStatus"></div>
+      </section>
+
+      <section class="card">
         <div class="section-head"><h2>Dzisiejsza lista</h2><button id="approveAllBtn" class="primary">Zatwierdź wszystkie</button></div>
         <div id="approvalList" class="list"></div>
       </section>
@@ -97,6 +109,30 @@
     <section id="schoolPanel" class="hidden">
       <section class="hero card">
         <div><p class="eyebrow">Konfiguracja szkoły</p><h1>Zasady po Waszemu</h1><p>Nauczyciel wybiera sposób pracy, plusy i ocenianie. Aktywnik+ tylko zapisuje ustalenia.</p></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head"><h2>Moje klasy</h2><span class="badge">rok szkolny</span></div>
+        <div class="form-grid">
+          <label>Nazwa klasy<input id="newClassName" maxlength="40" placeholder="np. 5A — WF" /></label>
+          <label>Rok szkolny<input id="newSchoolYear" maxlength="12" value="2026/2027" /></label>
+        </div>
+        <div class="actions"><button id="createClassBtn" class="primary">Utwórz klasę</button></div>
+        <div id="classList" class="list"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head"><h2>Zgłoszenia do klas</h2><span id="classRequestBadge" class="badge"></span></div>
+        <div id="classJoinRequests" class="list"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head"><h2>Dodaj dziecko w trybie papierowym</h2><a class="button-link ghost" href="paper.html" target="_blank" rel="noopener">Formularz</a></div>
+        <div class="form-grid">
+          <label>Klasa<select id="paperClassId"></select></label>
+          <label>Nazwa dziecka / identyfikator<input id="paperChildName" maxlength="60" placeholder="np. Julia R." /></label>
+        </div>
+        <div class="actions"><button id="addPaperChildBtn" class="primary">Dodaj do klasy</button></div>
       </section>
 
       <section class="card">
