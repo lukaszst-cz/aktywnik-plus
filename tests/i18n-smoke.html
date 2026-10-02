@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pl">
+<head><meta charset="utf-8"><title>Aktywnik+ i18n smoke</title></head>
+<body>
+<select data-language-switch><option value="pl">PL</option><option value="en">EN</option></select>
+<h1 id="sample" data-i18n="app.whatDid">Co robiłeś/aś?</h1>
+<input id="sampleInput" data-i18n-placeholder="app.search" placeholder="Szukaj aktywności">
+<div id="result">RUNNING</div>
+<script>localStorage.setItem('aktywnik_plus_lang','pl');</script>
+<script src="../i18n.js"></script>
+<script>
+const result=document.getElementById('result');
+function fail(msg){result.textContent='FAIL: '+msg;document.body.dataset.test='fail'}
+function pass(msg){result.textContent='PASS: '+msg;document.body.dataset.test='pass'}
+setTimeout(()=>{
+  try{
+    const select=document.querySelector('[data-language-switch]');
+    if(document.documentElement.lang!=='pl')throw new Error('initial lang is not pl');
+    if(document.getElementById('sample').textContent!=='Co robiłeś/aś?')throw new Error('PL text missing');
+    select.value='en';
+    select.dispatchEvent(new Event('change',{bubbles:true}));
+    if(document.documentElement.lang!=='en')throw new Error('lang did not change to en');
+    if(document.getElementById('sample').textContent!=='What did you do?')throw new Error('EN text missing');
+    if(document.getElementById('sampleInput').placeholder!=='Search activities')throw new Error('EN placeholder missing');
+    if(localStorage.getItem('aktywnik_plus_lang')!=='en')throw new Error('language preference not saved');
+    pass('PL/EN switch, text, placeholder and persistence');
+  }catch(e){fail(e.message||String(e))}
+},100);
+</script>
+</body>
+</html>
