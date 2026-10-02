@@ -60,5 +60,5 @@ jobs:
           "$CHROME"             --headless=new             --no-sandbox             --disable-gpu             --user-data-dir=/tmp/aktywnik-chrome             --virtual-time-budget=12000             --dump-dom             'http://127.0.0.1:8765/tests/smoke.html?skipPwa=1'             > /tmp/aktywnik-smoke.html
           grep -o '<div id="result"[^>]*>[^<]*' /tmp/aktywnik-smoke.html || true
           grep -q 'data-test="pass"' /tmp/aktywnik-smoke.html
-          grep -q 'PASS: pilot, timer, manual activity, approval, report, multi-item class handlers, backup, manifest and persistence' /tmp/aktywnik-smoke.html
+          grep -q 'PASS: pilot, timer, validation, manual activity, approval, report, multi-item class handlers, backup, manifest and persistence' /tmp/aktywnik-smoke.html
           echo "Aktywnik+ browser smoke PASS"
