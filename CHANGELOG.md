@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.1.2 — Support & hardening
+
+Aktualizacja stabilizująca publiczny pilot i ujednolicająca informacje o autorze.
+
+### Nowe
+- dobrowolne wsparcie „Postaw Naleśnikowi++ kawę” na stronie, w aplikacji i na podstronach;
+- stały odnośnik do Zielonej Marki dla osób potrzebujących własnej strony lub prostego systemu;
+- zachowany eksport CSV i FAQ z bieżącej wersji pilota.
+
+### Poprawki
+- blokada przyszłych dat przy zapisie aktywności;
+- twarda walidacja czasu 1–600 minut;
+- raporty ignorują wpisy z przyszłości;
+- import kopii ma limit 2 MB i odrzuca wadliwe rekordy;
+- dane odczytywane z localStorage przechodzą walidację;
+- limity klas i zgłoszeń w lokalnym pilocie;
+- blokada duplikatu dziecka dodawanego papierowo.
+
+### Testy
+- regresja importu uszkodzonej kopii;
+- regresja przyszłych wpisów w raportach;
+- dotychczasowe testy timera, CSV, akceptacji, klas, backupu i PWA pozostają aktywne.
+
 ## 0.1.1 — Pilot update
 
 Aktualizacja przygotowująca Aktywnik+ do wygodniejszego testowania przez dziecko, rodzica i nauczyciela.

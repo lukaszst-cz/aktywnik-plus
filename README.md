@@ -23,6 +23,8 @@ Aktywnik+ pozostaje bezpłatny. Jeśli aplikacja jest przydatna, można dobrowol
 
 Wsparcie nie odblokowuje żadnych funkcji i nie jest wymagane do korzystania z aplikacji.
 
+Jeśli potrzebujesz własnej strony internetowej lub prostego systemu dla firmy: https://zielona-marka.pl
+
 Przeczytaj przed pilotażem:
 - **[Start dla rodzica i nauczyciela](docs/START-DLA-RODZICA-I-NAUCZYCIELA.md)**
 - **[Warunki krytyczne pilota](docs/WARUNKI-KRYTYCZNE-PILOTA.md)**
@@ -32,9 +34,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.1.1 — Pilot**
+**Aktywnik+ 0.1.2 — Pilot**
 
-- [Release notes 0.1.1](docs/RELEASE-0.1.1.md)
+- [Release notes 0.1.2](docs/RELEASE-0.1.2.md)
 - [Changelog](CHANGELOG.md)
 - [Pobierz / zainstaluj](pobierz.html)
 - [FAQ](faq.html)
@@ -132,4 +134,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.1.1 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
+`0.1.2 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
