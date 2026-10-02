@@ -14,7 +14,7 @@ const PIN_LOCK_MS=30000;
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
 const defaultState={schemaVersion:4,pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
-let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[];
+let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let parentReportMonth=today().slice(0,7);
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
@@ -182,12 +182,24 @@ function renderApprovals(){
   if(!history.children.length)history.innerHTML='<small>Historia decyzji pojawi się po pierwszym wpisie.</small>';
 }
 function startFor(type,d=new Date()){const y=d.getFullYear(),m=d.getMonth();if(type==='month')return new Date(y,m,1);if(type==='quarter')return new Date(y,Math.floor(m/3)*3,1);if(type==='half')return new Date(y,m<6?0:6,1);return new Date(y,0,1)}
-function filtered(type,childId=state.activeChildId){
-  const start=startFor(type),end=new Date(today()+'T23:59:59');
+function endFor(type,d=new Date()){
+  const start=startFor(type,d);
+  if(type==='month')return new Date(start.getFullYear(),start.getMonth()+1,0,23,59,59);
+  if(type==='quarter')return new Date(start.getFullYear(),start.getMonth()+3,0,23,59,59);
+  if(type==='half')return new Date(start.getFullYear(),start.getMonth()+6,0,23,59,59);
+  return new Date(start.getFullYear(),11,31,23,59,59);
+}
+function safeReferenceMonth(value){const v=String(value||'');return /^\d{4}-\d{2}$/.test(v)&&validDate(v+'-01')?v:today().slice(0,7)}
+function parentReportReferenceDate(){
+  parentReportMonth=safeReferenceMonth($('#parentReportMonth')?.value||parentReportMonth);
+  return new Date(parentReportMonth+'-15T12:00:00');
+}
+function filtered(type,childId=state.activeChildId,referenceDate=new Date()){
+  const start=startFor(type,referenceDate),periodEnd=endFor(type,referenceDate),todayEnd=new Date(today()+'T23:59:59'),end=periodEnd<todayEnd?periodEnd:todayEnd;
   return state.entries.filter(e=>e.childId===childId&&e.status==='approved'&&validDate(e.date)&&new Date(e.date+'T12:00:00')>=start&&new Date(e.date+'T12:00:00')<=end);
 }
-function stats(type,childId=state.activeChildId){
-  const es=filtered(type,childId),minutes=es.reduce((sum,e)=>sum+e.minutes,0),days=new Set(es.map(e=>e.date)).size,types=new Set(es.map(e=>e.activity)).size,counts={};
+function stats(type,childId=state.activeChildId,referenceDate=new Date()){
+  const es=filtered(type,childId,referenceDate),minutes=es.reduce((sum,e)=>sum+e.minutes,0),days=new Set(es.map(e=>e.date)).size,types=new Set(es.map(e=>e.activity)).size,counts={};
   es.forEach(e=>counts[e.activity]=(counts[e.activity]||0)+e.minutes);return {es,minutes,days,types,counts};
 }
 function renderStats(){
@@ -198,15 +210,36 @@ function renderStats(){
 function reportTitle(t){return ({month:'Raport miesięczny',quarter:'Raport kwartalny',half:'Raport półroczny',year:'Raport roczny'})[t]}
 function csvCell(v){const s=String(v??'');return '"'+s.replace(/"/g,'""')+'"'}
 function exportReportCsv(){
-  if(!guardParent())return;const child=parentChild();if(!child)return;const es=filtered(reportType,child.id);
+  if(!guardParent())return;const child=parentChild();if(!child)return;const reference=parentReportReferenceDate(),es=filtered(reportType,child.id,reference);
   const rows=[['Dziecko','Data','Aktywność','Minuty','Wysiłek','Źródło','Notatka'],...es.map(e=>[child.displayName,e.date,e.activity,e.minutes,e.effort,e.source==='timer'?'Start/Stop':'Ręczny',e.note||''])];
   const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='aktywnik-'+child.displayName.replace(/[^A-Za-z0-9_-]+/g,'-')+'-'+reportType+'-'+today()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  a.href=url;a.download='aktywnik-'+child.displayName.replace(/[^A-Za-z0-9_-]+/g,'-')+'-'+reportType+'-'+parentReportMonth+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function reportPeriodLabel(type,referenceDate){
+  const start=startFor(type,referenceDate),end=endFor(type,referenceDate),fmt=d=>d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  return fmt(start)+' – '+fmt(end);
 }
 function renderParentReport(){
   const box=$('#parentReport');if(!box)return;if(!parentUnlocked()||!parentChild()){box.innerHTML='';return}
-  const child=parentChild(),st=stats(reportType,child.id);
-  box.innerHTML='<div class="report-head"><h3>'+reportTitle(reportType)+' — '+escapeHtml(child.displayName)+'</h3><span>'+fmtMin(st.minutes)+'</span></div><div class="report-summary"><div><b>'+st.days+'</b><small>aktywne dni</small></div><div><b>'+st.es.length+'</b><small>wpisy</small></div><div><b>'+st.types+'</b><small>rodzaje</small></div></div><div class="list">'+(st.es.map(e=>'<div class="entry"><div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+(e.note?' · '+escapeHtml(e.note):'')+'</small></div></div>').join('')||'<small>Brak zatwierdzonych wpisów w tym okresie.</small>')+'</div>';
+  const child=parentChild(),reference=parentReportReferenceDate(),st=stats(reportType,child.id,reference);
+  box.innerHTML='<div class="report-head"><div><h3>'+reportTitle(reportType)+' — '+escapeHtml(child.displayName)+'</h3><small>'+escapeHtml(reportPeriodLabel(reportType,reference))+'</small></div><span>'+fmtMin(st.minutes)+'</span></div><div class="report-summary"><div><b>'+st.days+'</b><small>aktywne dni</small></div><div><b>'+st.es.length+'</b><small>wpisy</small></div><div><b>'+st.types+'</b><small>rodzaje</small></div></div><div class="list">'+(st.es.map(e=>'<div class="entry"><div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+(e.note?' · '+escapeHtml(e.note):'')+'</small></div></div>').join('')||'<small>Brak zatwierdzonych wpisów w tym okresie.</small>')+'</div>';
+}
+function buildSchoolPrintPages(childId,referenceDate){
+  const entries=filtered('month',childId,referenceDate).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+  const totalPages=Math.max(2,Math.ceil(entries.length/35));
+  return Array.from({length:totalPages},(_,pageIndex)=>{
+    const offset=pageIndex*35,chunk=entries.slice(offset,offset+35);
+    const rows=Array.from({length:35},(_,rowIndex)=>({lp:offset+rowIndex+1,entry:chunk[rowIndex]||null}));
+    return {page:pageIndex+1,totalPages,rows};
+  });
+}
+function renderSchoolPrintReport(){
+  if(!guardParent())return false;const child=parentChild();if(!child)return false;const reference=parentReportReferenceDate(),pages=buildSchoolPrintPages(child.id,reference),st=stats('month',child.id,reference),monthLabel=reference.toLocaleDateString('pl-PL',{month:'long',year:'numeric'}),box=$('#schoolPrintReport');
+  box.innerHTML=pages.map(p=>'<section class="school-print-page"><div class="school-print-head"><div><h1>Dziennik Dodatkowej Aktywności Fizycznej</h1><p>jeden wiersz = jedna aktywność</p></div><div><strong>Aktywnik+</strong><br><small>raport z zatwierdzonych wpisów</small></div></div><div class="school-print-meta"><div>Imię / profil: <strong>'+escapeHtml(child.displayName)+'</strong></div><div>Klasa: <span></span></div><div>Miesiąc: <strong>'+escapeHtml(monthLabel)+'</strong></div></div><table class="school-print-table"><thead><tr><th>LP.</th><th>Data</th><th>Rodzaj aktywności</th><th>Czas</th><th>Wysiłek 1–5</th><th>Podpis / uwagi opiekuna</th></tr></thead><tbody>'+p.rows.map(r=>{const e=r.entry;return '<tr><td>'+r.lp+'</td><td>'+(e?escapeHtml(e.date):'')+'</td><td>'+(e?escapeHtml(e.activity):'')+'</td><td>'+(e?escapeHtml(fmtMin(e.minutes)):'')+'</td><td>'+(e?escapeHtml(e.effort):'')+'</td><td>'+(e?escapeHtml(e.note||''):'')+'</td></tr>'}).join('')+'</tbody></table>'+(p.page===p.totalPages?'<div class="school-print-summary"><strong>Podsumowanie miesiąca:</strong> '+st.es.length+' wpisów · '+st.days+' aktywnych dni · '+escapeHtml(fmtMin(st.minutes))+'<div><strong>Uwagi rodzica:</strong><span></span></div><div><strong>Uwagi nauczyciela / wychowawcy:</strong><span></span></div><div><strong>Plus / ocena:</strong><span></span></div></div>':'')+'<div class="school-print-footer"><span>Strona '+p.page+'/'+p.totalPages+' · wpisy '+((p.page-1)*35+1)+'–'+(p.page*35)+'</span><span>Aktywnik+ · raport lokalny</span></div></section>').join('');
+  return true;
+}
+function printSchoolMonthlyReport(){
+  if(!renderSchoolPrintReport())return;document.body.classList.add('school-print-mode');requestAnimationFrame(()=>window.print());
 }
 function renderFavoritesEditor(){
   const child=activeChild();if(!child)return;const box=$('#favoritesEditor');box.innerHTML='';
@@ -536,11 +569,15 @@ $('#saveSchoolSettingsBtn').onclick=saveSchoolSettings;
 $('#saveRewardBtn').onclick=saveReward;
 $('#rewardChildId').onchange=renderSchoolSettings;
 $('#reportPeriod').onchange=renderStats;
+$('#parentReportMonth').value=parentReportMonth;
+$('#parentReportMonth').onchange=()=>{parentReportMonth=safeReferenceMonth($('#parentReportMonth').value);renderParentReport()};
 $('#approveAllBtn').onclick=approveAllVisible;
 $('#editFavoritesBtn').onclick=()=>{renderFavoritesEditor();$('#favoritesDialog').showModal()};
 $$('[data-report]').forEach(b=>b.onclick=()=>{reportType=b.dataset.report;renderParentReport()});
 $('#exportCsvBtn').onclick=exportReportCsv;
 $('#printReportBtn').onclick=()=>{if(guardParent())window.print()};
+$('#printSchoolReportBtn').onclick=printSchoolMonthlyReport;
+window.addEventListener('afterprint',()=>document.body.classList.remove('school-print-mode'));
 setInterval(renderTimer,1000);
 setInterval(()=>{if((currentMode==='parent'||currentMode==='school')&&!parentUnlocked())lockParent()},10000);
 ['pointerdown','keydown','touchstart'].forEach(evt=>document.addEventListener(evt,()=>{if((currentMode==='parent'||currentMode==='school')&&parentUnlocked())touchParentSession()},{passive:true}));
