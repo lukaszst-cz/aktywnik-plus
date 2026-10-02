@@ -1,10 +1,11 @@
-const CACHE='aktywnik-plus-v5';
+const CACHE='aktywnik-plus-v6';
 const ASSETS=[
   './',
   './index.html',
   './app.html',
   './konto.html',
   './paper.html',
+  './pobierz.html',
   './landing.css',
   './styles.css',
   './app.js',
