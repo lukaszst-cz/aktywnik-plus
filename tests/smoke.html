@@ -66,6 +66,34 @@ async function run(){
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.classes?.length!==1 || !saved.classes[0].code) throw new Error('local class demo failed');
 
+    d.getElementById('paperChildName').value='Test A.';
+    d.getElementById('addPaperChildBtn').click();
+    await sleep(50);
+    d.getElementById('paperChildName').value='Test B.';
+    d.getElementById('addPaperChildBtn').click();
+    await sleep(100);
+    const reportSelectors=[...d.querySelectorAll('[data-report-child]')];
+    if(reportSelectors.length!==2) throw new Error('two local class children not rendered');
+    reportSelectors[1].value='submitted';
+    reportSelectors[1].dispatchEvent(new w.Event('change',{bubbles:true}));
+    await sleep(100);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.classes[0].children[1].reportStatus!=='submitted') throw new Error('second child report handler failed');
+
+    const classCode=saved.classes[0].code;
+    for(const name of ['Join A.','Join B.']){
+      d.getElementById('joinChildName').value=name;
+      d.getElementById('joinClassCode').value=classCode;
+      d.getElementById('sendJoinRequestBtn').click();
+      await sleep(50);
+    }
+    const acceptButtons=[...d.querySelectorAll('[data-join-accept]')];
+    if(acceptButtons.length!==2) throw new Error('two join requests not rendered');
+    acceptButtons[1].click();
+    await sleep(100);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.joinRequests.filter(x=>x.status==='accepted').length!==1) throw new Error('second join request handler failed');
+
     const payload={format:'aktywnik-plus-backup',version:2,data:saved};
     const restored=w.safeBackupState(payload);
     if(restored.entries?.length!==1 || restored.pilot?.childDisplayName!=='Test D.') throw new Error('backup validation failed');
@@ -99,7 +127,7 @@ async function run(){
     if(persisted.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name did not persist');
     if(!d.getElementById('childDisplayName').textContent.includes('Test D.')) throw new Error('reloaded UI did not restore pilot name');
 
-    pass(skipPwaChecks?'pilot, activity, approval, report, local class demo, backup, manifest and persistence':'pilot, activity, approval, report, local class demo, backup, service worker, cache, manifest and persistence');
+    pass(skipPwaChecks?'pilot, activity, approval, report, multi-item class handlers, backup, manifest and persistence':'pilot, activity, approval, report, multi-item class handlers, backup, service worker, cache, manifest and persistence');
     localStorage.removeItem(KEY);
   }catch(e){
     fail(e.message);
