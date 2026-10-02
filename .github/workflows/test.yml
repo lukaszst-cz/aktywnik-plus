@@ -22,6 +22,8 @@ jobs:
           node --check app.js
           node --check install.js
           node --check share.js
+          node --check auth-config.js
+          node --check auth.js
           node --check paper.js
           node --check teacher.js
           node --check sw.js
@@ -59,6 +61,21 @@ jobs:
               assert "onclick=" not in html, f"inline handler blocked by CSP: {page}"
               assert "<script>" not in html, f"inline script blocked by CSP: {page}"
           print("CSP-safe public pages OK")
+
+          with open("konto.html", encoding="utf-8") as f:
+              account=f.read()
+          with open("auth.js", encoding="utf-8") as f:
+              auth=f.read()
+          with open("auth-config.js", encoding="utf-8") as f:
+              auth_config=f.read()
+          with open("vercel.json", encoding="utf-8") as f:
+              vercel=json.load(f)
+          assert 'auth-config.js' in account and 'auth.js' in account, "account auth scripts missing"
+          assert 'SUPABASE_SERVICE_ROLE_KEY' not in auth and 'SUPABASE_SECRET_KEY' not in auth, "server key leaked to client auth"
+          assert 'sb_publishable_' in auth_config, "publishable key missing"
+          csp=next(h["value"] for x in vercel["headers"] if x["source"]=="/(.*)" for h in x["headers"] if h["key"]=="Content-Security-Policy")
+          assert "https://rgvmjglahubbglkolwug.supabase.co" in csp, "Supabase connect-src missing"
+          print("account auth/CSP checks OK")
           PY
 
       - name: Set up Node for browser runner
