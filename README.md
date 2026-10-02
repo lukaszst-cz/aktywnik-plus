@@ -40,6 +40,7 @@ Przeczytaj przed pilotażem:
 
 **Aktywnik+ 0.2.1 — Family Roles Pilot**
 
+- [Release notes 0.2.1](docs/RELEASE-0.2.1.md)
 - [Release notes 0.2.0](docs/RELEASE-0.2.0.md)
 - [Zmiany 0.2.1](CHANGELOG.md#021--monthly-report-hardening)
 - [Changelog](CHANGELOG.md)
