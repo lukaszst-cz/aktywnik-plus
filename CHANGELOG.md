@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0 — Daily UX & reliability
+
+### Dziecko
+- nowy szybki podgląd bieżącego tygodnia: łączny czas, aktywne dni, wpisy oczekujące i ostatnia aktywność;
+- „Powtórz ostatnią aktywność” otwiera formularz z poprzednim rodzajem aktywności, czasem i wysiłkiem, bez kopiowania notatki;
+- podsumowanie pozostaje informacyjne: bez celów, serii, kalorii, rankingów i porównywania dzieci;
+- zabezpieczenie przed ponownym zapisaniem identycznego ręcznego wpisu w krótkim odstępie.
+
+### Rodzic
+- szybki podgląd zatwierdzonej aktywności dzisiaj i w bieżącym tygodniu;
+- licznik wpisów oczekujących i informacja o ostatniej zatwierdzonej aktywności;
+- widoczny wiek ostatniej kopii danych.
+
+### Niezawodność
+- status lokalnego zapisu widoczny w nagłówku;
+- metadane ostatniego zapisu i ostatniej kopii są zachowywane w danych;
+- schema kopii podniesiona do wersji 5 z migracją starszych danych;
+- cache PWA podniesiony, aby urządzenia pobrały aktualne pliki.
+
 ## 0.2.1 — Monthly report hardening
 
 ### Raporty
