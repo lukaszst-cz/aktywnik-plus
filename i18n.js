@@ -109,7 +109,16 @@
       "account.syncText": "Tryb osobisty ma już bezpieczny fundament synchronizacji RLS. Chmura pozostaje betą do zakończenia testów wielu kont i konfliktów offline.",
       "account.familyTitle": "👨‍👩‍👧 Rodzina",
       "account.familyText": "Rodzic będzie mógł powiązać kilka profili dzieci bez udostępniania im swojego konta.",
-      "account.keyNote": "Aktywnik+ używa publicznego klucza Supabase po stronie przeglądarki. Klucze administracyjne i serwerowe nie są wysyłane do użytkownika."
+      "account.keyNote": "Aktywnik+ używa publicznego klucza Supabase po stronie przeglądarki. Klucze administracyjne i serwerowe nie są wysyłane do użytkownika.",
+      "account.accountLabel": "Konto:",
+      "account.status.configMissing": "Logowanie online nie jest jeszcze skonfigurowane.",
+      "account.status.loginConfirmed": "Logowanie potwierdzone.",
+      "account.status.loggedIn": "Konto jest zalogowane. Personal Sync 0.5 beta jest gotowy technicznie, ale chmura pozostaje wyłączona do zakończenia testów.",
+      "account.status.loggedOut": "Wylogowano.",
+      "account.status.local": "Możesz zalogować się linkiem wysłanym na e-mail. Dane lokalne pozostają na urządzeniu.",
+      "account.status.sent": "Link logowania został wysłany. Sprawdź skrzynkę e-mail.",
+      "account.status.sendFail": "Nie udało się wysłać linku:",
+      "account.status.error": "Błąd konta:"
     },
     en: {
       "lang.select": "Language",
@@ -215,7 +224,16 @@
       "account.syncText": "Personal mode already has an RLS-protected sync foundation. Cloud sync stays in beta until multi-account and offline-conflict tests are complete.",
       "account.familyTitle": "👨‍👩‍👧 Family",
       "account.familyText": "A parent will be able to link multiple child profiles without sharing the parent account.",
-      "account.keyNote": "Aktywnik+ uses a public Supabase key in the browser. Administrative and server keys are never sent to the user."
+      "account.keyNote": "Aktywnik+ uses a public Supabase key in the browser. Administrative and server keys are never sent to the user.",
+      "account.accountLabel": "Account:",
+      "account.status.configMissing": "Online sign-in is not configured yet.",
+      "account.status.loginConfirmed": "Sign-in confirmed.",
+      "account.status.loggedIn": "You are signed in. Personal Sync 0.5 beta is technically ready, but cloud sync remains disabled until testing is complete.",
+      "account.status.loggedOut": "Signed out.",
+      "account.status.local": "You can sign in with a link sent to your email. Local data remains on this device.",
+      "account.status.sent": "The sign-in link was sent. Check your email.",
+      "account.status.sendFail": "Could not send the sign-in link:",
+      "account.status.error": "Account error:"
     }
   };
 
