@@ -22,6 +22,14 @@ Przeczytaj przed pilotażem:
 - **[Jak zainstalować PWA](docs/INSTALACJA-PWA.md)**
 - **[Checklista gotowości pilota](docs/CHECKLISTA-PILOTA.md)**
 
+## Wersja
+
+**Aktywnik+ 0.1.0 — Pilot**
+
+- [Release notes](docs/RELEASE-0.1.0.md)
+- [Changelog](CHANGELOG.md)
+- [Pobierz / zainstaluj](pobierz.html)
+
 ## Co już działa
 
 - panel dziecka z dużą listą aktywności;
@@ -103,4 +111,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.1 prototype` — mobilny interfejs, lokalne dane, ulubione aktywności, akceptacja rodzica, raporty okresowe, konfiguracja szkoły, plusy/oceny i alternatywa papierowa.
+`0.1.0 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
