@@ -21,6 +21,7 @@ function persist(){
   try{
     localStorage.setItem(KEY,JSON.stringify(state));
     lastPersistOk=true;
+    window.AktywnikSync?.markDirty?.(state);
   }catch(err){
     lastPersistOk=false;
     console.error('Aktywnik+: local save failed',err);
