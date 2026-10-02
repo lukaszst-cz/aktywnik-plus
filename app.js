@@ -163,16 +163,27 @@ function renderSaveStatus(){
   el.dataset.state='ok';
 }
 function renderChildOverview(){
-  const child=activeChild(),box=$('#childWeekSnapshot'),repeat=$('#repeatLastActivityBtn');if(!child||!box||!repeat)return;
+  const child=activeChild(),box=$('#childWeekSnapshot'),repeat=$('#repeatLastActivityBtn'),quickStart=$('#quickStartLastActivityBtn');if(!child||!box||!repeat||!quickStart)return;
   const {start,end}=weekBounds(),week=usableChildEntries(child.id).filter(e=>{const d=new Date(e.date+'T12:00:00');return d>=start&&d<end});
-  const minutes=week.reduce((sum,e)=>sum+Number(e.minutes||0),0),days=new Set(week.map(e=>e.date)).size,pending=childEntries(child.id).filter(e=>e.status==='pending').length,last=latestActivityEntry(child.id);
+  const minutes=week.reduce((sum,e)=>sum+Number(e.minutes||0),0),days=new Set(week.map(e=>e.date)).size,pending=childEntries(child.id).filter(e=>e.status==='pending').length,last=latestActivityEntry(child.id),timerActive=state.activeTimer?.childId===child.id;
   box.innerHTML='<div class="snapshot-item"><strong>'+fmtMin(minutes)+'</strong><small>ruch w tym tygodniu</small></div><div class="snapshot-item"><strong>'+days+'</strong><small>aktywne dni</small></div><div class="snapshot-item"><strong>'+pending+'</strong><small>'+(isSelfMode()?'oczekujące':'czeka na rodzica')+'</small></div><div class="snapshot-item"><strong>'+(last?escapeHtml(last.activity):'—')+'</strong><small>'+(last?'ostatnio · '+escapeHtml(last.date):'brak wpisów')+'</small></div>';
-  repeat.classList.toggle('hidden',!last);
+  repeat.classList.toggle('hidden',!last||timerActive);
+  quickStart.classList.toggle('hidden',!last||timerActive);
 }
 function repeatLastActivity(){
   const child=activeChild(),last=child?latestActivityEntry(child.id):null;if(!last)return;
   pickActivity(last.activity);setQuickDuration(last.minutes);$('#activityEffort').value=String(clampInt(last.effort,1,5,2));$('#activityNote').value='';saveEntryDraft();
 }
+function quickStartLastActivity(){
+  const child=activeChild(),last=child?latestActivityEntry(child.id):null;
+  if(!child||!last||state.activeTimer)return;
+  clearEntryDraft();editingEntryId=null;selected=null;
+  state.activeTimer={childId:child.id,activity:last.activity,startAt:nowIso(),date:today(),effort:clampInt(last.effort,1,5,2),note:''};
+  if($('#customActivityName'))$('#customActivityName').value='';
+  $('#activityNote').value='';$('#entryCard').classList.add('hidden');
+  persist();
+}
+
 function backupAgeLabel(){
   const iso=safeIso(state.meta?.lastBackupAt);if(!iso)return 'kopia: brak';
   const days=Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/86400000));
@@ -186,7 +197,7 @@ function renderParentSnapshot(){
   badge.textContent=backupAgeLabel();
   const backup=$('#backupStatus');if(backup)backup.textContent=backupAgeLabel().replace('kopia: ','');
 }
-function setQuickDuration(minutes){const input=$('#activityDuration');if(!input)return;input.value=String(minutes);$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(minutes)));saveEntryDraft()}
+function setQuickDuration(minutes){const input=$('#activityDuration');if(!input)return;input.value=String(minutes);$$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(minutes)));saveEntryDraft()}
 
 function startActivityTimer(){
   const child=activeChild();if(!selected||!child||state.activeTimer)return;
@@ -682,6 +693,7 @@ function renderAll(){
 $('#activitySearch').oninput=renderActivities;
 ['activityDate','activityDuration','activityEffort','customActivityName','activityNote'].forEach(id=>{const el=$('#'+id);if(!el)return;el.addEventListener('input',saveEntryDraft);el.addEventListener('change',saveEntryDraft)});
 $('#repeatLastActivityBtn').onclick=repeatLastActivity;
+$('#quickStartLastActivityBtn').onclick=quickStartLastActivity;
 $$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
 $('#setupMode').onchange=renderSetupMode;
 $('#startPilotBtn').onclick=startPilot;

@@ -108,6 +108,8 @@ async function run(){
     if(!ninety)throw new Error('quick duration preset missing');
     ninety.click();
     if(d.getElementById('activityDuration').value!=='90')throw new Error('quick duration preset failed');
+    try{w.setQuickDuration(45)}catch(e){throw new Error('quick duration handler threw: '+(e?.message||e))}
+    if(d.getElementById('activityDuration').value!=='45')throw new Error('direct quick duration handler failed');
     d.getElementById('activityDuration').value='25';d.getElementById('activityNote').value='pierwszy wpis';d.getElementById('saveEntryBtn').click();await sleep(80);
     let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.entries?.length!==1||saved.entries[0].status!=='pending'||saved.entries[0].childId!=='child-a')throw new Error('pending child entry failed');
@@ -126,6 +128,13 @@ async function run(){
     d.getElementById('repeatLastActivityBtn').click();await sleep(40);
     if(d.getElementById('activityDuration').value!=='30'||!d.getElementById('selectedActivityTitle').textContent.includes('Spacer'))throw new Error('repeat last activity failed');
     d.getElementById('cancelEntryBtn').click();
+    if(d.getElementById('quickStartLastActivityBtn').classList.contains('hidden'))throw new Error('quick start last action missing');
+    d.getElementById('quickStartLastActivityBtn').click();await sleep(60);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.activeTimer?.activity!=='Spacer'||saved.activeTimer?.childId!=='child-a')throw new Error('quick start last failed');
+    w.confirm=()=>true;w.cancelActivityTimer();await sleep(60);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.activeTimer)throw new Error('quick-start timer cancel failed');
 
     sessionStorage.setItem(SESSION_KEY,String(Date.now()+600000));w.switchMode('parent',true);await sleep(80);
     if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('authorized parent session not shown');
@@ -189,7 +198,7 @@ async function run(){
     w.clearPinFailures();
     if(w.pinLockRemainingMs()>0)throw new Error('PIN lockout reset failed');
 
-    pass('universal modes, entry draft recovery, data controls, family PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
+    pass('universal modes, entry draft recovery, smart duration, quick start, data controls, family PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
