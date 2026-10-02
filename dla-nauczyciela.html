@@ -14,7 +14,7 @@
 <p><strong>W pilocie nie trzeba się logować.</strong> Nauczyciel może otworzyć panel jednym linkiem; konto będzie potrzebne dopiero w przyszłej wersji z prawdziwą synchronizacją klas.</p>
 <p>Aktywnik+ rozwija szkolny Dziennik Dodatkowej Aktywności Fizycznej o wygodną ścieżkę cyfrową, bez odbierania rodzinom możliwości korzystania z papieru.</p>
 <div class="cards">
-<article><h3>📝 Papier zostaje</h3><p>Publiczny arkusz 70 wpisów można wydrukować lub zapisać jako PDF. <strong>Autor arkusza: Ewa Gębska.</strong></p><a class="secondary" href="paper.html">Otwórz arkusz</a></article>
+<article><h3>📝 Papier zostaje</h3><p>W pilocie dostępny jest wzór źródłowy oparty na arkuszu Pani Ewy Gębskiej ze Szkoły Podstawowej Nr 3 im. Pomnik Zwycięstwa 1920 roku w Markach oraz neutralny wzór dla innych szkół.</p><a class="secondary" href="paper.html">Wzór źródłowy</a> <a class="secondary" href="paper-uniwersalny.html">Wzór uniwersalny</a></article>
 <article><h3>📱 Rodzic może używać telefonu</h3><p>Dziecko wpisuje aktywność ręcznie, wybiera szybki czas treningu albo używa Start/Stop. Rodzic zatwierdza wpisy.</p></article>
 <article><h3>📊 Raport zamiast przepisywania</h3><p>Rodzic może przekazać PDF lub CSV. Nauczyciel nie musi ręcznie sumować wszystkich minut.</p></article>
 <article><h3>📷 Skan kartki</h3><p>W panelu Szkoła można wczytać CSV/JSON albo wkleić tekst OCR. DocPilot może zrobić OCR i przygotować plik do importu.</p></article>
@@ -45,18 +45,10 @@ Na koniec miesiąca można przygotować raport PDF lub CSV.</textarea>
 </section>
 <section class="section">
 <h2>Autorstwo i rozwój</h2>
-<p><strong>Autor arkusza papierowego: Ewa Gębska.</strong></p>
+<p><strong>Źródło pierwszego pilota:</strong> arkusz autorstwa Pani Ewy Gębskiej ze Szkoły Podstawowej Nr 3 im. Pomnik Zwycięstwa 1920 roku w Markach.</p><p>W innych klasach i szkołach można używać neutralnego wzoru Aktywnik+, bez przypisywania Pani Ewie autorstwa lokalnych formularzy.</p>
 <p>Cyfrowe opracowanie i rozwój Aktywnik+: <strong>Łukasz St-cz</strong>. Kod projektu: <a href="https://github.com/lukaszst-cz/aktywnik-plus" target="_blank" rel="noopener">GitHub</a>.</p>
 </section>
 </main>
 <footer>Aktywnik+ • bezpłatny projekt rodzicielski • arkusz papierowy: Ewa Gębska • projekt cyfrowy: Łukasz St-cz</footer>
-<script>
-const teacherUrl='https://aktywnik-plus.vercel.app';
-async function copyText(text,msg){
-  const status=document.getElementById('teacherShareStatus');
-  try{await navigator.clipboard.writeText(text);status.textContent=msg}catch{status.textContent='Skopiuj ręcznie: '+text}
-}
-document.getElementById('copyTeacherLink').onclick=()=>copyText(teacherUrl,'Link skopiowany.');
-document.getElementById('copyTeacherMessage').onclick=()=>copyText(document.getElementById('teacherShareMessage').value,'Wiadomość do rodziców skopiowana.');
-</script>
+<script src="teacher.js" defer></script>
 </body></html>

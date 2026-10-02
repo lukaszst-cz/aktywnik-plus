@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pl">
+<head><meta charset="utf-8"><title>Aktywnik+ PWA smoke</title></head>
+<body>
+<div id="result">RUNNING</div>
+<script>
+const result=document.getElementById('result');
+function fail(msg){result.textContent='FAIL: '+msg;document.body.dataset.test='fail'}
+function pass(msg){result.textContent='PASS: '+msg;document.body.dataset.test='pass'}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{
+  try{
+    if(!('serviceWorker' in navigator))throw new Error('service worker API unavailable');
+    await navigator.serviceWorker.register('../sw.js');
+    await navigator.serviceWorker.ready;
+    let regs=[];
+    for(let i=0;i<40;i++){
+      regs=await navigator.serviceWorker.getRegistrations();
+      if(regs.length)break;
+      await sleep(100);
+    }
+    if(!regs.length)throw new Error('service worker not registered');
+    let names=[];
+    for(let i=0;i<50;i++){
+      names=await caches.keys();
+      if(names.some(n=>n.startsWith('aktywnik-plus-v')))break;
+      await sleep(100);
+    }
+    if(!names.some(n=>n.startsWith('aktywnik-plus-v')))throw new Error('PWA cache missing');
+    const manifest=await fetch('../manifest.webmanifest').then(r=>r.json());
+    if(manifest.start_url!=='./app.html')throw new Error('manifest start_url invalid');
+    if(!Array.isArray(manifest.icons)||manifest.icons.length<2)throw new Error('manifest icons missing');
+    const cache=await caches.open(names.find(n=>n.startsWith('aktywnik-plus-v')));
+    const assets=['../app.html','../app.js','../styles.css'].map(x=>new URL(x,location.href).href);
+    for(const asset of assets){
+      let hit=null;
+      for(let i=0;i<50;i++){
+        hit=await cache.match(asset);
+        if(hit)break;
+        await sleep(100);
+      }
+      if(!hit)throw new Error('cached asset missing: '+asset);
+    }
+    pass('service worker, cache, manifest and core assets');
+  }catch(e){fail(e.message||String(e))}
+})();
+</script>
+</body>
+</html>

@@ -22,6 +22,8 @@ jobs:
           node --check app.js
           node --check install.js
           node --check share.js
+          node --check paper.js
+          node --check teacher.js
           node --check sw.js
           node --check api/health.js
           node --check api/capabilities.js
@@ -50,7 +52,19 @@ jobs:
                   continue
               assert os.path.exists(path), f"missing cached asset: {path}"
           print("manifest and service-worker assets OK")
+
+          for page in ("paper.html","dla-nauczyciela.html","paper-uniwersalny.html"):
+              with open(page, encoding="utf-8") as f:
+                  html=f.read()
+              assert "onclick=" not in html, f"inline handler blocked by CSP: {page}"
+              assert "<script>" not in html, f"inline script blocked by CSP: {page}"
+          print("CSP-safe public pages OK")
           PY
+
+      - name: Set up Node for browser runner
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Start local server
         run: |
@@ -58,16 +72,49 @@ jobs:
           echo $! > /tmp/aktywnik-http.pid
           sleep 2
 
+      - name: Paper form browser smoke
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --user-data-dir=/tmp/aktywnik-paper-chrome --virtual-time-budget=4000 --dump-dom 'http://127.0.0.1:8765/paper.html' > /tmp/aktywnik-paper.html
+          test "$(grep -o '<tr><td>' /tmp/aktywnik-paper.html | wc -l)" -eq 70
+          echo "Paper form 70 rows PASS"
+
       - name: Browser UI smoke test
         run: |
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME"
-          "$CHROME"             --headless=new             --no-sandbox             --disable-gpu             --user-data-dir=/tmp/aktywnik-chrome             --virtual-time-budget=12000             --dump-dom             'http://127.0.0.1:8765/tests/smoke.html?skipPwa=1'             > /tmp/aktywnik-smoke.html
-          grep -o '<div id="result"[^>]*>[^<]*' /tmp/aktywnik-smoke.html || true
-          grep -q 'data-test="pass"' /tmp/aktywnik-smoke.html
-          grep -q 'PASS: pilot, timer, validation, manual activity, approval, report, multi-item class handlers, backup, manifest and persistence' /tmp/aktywnik-smoke.html
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --no-first-run \
+            --remote-debugging-port=9222 \
+            --user-data-dir=/tmp/aktywnik-chrome \
+            'http://127.0.0.1:8765/tests/smoke.html?skipPwa=1' \
+            >/tmp/aktywnik-chrome.log 2>&1 &
+          echo $! > /tmp/aktywnik-chrome.pid
+          sleep 2
+          node tests/run-smoke.mjs 9222 'http://127.0.0.1:8765/tests/smoke.html'
           echo "Aktywnik+ browser smoke PASS"
 
+      - name: PWA runtime smoke test
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --no-first-run \
+            --remote-debugging-port=9223 \
+            --user-data-dir=/tmp/aktywnik-chrome-pwa \
+            'http://127.0.0.1:8765/tests/pwa-smoke.html' \
+            >/tmp/aktywnik-chrome-pwa.log 2>&1 &
+          echo $! > /tmp/aktywnik-chrome-pwa.pid
+          sleep 2
+          node tests/run-smoke.mjs 9223 'http://127.0.0.1:8765/tests/pwa-smoke.html'
+          echo "Aktywnik+ PWA runtime smoke PASS"
 
       - name: Backend API unit smoke
         run: |

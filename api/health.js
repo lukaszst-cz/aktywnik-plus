@@ -1,5 +1,7 @@
 'use strict';
 
+const {cloudReady}=require('./_lib/backend');
+
 module.exports = function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -8,19 +10,18 @@ module.exports = function handler(req,res){
     return res.status(405).json({ok:false,error:'method_not_allowed'});
   }
 
-  const databaseConfigured=Boolean(process.env.DATABASE_URL || process.env.SUPABASE_URL);
-  const authConfigured=process.env.AUTH_MODE && process.env.AUTH_MODE!=='disabled';
-  const cloudSyncEnabled=process.env.AKTYWNIK_CLOUD_SYNC==='true';
+  const cloud=cloudReady();
 
   return res.status(200).json({
     ok:true,
     service:'aktywnik-plus-api',
-    version:'0.1.3',
+    version:'0.2.0',
     environment:process.env.VERCEL_ENV || 'local',
     backend:'scaffold',
-    databaseConfigured,
-    authConfigured:Boolean(authConfigured),
-    cloudSyncEnabled,
+    databaseConfigured:cloud.databaseConfigured,
+    authConfigured:cloud.authConfigured,
+    rlsVerified:cloud.rlsVerified,
+    cloudSyncEnabled:cloud.enabled,
     timestamp:new Date().toISOString()
   });
 };

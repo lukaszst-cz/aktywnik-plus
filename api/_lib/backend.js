@@ -1,12 +1,23 @@
 'use strict';
 
 function cloudReady(){
-  const databaseConfigured=Boolean(process.env.DATABASE_URL || process.env.SUPABASE_URL);
+  const directDatabaseConfigured=Boolean(process.env.DATABASE_URL);
+  const supabaseConfigured=Boolean(
+    process.env.SUPABASE_URL &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  const databaseConfigured=directDatabaseConfigured || supabaseConfigured;
   const authConfigured=Boolean(process.env.AUTH_MODE && process.env.AUTH_MODE!=='disabled');
+  const rlsVerified=process.env.AKTYWNIK_RLS_VERIFIED==='true';
+  const explicitEnable=process.env.AKTYWNIK_CLOUD_SYNC==='true';
+
   return {
     databaseConfigured,
+    supabaseConfigured,
     authConfigured,
-    enabled:process.env.AKTYWNIK_CLOUD_SYNC==='true' && databaseConfigured && authConfigured
+    rlsVerified,
+    explicitEnable,
+    enabled:explicitEnable && databaseConfigured && authConfigured && rlsVerified
   };
 }
 
@@ -25,7 +36,8 @@ function requireCloud(res){
       requires:{
         database:!state.databaseConfigured,
         authentication:!state.authConfigured,
-        explicitEnable:process.env.AKTYWNIK_CLOUD_SYNC!=='true'
+        rowLevelSecurityVerification:!state.rlsVerified,
+        explicitEnable:!state.explicitEnable
       }
     });
     return null;
