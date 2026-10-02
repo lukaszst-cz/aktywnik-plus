@@ -38,8 +38,8 @@ async function run(){
     d.getElementById('pilotChildName').value='Dziecko A';
     d.getElementById('parentPinSetup').value='2468';
     d.getElementById('parentPinConfirm').value='2468';
-    d.getElementById('startPilotBtn').click();
-    await sleep(450);
+    await w.startPilot();
+    await sleep(120);
     let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.schemaVersion!==4||saved.children?.length!==1)throw new Error('family schema setup failed');
     if(!saved.parentAuth?.pinHash||saved.parentAuth.pinHash==='2468')throw new Error('PIN is not hashed');
@@ -67,13 +67,13 @@ async function run(){
 
     d.getElementById('parentAccessBtn').click();
     d.getElementById('parentPinInput').value='1111';
-    d.getElementById('unlockParentBtn').click();
-    await sleep(350);
+    await w.unlockParent();
+    await sleep(120);
     if(!d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('wrong PIN unlocked parent');
 
     d.getElementById('parentPinInput').value='2468';
-    d.getElementById('unlockParentBtn').click();
-    await sleep(450);
+    await w.unlockParent();
+    await sleep(120);
     if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('correct PIN did not unlock parent');
     if(!d.getElementById('schoolPanel').classList.contains('hidden'))throw new Error('school opened automatically');
 
@@ -118,8 +118,8 @@ async function run(){
 
     d.getElementById('parentAccessBtn').click();
     d.getElementById('parentPinInput').value='2468';
-    d.getElementById('unlockParentBtn').click();
-    await sleep(350);
+    await w.unlockParent();
+    await sleep(120);
     const reject=d.querySelector('[data-reject]');
     if(!reject)throw new Error('reject action missing');
     reject.click();
