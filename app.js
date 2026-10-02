@@ -145,7 +145,7 @@ function pickActivity(name){
   const child=activeChild();if(!child)return;selected=name;editingEntryId=null;
   const previous=latestMatchingActivityEntry(child.id,name),suggestedMinutes=previous?clampInt(previous.minutes,1,600,30):30,suggestedEffort=previous?clampInt(previous.effort,1,5,2):2;
   $('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#activityDuration').value=String(suggestedMinutes);$('#activityEffort').value=String(suggestedEffort);if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';
-  $('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(suggestedMinutes)));
+  $$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(suggestedMinutes)));
   showDurationSuggestion(name);
   $('#saveEntryBtn').textContent='Zapisz ręcznie';$('#startTimerBtn').classList.remove('hidden');$('#entryCard').classList.remove('hidden');delete $('#entryCard').dataset.restoredDraft;saveEntryDraft();$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
 }
