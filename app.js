@@ -9,8 +9,8 @@ const MAX_JOIN_REQUESTS=1000;
 const PARENT_SESSION_KEY='aktywnik-plus-parent-unlocked-until';
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
-const defaultState={schemaVersion:4,pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
-let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null;
+const defaultState={schemaVersion:4,pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
+let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[];
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
@@ -50,6 +50,8 @@ function renderActivities(){
   const fav=$('#favoriteActivities');fav.innerHTML='';ACTIVITIES.filter(a=>(child.favorites||DEFAULT_FAVORITES).includes(a[0])).forEach(a=>fav.append(activityButton(a)));
   const q=$('#activitySearch').value.toLowerCase(),all=$('#allActivities');all.innerHTML='';ACTIVITIES.filter(a=>a[0].toLowerCase().includes(q)).forEach(a=>all.append(activityButton(a)));
 }
+function setQuickDuration(minutes){const input=$('#activityDuration');if(!input)return;input.value=String(minutes);$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(minutes)))}
+
 function startActivityTimer(){
   const child=activeChild();if(!selected||!child||state.activeTimer)return;
   if(editingEntryId){alert('Podczas poprawiania wpisu zapisz czas ręcznie.');return}
@@ -307,7 +309,7 @@ function setReportStatus(classId,childId,status){
 function renderClasses(){
   const classes=state.classes.filter(c=>!c.archived),box=$('#classList');if(!box)return;if(!parentUnlocked()){box.innerHTML='';return}box.innerHTML='';
   classes.forEach(c=>{const children=c.children||[],el=document.createElement('div');el.className='entry',childRows=children.map(ch=>'<div class="class-child"><span><strong>'+escapeHtml(ch.name)+'</strong> · '+(ch.mode==='paper'?'papier':ch.mode==='hybrid'?'hybrydowo':'cyfrowo')+'</span><select data-report-class="'+escapeAttr(c.id)+'" data-report-child="'+escapeAttr(ch.id)+'"><option value="missing" '+(ch.reportStatus==='missing'?'selected':'')+'>brak raportu</option><option value="preparing" '+(ch.reportStatus==='preparing'?'selected':'')+'>w przygotowaniu</option><option value="submitted" '+(ch.reportStatus==='submitted'?'selected':'')+'>oddany</option><option value="reviewed" '+(ch.reportStatus==='reviewed'?'selected':'')+'>sprawdzony</option></select></div>').join('');el.innerHTML='<div style="width:100%"><strong>'+escapeHtml(c.name)+'</strong><small>'+escapeHtml(c.schoolYear)+' · kod klasy: <b>'+escapeHtml(c.code)+'</b> · '+children.length+' dzieci</small>'+(childRows?'<div class="class-children">'+childRows+'</div>':'<small>Brak dzieci w klasie.</small>')+'</div>';box.append(el)});
-  if(!classes.length)box.innerHTML='<small>Nie utworzono jeszcze żadnej klasy.</small>';const select=$('#paperClassId');if(select)select.innerHTML=classes.map(c=>'<option value="'+escapeAttr(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.schoolYear)+'</option>').join('');$$('[data-report-child]').forEach(sel=>sel.onchange=()=>setReportStatus(sel.dataset.reportClass,sel.dataset.reportChild,sel.value));
+  if(!classes.length)box.innerHTML='<small>Nie utworzono jeszcze żadnej klasy.</small>';const options=classes.map(c=>'<option value="'+escapeAttr(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.schoolYear)+'</option>').join('');const select=$('#paperClassId');if(select)select.innerHTML=options;const importSelect=$('#importClassId');if(importSelect)importSelect.innerHTML=options;$('[data-report-child]').forEach(sel=>sel.onchange=()=>setReportStatus(sel.dataset.reportClass,sel.dataset.reportChild,sel.value));
 }
 function renderJoinRequests(){
   const box=$('#classJoinRequests');if(!box)return;if(!parentUnlocked()){box.innerHTML='';return}
@@ -315,6 +317,54 @@ function renderJoinRequests(){
   pending.forEach(r=>{const klass=state.classes.find(c=>c.id===r.classId),el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+escapeHtml(r.childName)+'</strong><small>'+escapeHtml(klass?.name||'Klasa')+' · '+(r.mode==='paper'?'papier':r.mode==='hybrid'?'hybrydowo':'cyfrowo')+'</small></div><div class="entry-actions"><button class="primary" data-join-accept="'+escapeAttr(r.id)+'">Akceptuj</button><button class="ghost" data-join-reject="'+escapeAttr(r.id)+'">Odrzuć</button></div>';box.append(el)});
   if(!pending.length)box.innerHTML='<small>Brak oczekujących zgłoszeń.</small>';$$('[data-join-accept]').forEach(b=>b.onclick=()=>acceptJoinRequest(b.dataset.joinAccept));$$('[data-join-reject]').forEach(b=>b.onclick=()=>rejectJoinRequest(b.dataset.joinReject));
 }
+
+function parseDurationValue(value){
+  const raw=cleanText(value,40).toLowerCase().replace(',', '.');if(!raw)return 0;
+  const hhmm=raw.match(/^(\d{1,2})\s*:\s*(\d{1,2})$/);if(hhmm)return clampInt(Number(hhmm[1])*60+Number(hhmm[2]),1,600,0);
+  const h=raw.match(/(\d+(?:\.\d+)?)\s*h/),m=raw.match(/(\d+)\s*min/);
+  if(h||m)return clampInt((h?Number(h[1])*60:0)+(m?Number(m[1]):0),1,600,0);
+  return clampInt(raw.replace(/[^0-9.]/g,''),1,600,0);
+}
+function normalizeImportRow(row){
+  if(Array.isArray(row))row={date:row[0],activity:row[1],minutes:row[2],effort:row[3],note:row[4]};
+  if(!row||typeof row!=='object')return null;const map={};Object.entries(row).forEach(([k,v])=>map[String(k).toLowerCase().trim()]=v);
+  const date=cleanText(map.date??map.data??map['data aktywności'],20),activity=cleanText(map.activity??map.aktywnosc??map['aktywność']??map['rodzaj aktywności']??map.rodzaj,80),minutes=parseDurationValue(map.minutes??map.minuty??map.czas??map['czas trwania']),effort=clampInt(map.effort??map.wysilek??map['wysiłek']??map['poziom zmęczenia'],1,5,2),note=cleanText(map.note??map.uwagi??map['uwaga']??map['podpis / uwagi opiekuna'],160);
+  if(!allowedActivityDate(date)||!activity||!minutes)return null;return {date,activity,minutes,effort,note};
+}
+function parseDelimitedImport(text){
+  const lines=String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);if(!lines.length)return [];
+  const first=lines[0],delimiter=first.includes(';')?';':first.includes('\t')?'\t':first.includes('|')?'|':',',split=line=>line.split(delimiter).map(x=>x.trim().replace(/^"|"$/g,''));
+  let start=0,headers=null;const firstCols=split(lines[0]);if(firstCols.some(x=>/data|aktywn|czas|minutes|activity/i.test(x))){headers=firstCols.map(x=>x.toLowerCase().trim());start=1}
+  return lines.slice(start).map(line=>{const cols=split(line);if(headers){const o={};headers.forEach((h,i)=>o[h]=cols[i]??'');return normalizeImportRow(o)}return normalizeImportRow(cols)}).filter(Boolean);
+}
+function parseImportText(text){
+  const raw=String(text||'').trim();if(!raw)return [];if(raw.startsWith('{')||raw.startsWith('[')){try{const parsed=JSON.parse(raw),rows=Array.isArray(parsed)?parsed:(Array.isArray(parsed.rows)?parsed.rows:[]);return rows.map(normalizeImportRow).filter(Boolean)}catch{}}
+  return parseDelimitedImport(raw);
+}
+async function loadPaperImportFile(file){
+  if(!guardParent()||!file)return;try{$('#ocrPaste').value=await file.text();$('#paperImportStatus').innerHTML='<p class="status-approved">Plik wczytany. Sprawdź podgląd przed zapisem.</p>'}catch{$('#paperImportStatus').innerHTML='<p class="status-pending">Nie udało się odczytać pliku.</p>'}
+}
+function renderPaperImportPreview(){
+  if(!guardParent())return;pendingPaperImportRows=parseImportText($('#ocrPaste').value);const box=$('#paperImportPreview');
+  if(!pendingPaperImportRows.length){box.innerHTML='<p class="status-pending">Nie znaleziono poprawnych wierszy. Użyj CSV/JSON lub formatu: data; aktywność; czas; wysiłek; uwagi.</p>';$('#savePaperImportBtn').disabled=true;return}
+  box.innerHTML='<div class="import-table"><div class="import-head">Data</div><div class="import-head">Aktywność</div><div class="import-head">Min</div><div class="import-head">Wysiłek</div><div class="import-head">Uwagi</div>'+pendingPaperImportRows.map((r,i)=>'<input data-import-field="date" data-import-row="'+i+'" value="'+escapeAttr(r.date)+'"><input data-import-field="activity" data-import-row="'+i+'" value="'+escapeAttr(r.activity)+'"><input data-import-field="minutes" data-import-row="'+i+'" type="number" min="1" max="600" value="'+r.minutes+'"><input data-import-field="effort" data-import-row="'+i+'" type="number" min="1" max="5" value="'+r.effort+'"><input data-import-field="note" data-import-row="'+i+'" value="'+escapeAttr(r.note)+'">').join('')+'</div>';
+  $('#savePaperImportBtn').disabled=false;$('#paperImportStatus').innerHTML='<p class="status-approved">Rozpoznano '+pendingPaperImportRows.length+' wierszy. Możesz je poprawić przed zapisem.</p>';
+}
+function collectPaperImportPreview(){
+  return pendingPaperImportRows.map((r,i)=>{const get=f=>document.querySelector('[data-import-row="'+i+'"][data-import-field="'+f+'"]')?.value??'';return normalizeImportRow({date:get('date'),activity:get('activity'),minutes:get('minutes'),effort:get('effort'),note:get('note')})}).filter(Boolean);
+}
+function savePaperImport(){
+  if(!guardParent())return;const rows=collectPaperImportPreview(),childName=cleanText($('#importChildName').value,60),classId=$('#importClassId').value;
+  if(!rows.length||!childName){$('#paperImportStatus').innerHTML='<p class="status-pending">Podaj dziecko i co najmniej jeden poprawny wiersz.</p>';return}
+  state.paperImports=state.paperImports||[];state.paperImports.unshift({id:uuid(),classId,childName,rows,source:'paper_ocr',createdAt:nowIso()});
+  const klass=state.classes.find(c=>c.id===classId);if(klass){klass.children=klass.children||[];let child=klass.children.find(c=>String(c.name||'').toLowerCase()===childName.toLowerCase());if(!child){child={id:uuid(),familyChildId:null,name:childName,mode:'paper',reportStatus:'submitted',joinedAt:nowIso()};klass.children.push(child)}else child.reportStatus='submitted'}
+  pendingPaperImportRows=[];$('#ocrPaste').value='';$('#paperImportFile').value='';$('#savePaperImportBtn').disabled=true;persist();$('#paperImportStatus').innerHTML='<p class="status-approved">Karta zapisana lokalnie i oznaczona jako oddana.</p>';
+}
+function renderPaperImports(){
+  const box=$('#paperImportHistory');if(!box)return;if(!parentUnlocked()){box.innerHTML='';return}const imports=state.paperImports||[];
+  box.innerHTML=imports.slice(0,20).map(x=>{const klass=state.classes.find(c=>c.id===x.classId),total=(x.rows||[]).reduce((sum,r)=>sum+Number(r.minutes||0),0);return '<div class="entry"><div><strong>'+escapeHtml(x.childName)+' · '+(x.rows||[]).length+' wpisów</strong><small>'+escapeHtml(klass?.name||'bez klasy')+' · '+fmtMin(total)+' · import OCR/DocPilot</small></div></div>'}).join('')||'<small>Nie zaimportowano jeszcze żadnej karty papierowej.</small>';
+}
+
 async function startPilot(){
   const name=cleanText($('#pilotChildName').value,60),pin=$('#parentPinSetup').value,confirmPin=$('#parentPinConfirm').value;
   if(!name){alert('Podaj nazwę dziecka.');return}
@@ -364,12 +414,13 @@ function safeBackupState(raw){
   }).filter(Boolean);
   const rewards=(Array.isArray(d.rewards)?d.rewards:[]).slice(0,2000).map(r=>{if(!r||typeof r!=='object')return null;const childId=ids.has(r.childId)?r.childId:fallback;if(!childId)return null;return {...r,id:cleanText(r.id,80)||uuid(),childId,type:['plus','grade','note'].includes(r.type)?r.type:'plus',value:cleanText(r.value,20),date:validDate(r.date)?r.date:today(),note:cleanText(r.note,160),createdAt:r.createdAt||nowIso()}}).filter(Boolean);
   const classes=(Array.isArray(d.classes)?d.classes:[]).slice(0,MAX_CLASSES);
+  const paperImports=(Array.isArray(d.paperImports)?d.paperImports:[]).slice(0,500).map(x=>x&&typeof x==='object'?{...x,id:cleanText(x.id,80)||uuid(),classId:cleanText(x.classId,80),childName:cleanText(x.childName,60),rows:Array.isArray(x.rows)?x.rows.slice(0,200):[],source:'paper_ocr',createdAt:x.createdAt||nowIso()}:null).filter(Boolean);
   const joinRequests=(Array.isArray(d.joinRequests)?d.joinRequests:[]).slice(0,MAX_JOIN_REQUESTS).map(r=>r&&typeof r==='object'?{...r,childId:ids.has(r.childId)?r.childId:null,childName:cleanText(r.childName,60),status:['pending','accepted','rejected'].includes(r.status)?r.status:'pending'}:null).filter(Boolean);
   let activeTimer=null;
   if(d.activeTimer&&typeof d.activeTimer==='object'){const childId=ids.has(d.activeTimer.childId)?d.activeTimer.childId:fallback;if(childId&&cleanText(d.activeTimer.activity,80)&&d.activeTimer.startAt)activeTimer={...d.activeTimer,childId,activity:cleanText(d.activeTimer.activity,80),date:validDate(d.activeTimer.date)?d.activeTimer.date:today(),effort:clampInt(d.activeTimer.effort,1,5,2),note:cleanText(d.activeTimer.note,120)}}
   const auth=d.parentAuth&&typeof d.parentAuth==='object'?d.parentAuth:{};
   const parentAuth={pinSalt:cleanText(auth.pinSalt,300),pinHash:cleanText(auth.pinHash,300),iterations:clampInt(auth.iterations,50000,500000,PIN_ITERATIONS),autoLockMinutes:clampInt(auth.autoLockMinutes,1,30,5)};
-  return {...base,schemaVersion:4,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
+  return {...base,schemaVersion:4,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
 function exportBackup(){
   if(!guardParent())return;const payload={format:'aktywnik-plus-backup',version:4,exportedAt:nowIso(),data:state},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -390,7 +441,7 @@ function renderAll(){
   const child=activeChild();if(!child)return;
   renderTimer();renderActivities();renderChildEntries();renderChildRewards();renderStats();
   if(parentUnlocked()){
-    renderParentChildren();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderStorageStatus();
+    renderParentChildren();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();
   }else{
     $('#approvalList').innerHTML='';$('#approvalHistory').innerHTML='';$('#pendingCount').textContent='0';$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(currentMode!=='child')currentMode='child';
   }
@@ -399,6 +450,7 @@ function renderAll(){
   $('#schoolPanel').classList.toggle('hidden',currentMode!=='school');
 }
 $('#activitySearch').oninput=renderActivities;
+$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
 $('#startPilotBtn').onclick=startPilot;
 $('#parentAccessBtn').onclick=openParentGate;
 $('#unlockParentBtn').onclick=unlockParent;
@@ -421,6 +473,9 @@ $('#deleteLocalDataBtn').onclick=deleteLocalData;
 $('#createClassBtn').onclick=createClass;
 $('#sendJoinRequestBtn').onclick=sendJoinRequest;
 $('#addPaperChildBtn').onclick=addPaperChild;
+$('#paperImportFile').onchange=e=>loadPaperImportFile(e.target.files?.[0]);
+$('#parsePaperImportBtn').onclick=renderPaperImportPreview;
+$('#savePaperImportBtn').onclick=savePaperImport;
 $('#saveEntryBtn').onclick=saveEntry;
 $('#startTimerBtn').onclick=startActivityTimer;
 $('#stopTimerBtn').onclick=stopActivityTimer;
