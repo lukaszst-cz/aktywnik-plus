@@ -11,6 +11,24 @@
 - zachowana jest migracja wcześniejszego pojedynczego klucza szkicu.
 
 
+## 0.5.0-beta.2 — Pull & Merge
+
+### Synchronizacja osobista
+- dodano pobieranie wpisów przez `GET /api/v1/sync`;
+- po zalogowaniu działa cykl **push → pull**;
+- brakujące wpisy z innego urządzenia są dodawane lokalnie;
+- dla tego samego wpisu nowszy timestamp wygrywa;
+- nowsza wersja lokalna pozostaje lokalnie i wraca do kolejki push;
+- import z chmury nie wywołuje pętli synchronizacji;
+- status ostatniej synchronizacji jest zapamiętywany lokalnie;
+- statusy sync są dostępne po polsku i angielsku.
+
+### Bezpieczniki
+- usuwanie wpisów nie jest jeszcze synchronizowane między urządzeniami;
+- tryb rodzinny nie jest jeszcze objęty cloud sync;
+- chmura pozostaje fail-closed do zakończenia testów wielu kont.
+
+
 ## 0.5.0-beta.1 — Sync Foundation
 
 ### Konto i synchronizacja
