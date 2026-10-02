@@ -6,7 +6,8 @@ Wydanie 0.2.0 przebudowuje rodzinny pilot tak, aby dziecko korzystało niezależ
 
 - strefa rodzica chroniona lokalnym PIN-em;
 - PIN haszowany PBKDF2 z losową solą;
-- automatyczne blokowanie strefy rodzica;
+- automatyczne blokowanie strefy rodzica z wyborem czasu blokady;
+- możliwość zmiany PIN-u rodzica po podaniu obecnego PIN-u;
 - jeden rodzic może prowadzić wiele profili dzieci;
 - każde urządzenie ma jeden aktywny profil dziecka, którego zmiana wymaga strefy rodzica;
 - wszystkie wpisy, timery, raporty, statystyki, plusy i oceny są przypisane do konkretnego dziecka;
