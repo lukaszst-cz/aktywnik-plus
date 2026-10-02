@@ -264,16 +264,16 @@ function setDeviceChild(){
   if(state.activeTimer&&state.activeTimer.childId!==child.id){alert('Najpierw zakończ trwający pomiar aktywności na obecnym profilu.');return}
   state.activeChildId=child.id;persist();
 }
-function purgeChildLocalData(childId){
-  state.entries=state.entries.filter(e=>e.childId!==childId);
-  state.rewards=state.rewards.filter(r=>r.childId!==childId);
-  state.approvalEvents=state.approvalEvents.filter(ev=>ev.childId!==childId);
-  state.joinRequests=state.joinRequests.filter(r=>r.childId!==childId);
-  state.paperImports=(state.paperImports||[]).filter(x=>x.familyChildId!==childId);
-  state.classes.forEach(klass=>{
+function purgeChildLocalData(childId,target=state){
+  target.entries=(target.entries||[]).filter(e=>e.childId!==childId);
+  target.rewards=(target.rewards||[]).filter(r=>r.childId!==childId);
+  target.approvalEvents=(target.approvalEvents||[]).filter(ev=>ev.childId!==childId);
+  target.joinRequests=(target.joinRequests||[]).filter(r=>r.childId!==childId);
+  target.paperImports=(target.paperImports||[]).filter(x=>x.familyChildId!==childId);
+  (target.classes||[]).forEach(klass=>{
     klass.children=(klass.children||[]).filter(c=>c.familyChildId!==childId);
   });
-  if(state.activeTimer?.childId===childId)state.activeTimer=null;
+  if(target.activeTimer?.childId===childId)target.activeTimer=null;
 }
 function removeChild(){
   if(!guardParent())return;const child=parentChild();if(!child)return;if(state.children.length<=1){alert('Musi pozostać co najmniej jeden profil dziecka.');return}
