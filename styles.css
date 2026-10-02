@@ -77,3 +77,21 @@ button:disabled{opacity:.5;cursor:not-allowed}
   body.school-print-mode .school-print-page{margin:0;width:210mm;height:297mm;min-height:297mm;box-shadow:none}
   @page{size:A4 portrait;margin:0}
 }
+
+
+/* 0.3.0 — daily overview */
+.overview-card{border:1px solid #cbd5e1;background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%)}
+.snapshot-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.snapshot-item{min-width:0;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:13px}
+.snapshot-item strong{display:block;font-size:1.12rem;line-height:1.25;overflow-wrap:anywhere}
+.snapshot-item small,.calm-note{color:#64748b}
+.calm-note{display:block;margin-top:10px;line-height:1.45}
+.save-status[data-state="ok"]{background:#dcfce7;color:#166534}
+.save-status[data-state="error"]{background:#fee2e2;color:#991b1b}
+@media(max-width:760px){
+  .snapshot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .snapshot-item{padding:11px}
+}
+@media(max-width:420px){
+  .snapshot-grid{grid-template-columns:1fr}
+}

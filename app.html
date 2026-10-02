@@ -15,11 +15,12 @@
     <div>
       <strong class="brand">Aktywnik+</strong>
       <span class="tagline">ruch bez presji</span>
-      <span class="version-badge">Pilot 0.2.1</span>
+      <span class="version-badge">Pilot 0.3.0</span>
       <span class="local-session-badge">bez logowania · dane lokalne</span>
     </div>
     <button class="install-mini" type="button" data-install-pwa>Zainstaluj</button>
     <div class="secure-actions">
+      <span id="saveStatusBadge" class="badge save-status" aria-live="polite">zapis lokalny</span>
       <span id="deviceChildBadge" class="badge"></span>
       <button id="parentAccessBtn" class="ghost">Strefa rodzica 🔒</button>
     </div>
@@ -55,6 +56,18 @@
         </div>
         <div class="metric"><span id="todayMinutes">0</span><small>min dzisiaj</small></div>
       </div>
+
+      <section id="childOverviewCard" class="card overview-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Szybki podgląd</p>
+            <h2>Ten tydzień</h2>
+          </div>
+          <button id="repeatLastActivityBtn" class="ghost hidden" type="button">Powtórz ostatnią aktywność</button>
+        </div>
+        <div id="childWeekSnapshot" class="snapshot-grid"></div>
+        <small class="calm-note">To tylko podsumowanie aktywności — bez celów, rankingów i porównywania z innymi.</small>
+      </section>
 
       <section id="timerStatusCard" class="card timer-card hidden">
         <div class="timer-live">
@@ -136,6 +149,18 @@
       <section class="hero card">
         <div><p class="eyebrow">Strefa rodzica 🔓</p><h1>Kontrola rodzicielska</h1><p>Wybierz dziecko, sprawdź wpisy i zdecyduj: zatwierdź, popraw albo odrzuć.</p></div>
         <div class="metric"><span id="pendingCount">0</span><small>oczekuje</small></div>
+      </section>
+
+      <section class="card overview-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Szybki podgląd</p>
+            <h2 id="parentSnapshotTitle">Dzisiaj i ten tydzień</h2>
+          </div>
+          <span id="parentBackupBadge" class="badge">kopia: brak</span>
+        </div>
+        <div id="parentSnapshot" class="snapshot-grid"></div>
+        <small id="parentSnapshotHint" class="calm-note">Podsumowanie dotyczy wybranego profilu dziecka.</small>
       </section>
 
       <section class="card">

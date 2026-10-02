@@ -38,7 +38,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.2.1 — Family Roles Pilot**
+**Aktywnik+ 0.3.0 — Daily UX & Reliability**
+
+- [Release notes 0.3.0](docs/RELEASE-0.3.0.md)
 
 - [Release notes 0.2.1](docs/RELEASE-0.2.1.md)
 - [Release notes 0.2.0](docs/RELEASE-0.2.0.md)
@@ -50,6 +52,9 @@ Przeczytaj przed pilotażem:
 ## Co już działa
 
 - panel dziecka z dużą listą aktywności;
+- szybki podgląd tygodnia bez celów, rankingów i porównywania dzieci;
+- przycisk „Powtórz ostatnią aktywność” wypełniający ostatni typ, czas i poziom wysiłku;
+- widoczny status lokalnego zapisu i informacja o świeżości kopii danych w strefie rodzica;
 - ulubione aktywności do szybkiego wyboru;
 - wpis aktywności z datą, czasem, wysiłkiem i notatką;
 - **Start/Stop aktywności** — pomiar czasu oparty na zapisanym czasie startu, działający także po zminimalizowaniu lub ponownym otwarciu PWA;
@@ -174,4 +179,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.2.1 Family Roles Pilot` — lokalny pilot rodzinny z PIN-em rodzica i wieloma profilami dzieci. Dane pozostają lokalnie na urządzeniu. Osobne konta dziecka, synchronizacja między telefonami i prawdziwe role szkoły pozostają wyłączone do czasu uruchomienia backendu.
+`0.3.0 Daily UX & Reliability` — lokalny pilot rodzinny z PIN-em rodzica, wieloma profilami dzieci, szybszym codziennym przepływem i mocniejszą kontrolą zapisu lokalnego. Dane pozostają lokalnie na urządzeniu. Osobne konta dziecka, synchronizacja między telefonami i prawdziwe role szkoły pozostają wyłączone do czasu uruchomienia backendu.

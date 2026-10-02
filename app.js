@@ -13,10 +13,20 @@ const MAX_PIN_ATTEMPTS=5;
 const PIN_LOCK_MS=30000;
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
-const defaultState={schemaVersion:4,pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
-let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let parentReportMonth=today().slice(0,7);
+const defaultState={schemaVersion:5,meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
+let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let parentReportMonth=today().slice(0,7); let lastPersistOk=true;
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
-function persist(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
+function persist(){
+  state.meta={...(state.meta||{}),lastWriteAt:nowIso()};
+  try{
+    localStorage.setItem(KEY,JSON.stringify(state));
+    lastPersistOk=true;
+  }catch(err){
+    lastPersistOk=false;
+    console.error('Aktywnik+: local save failed',err);
+  }
+  renderAll();
+}
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
 function fmtMin(m){const h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
 function today(){const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
@@ -32,6 +42,22 @@ function parentChild(){return getChild(parentSelectedChildId)||activeChild()}
 function childEntries(childId){return state.entries.filter(e=>e.childId===childId)}
 function childRewards(childId){return state.rewards.filter(r=>r.childId===childId)}
 function approvalRequired(child){return child?.requireParentApproval!==false}
+function safeIso(value){const d=new Date(value||'');return Number.isNaN(d.getTime())?null:d.toISOString()}
+function weekBounds(ref=new Date()){
+  const start=new Date(ref);const offset=(start.getDay()+6)%7;start.setDate(start.getDate()-offset);start.setHours(0,0,0,0);
+  const end=new Date(start);end.setDate(end.getDate()+7);return {start,end};
+}
+function usableChildEntries(childId){
+  const {start,end}=weekBounds();
+  return childEntries(childId).filter(e=>e.status!=='rejected'&&validDate(e.date)&&new Date(e.date+'T12:00:00')<end);
+}
+function latestActivityEntry(childId){
+  return childEntries(childId).filter(e=>e.status!=='rejected'&&validDate(e.date)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;
+}
+function recentDuplicate(childId,payload){
+  const cutoff=Date.now()-20000;
+  return state.entries.some(e=>e.childId===childId&&e.source==='manual'&&e.date===payload.date&&e.activity===payload.activity&&Number(e.minutes)===Number(payload.minutes)&&String(e.note||'')===String(payload.note||'')&&new Date(e.createdAt||0).getTime()>=cutoff);
+}
 function pinConfigured(){return !!state.parentAuth?.pinHash&&!!state.parentAuth?.pinSalt}
 function appReady(){return state.children.length>0&&pinConfigured()}
 function bytesToB64(bytes){let out='';bytes.forEach(b=>out+=String.fromCharCode(b));return btoa(out)}
@@ -65,6 +91,37 @@ function renderActivities(){
   const child=activeChild();if(!child)return;
   const fav=$('#favoriteActivities');fav.innerHTML='';ACTIVITIES.filter(a=>(child.favorites||DEFAULT_FAVORITES).includes(a[0])).forEach(a=>fav.append(activityButton(a)));
   const q=$('#activitySearch').value.toLowerCase(),all=$('#allActivities');all.innerHTML='';ACTIVITIES.filter(a=>a[0].toLowerCase().includes(q)).forEach(a=>all.append(activityButton(a)));
+}
+function renderSaveStatus(){
+  const el=$('#saveStatusBadge');if(!el)return;
+  if(!lastPersistOk){el.textContent='błąd zapisu';el.dataset.state='error';return}
+  const last=safeIso(state.meta?.lastWriteAt);
+  el.textContent=last?'zapisano '+new Date(last).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):'zapis lokalny';
+  el.dataset.state='ok';
+}
+function renderChildOverview(){
+  const child=activeChild(),box=$('#childWeekSnapshot'),repeat=$('#repeatLastActivityBtn');if(!child||!box||!repeat)return;
+  const {start,end}=weekBounds(),week=usableChildEntries(child.id).filter(e=>{const d=new Date(e.date+'T12:00:00');return d>=start&&d<end});
+  const minutes=week.reduce((sum,e)=>sum+Number(e.minutes||0),0),days=new Set(week.map(e=>e.date)).size,pending=childEntries(child.id).filter(e=>e.status==='pending').length,last=latestActivityEntry(child.id);
+  box.innerHTML='<div class="snapshot-item"><strong>'+fmtMin(minutes)+'</strong><small>ruch w tym tygodniu</small></div><div class="snapshot-item"><strong>'+days+'</strong><small>aktywne dni</small></div><div class="snapshot-item"><strong>'+pending+'</strong><small>czeka na rodzica</small></div><div class="snapshot-item"><strong>'+(last?escapeHtml(last.activity):'—')+'</strong><small>'+(last?'ostatnio · '+escapeHtml(last.date):'brak wpisów')+'</small></div>';
+  repeat.classList.toggle('hidden',!last);
+}
+function repeatLastActivity(){
+  const child=activeChild(),last=child?latestActivityEntry(child.id):null;if(!last)return;
+  pickActivity(last.activity);setQuickDuration(last.minutes);$('#activityEffort').value=String(clampInt(last.effort,1,5,2));$('#activityNote').value='';
+}
+function backupAgeLabel(){
+  const iso=safeIso(state.meta?.lastBackupAt);if(!iso)return 'kopia: brak';
+  const days=Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/86400000));
+  return days===0?'kopia: dziś':days===1?'kopia: wczoraj':'kopia: '+days+' dni temu';
+}
+function renderParentSnapshot(){
+  const child=parentChild(),box=$('#parentSnapshot'),badge=$('#parentBackupBadge');if(!child||!box||!badge)return;
+  const {start,end}=weekBounds(),approved=childEntries(child.id).filter(e=>e.status==='approved'&&validDate(e.date));
+  const week=approved.filter(e=>{const d=new Date(e.date+'T12:00:00');return d>=start&&d<end}),todayMinutes=approved.filter(e=>e.date===today()).reduce((sum,e)=>sum+Number(e.minutes||0),0),weekMinutes=week.reduce((sum,e)=>sum+Number(e.minutes||0),0),pending=childEntries(child.id).filter(e=>e.status==='pending').length,last=approved.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;
+  box.innerHTML='<div class="snapshot-item"><strong>'+fmtMin(todayMinutes)+'</strong><small>zatwierdzone dzisiaj</small></div><div class="snapshot-item"><strong>'+fmtMin(weekMinutes)+'</strong><small>zatwierdzone w tygodniu</small></div><div class="snapshot-item"><strong>'+pending+'</strong><small>do decyzji</small></div><div class="snapshot-item"><strong>'+(last?escapeHtml(last.activity):'—')+'</strong><small>'+(last?'ostatnio · '+escapeHtml(last.date):'brak zatwierdzonych')+'</small></div>';
+  badge.textContent=backupAgeLabel();
+  const backup=$('#backupStatus');if(backup)backup.textContent=backupAgeLabel().replace('kopia: ','');
 }
 function setQuickDuration(minutes){const input=$('#activityDuration');if(!input)return;input.value=String(minutes);$$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(minutes)))}
 
@@ -119,6 +176,7 @@ function saveEntry(){
     addApprovalEvent(wasRejected?'resubmitted':'edited',e,'child',wasRejected?'Dziecko poprawiło odrzucony wpis i wysłało go ponownie.':'Dziecko poprawiło oczekujący wpis.',before,{date:e.date,activity:e.activity,minutes:e.minutes,effort:e.effort,note:e.note,status:e.status});
     if(e.status==='approved')addApprovalEvent('approved_auto',e,'system','Automatyczne zatwierdzenie po poprawce.');
   }else{
+    if(recentDuplicate(child.id,payload)){alert('Ten sam wpis został zapisany przed chwilą. Sprawdź listę ostatnich wpisów.');return}
     const entry={id:uuid(),childId:child.id,...payload,status:approvalRequired(child)?'pending':'approved',source:'manual',createdAt:nowIso(),rejectionReason:''};
     state.entries.unshift(entry);addApprovalEvent('created',entry,'child','Wpis ręczny.');if(entry.status==='approved')addApprovalEvent('approved_auto',entry,'system','Automatyczne zatwierdzenie zgodnie z ustawieniem rodzica.');
   }
@@ -502,11 +560,14 @@ function safeBackupState(raw){
   if(d.activeTimer&&typeof d.activeTimer==='object'){const childId=ids.has(d.activeTimer.childId)?d.activeTimer.childId:fallback;if(childId&&cleanText(d.activeTimer.activity,80)&&d.activeTimer.startAt)activeTimer={...d.activeTimer,childId,activity:cleanText(d.activeTimer.activity,80),date:validDate(d.activeTimer.date)?d.activeTimer.date:today(),effort:clampInt(d.activeTimer.effort,1,5,2),note:cleanText(d.activeTimer.note,120)}}
   const auth=d.parentAuth&&typeof d.parentAuth==='object'?d.parentAuth:{};
   const parentAuth={pinSalt:cleanText(auth.pinSalt,300),pinHash:cleanText(auth.pinHash,300),iterations:clampInt(auth.iterations,50000,500000,PIN_ITERATIONS),autoLockMinutes:clampInt(auth.autoLockMinutes,1,30,5)};
-  return {...base,schemaVersion:4,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
+  const rawMeta=d.meta&&typeof d.meta==='object'?d.meta:{},meta={lastBackupAt:safeIso(rawMeta.lastBackupAt),lastWriteAt:safeIso(rawMeta.lastWriteAt)};
+  return {...base,schemaVersion:5,meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
 function exportBackup(){
-  if(!guardParent())return;const payload={format:'aktywnik-plus-backup',version:4,exportedAt:nowIso(),data:state},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='aktywnik-plus-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#backupStatus').textContent='kopia zapisana';
+  if(!guardParent())return;
+  state.meta={...(state.meta||{}),lastBackupAt:nowIso()};persist();
+  const payload={format:'aktywnik-plus-backup',version:5,exportedAt:nowIso(),data:state},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='aktywnik-plus-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#backupStatus').textContent='dziś';
 }
 async function importBackup(file){
   if(!guardParent()||!file)return;
@@ -518,12 +579,12 @@ function deleteLocalData(){if(!guardParent())return;if(!confirm('Usunąć wszyst
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
 function renderAll(){
-  renderPilot();
+  renderSaveStatus();renderPilot();
   if(!appReady())return;
   const child=activeChild();if(!child)return;
-  renderTimer();renderActivities();renderChildEntries();renderChildRewards();renderStats();
+  renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();
   if(parentUnlocked()){
-    renderParentChildren();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();
+    renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();
   }else{
     $('#approvalList').innerHTML='';$('#approvalHistory').innerHTML='';$('#pendingCount').textContent='0';$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(currentMode!=='child')currentMode='child';
   }
@@ -532,6 +593,7 @@ function renderAll(){
   $('#schoolPanel').classList.toggle('hidden',currentMode!=='school');
 }
 $('#activitySearch').oninput=renderActivities;
+$('#repeatLastActivityBtn').onclick=repeatLastActivity;
 $$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
 $('#startPilotBtn').onclick=startPilot;
 $('#parentAccessBtn').onclick=openParentGate;
