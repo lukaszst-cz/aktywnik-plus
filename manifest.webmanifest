@@ -7,7 +7,7 @@
   "display": "standalone",
   "background_color": "#f1f5f9",
   "theme_color": "#0f172a",
-  "description": "Bezpłatny dziennik aktywności dziecka z funkcją Start/Stop, akceptacją rodzica i raportami dla nauczyciela.",
+  "description": "Bezpłatny tracker aktywności z trybem Dla siebie, Rodzina oraz pilotażowym modułem szkoły/klubu.",
   "prefer_related_applications": false,
   "icons": [
     {
