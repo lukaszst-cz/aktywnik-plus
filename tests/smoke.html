@@ -111,6 +111,10 @@ async function run(){
     d.getElementById('activityDuration').value='25';d.getElementById('activityNote').value='pierwszy wpis';d.getElementById('saveEntryBtn').click();await sleep(80);
     let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.entries?.length!==1||saved.entries[0].status!=='pending'||saved.entries[0].childId!=='child-a')throw new Error('pending child entry failed');
+    spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));spacer.click();await sleep(30);
+    if(d.getElementById('activityDuration').value!=='25')throw new Error('smart duration did not reuse last matching duration');
+    if(!d.getElementById('durationSuggestionHint').textContent.includes('25 min'))throw new Error('smart duration hint missing');
+    d.getElementById('cancelEntryBtn').click();
 
     const editBtn=d.querySelector('[data-child-edit]');if(!editBtn)throw new Error('pending edit button missing');
     editBtn.click();d.getElementById('activityDuration').value='30';d.getElementById('saveEntryBtn').click();await sleep(80);
