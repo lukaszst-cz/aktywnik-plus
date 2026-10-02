@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.0 — Universal
+
+### Tryb osobisty
+- nowy onboarding pozwala wybrać **Dla siebie** lub **Rodzina**;
+- tryb osobisty nie wymaga PIN-u rodzica i zapisuje wpisy od razu jako zatwierdzone;
+- dodano własną nazwę aktywności oraz aktywności użyteczne także dla dorosłych;
+- tryb osobisty ma eksport CSV, kopię JSON, przywracanie kopii, trwałą pamięć i usuwanie danych.
+
+### Dostępność
+- dodano link „Przejdź do treści” dla klawiatury i czytników ekranu;
+- powiększono minimalne cele dotykowe;
+- dodano wyraźne focus states;
+- respektowane jest `prefers-reduced-motion`.
+
+### Dane i kompatybilność
+- schema kopii podniesiona do wersji 6 z polem `profileMode`;
+- starsze kopie bez `profileMode` migrują do trybu rodzinnego;
+- cache PWA podniesiony, aby urządzenia pobrały nowy interfejs.
+
 ## 0.3.0 — Daily UX & reliability
 
 ### Dziecko
