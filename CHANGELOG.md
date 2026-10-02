@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.3 — Backend foundation
+
+### Backend
+- publiczny health check: `/api/health`;
+- publiczna deklaracja możliwości: `/api/capabilities`;
+- konfiguracja środowiska w `.env.example`;
+- migracja bazowa PostgreSQL;
+- przygotowane polityki RLS dla wariantu Supabase;
+- backend działa domyślnie w trybie **fail-closed**;
+- cloud sync pozostaje wyłączony do czasu podłączenia bazy i autoryzacji.
+
+### Bezpieczeństwo
+- endpointy API mają `Cache-Control: no-store`;
+- API nie ujawnia sekretów ani wartości zmiennych środowiskowych;
+- CI sprawdza składnię oraz zachowanie podstawowych endpointów.
+
+
 ## 0.1.2 — Support & hardening
 
 Aktualizacja stabilizująca publiczny pilot i ujednolicająca informacje o autorze.
