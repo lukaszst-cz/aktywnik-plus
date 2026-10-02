@@ -26,8 +26,10 @@
   }
   function statusText(){
     const q=read();
-    if(!q?.dirty)return 'lokalnie · brak zmian do sync';
-    return q.lastError?'lokalnie · sync oczekuje':'lokalnie · zmiany czekają na sync';
+    const session=window.AktywnikAuth?.readSession?.();
+    if(!session)return 'lokalnie · konto opcjonalne';
+    if(!q?.dirty)return 'konto · brak zmian do sync';
+    return q.lastError?'konto · sync oczekuje':'konto · zmiany czekają na sync';
   }
   function renderStatus(){
     const el=document.querySelector('#cloudSyncBadge');
@@ -82,6 +84,7 @@
   }
   window.addEventListener('online',schedule);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')schedule()});
+  window.addEventListener('storage',event=>{if(event.key==='aktywnik-plus-cloud-session-v1')renderStatus()});
   document.addEventListener('DOMContentLoaded',()=>{renderStatus();schedule()});
 
   window.AktywnikSync={markDirty,flush,read,renderStatus};
