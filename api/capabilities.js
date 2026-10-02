@@ -24,7 +24,9 @@ module.exports = function handler(req,res){
       rowLevelSecurityVerified:cloud.rlsVerified,
       classes:cloud.enabled,
       crossDeviceSync:cloud.enabled,
-      serverBackups:cloud.enabled
+      serverBackups:cloud.enabled,
+      personalSyncBeta:true,
+      personalSyncDeletes:false
     }
   });
 };
