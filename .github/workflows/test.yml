@@ -47,6 +47,11 @@ jobs:
           print("manifest and service-worker assets OK")
           PY
 
+      - name: Set up Node for browser runner
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Start local server
         run: |
           python3 -m http.server 8765 >/tmp/aktywnik-http.log 2>&1 &
@@ -57,8 +62,16 @@ jobs:
         run: |
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME"
-          "$CHROME"             --headless=new             --no-sandbox             --disable-gpu             --user-data-dir=/tmp/aktywnik-chrome             --virtual-time-budget=12000             --dump-dom             'http://127.0.0.1:8765/tests/smoke.html?skipPwa=1'             > /tmp/aktywnik-smoke.html
-          grep -o '<div id="result"[^>]*>[^<]*' /tmp/aktywnik-smoke.html || true
-          grep -q 'data-test="pass"' /tmp/aktywnik-smoke.html
-          grep -q 'PASS: PIN roles, multi-child isolation, child edit, parent correction/rejection, audit, migration, backup and PWA' /tmp/aktywnik-smoke.html
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --no-first-run \
+            --remote-debugging-port=9222 \
+            --user-data-dir=/tmp/aktywnik-chrome \
+            'http://127.0.0.1:8765/tests/smoke.html?skipPwa=1' \
+            >/tmp/aktywnik-chrome.log 2>&1 &
+          echo $! > /tmp/aktywnik-chrome.pid
+          sleep 2
+          node tests/run-smoke.mjs 9222 'http://127.0.0.1:8765/tests/smoke.html'
           echo "Aktywnik+ browser smoke PASS"
