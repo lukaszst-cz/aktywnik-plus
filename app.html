@@ -148,6 +148,28 @@
         <small>Rodzic może mieć dowolnie wiele profili dzieci. Na ekranie dziecka aktywny jest tylko jeden profil; zmiana wymaga odblokowanej strefy rodzica.</small>
       </section>
       <section class="card">
+        <div class="section-head"><h2>Bezpieczeństwo strefy rodzica</h2><span class="badge">PIN lokalny</span></div>
+        <div class="form-grid">
+          <label>Automatyczna blokada
+            <select id="parentAutoLockMinutes">
+              <option value="1">po 1 minucie</option>
+              <option value="5">po 5 minutach</option>
+              <option value="10">po 10 minutach</option>
+              <option value="15">po 15 minutach</option>
+            </select>
+          </label>
+          <label>Obecny PIN<input id="currentParentPin" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" /></label>
+          <label>Nowy PIN<input id="newParentPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="4–8 cyfr" /></label>
+          <label>Powtórz nowy PIN<input id="confirmNewParentPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="powtórz PIN" /></label>
+        </div>
+        <div class="actions">
+          <button id="saveAutoLockBtn" class="ghost">Zapisz czas blokady</button>
+          <button id="changeParentPinBtn" class="primary">Zmień PIN rodzica</button>
+        </div>
+        <small>Jeśli PIN zostanie zapomniany w tym lokalnym pilocie, nie ma serwerowego odzyskiwania hasła. Dlatego przed czyszczeniem danych wykonaj kopię, gdy masz dostęp do strefy rodzica.</small>
+      </section>
+
+      <section class="card">
         <div class="section-head"><h2>Klasa dziecka</h2><span class="badge">demo lokalne</span></div>
         <div class="prototype-warning"><strong>Na etapie pilota kod klasy działa tylko na tym urządzeniu.</strong> Synchronizacja rodzic–nauczyciel między różnymi telefonami będzie dostępna dopiero po uruchomieniu backendu.</div>
         <p>Możesz przetestować cały przepływ lokalnie: utwórz klasę w panelu Szkoła, a następnie użyj jej kodu tutaj.</p>
