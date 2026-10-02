@@ -20,7 +20,7 @@
   <div class="cards">
     <article>
       <h3>Co zapisuje aplikacja?</h3>
-      <p>Nazwę wyświetlaną lub identyfikator dziecka, datę i rodzaj aktywności, czas, opcjonalny poziom wysiłku, notatkę, potwierdzenie rodzica oraz lokalne ustawienia.</p>
+      <p>Nazwy wyświetlane lub identyfikatory dzieci, datę i rodzaj aktywności, czas, opcjonalny poziom wysiłku, notatkę, potwierdzenia rodzica, historię decyzji oraz lokalne ustawienia rodziny.</p>
     </article>
     <article>
       <h3>Gdzie są dane?</h3>
@@ -28,13 +28,14 @@
     </article>
     <article>
       <h3>Kto je widzi?</h3>
-      <p>Osoby korzystające z tego urządzenia. Nauczyciel otrzymuje informacje dopiero wtedy, gdy rodzic sam przekaże raport PDF lub wydruk.</p>
+      <p>Interfejs dziecka pokazuje wyłącznie jego aktywny profil. Strefa rodzica wymaga PIN-u i pozwala przełączać się między dziećmi. Nauczyciel otrzymuje informacje dopiero wtedy, gdy rodzic sam przekaże raport PDF/CSV lub wydruk.</p>
     </article>
   </div>
 
   <section class="section action">
     <h2>Kontrola rodzica</h2>
-    <p>W panelu rodzica można wykonać kopię danych do pliku JSON, przywrócić kopię i usunąć wszystkie lokalne dane Aktywnik+ z urządzenia.</p>
+    <p>W strefie rodzica można dodać wiele dzieci, ustawić aktywny profil urządzenia, zmienić PIN, wybrać czas automatycznej blokady, wykonać kopię JSON, przywrócić ją i usunąć lokalne dane.</p>
+    <p><strong>PIN chroni interfejs, ale nie szyfruje localStorage.</strong> Osoba z technicznym dostępem do profilu przeglądarki może nadal odczytać lokalne dane. Pełna izolacja bezpieczeństwa między urządzeniami wymaga backendu i kont.</p>
   </section>
 
   <section class="section">
