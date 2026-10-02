@@ -41,8 +41,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.5.0-beta.1 — Sync Foundation**
+**Aktywnik+ 0.5.0-beta.2 — Pull & Merge**
 
+- [Release notes 0.5.0-beta.2](docs/RELEASE-0.5.0-beta.2.md)
 - [Release notes 0.5.0-beta.1](docs/RELEASE-0.5.0-beta.1.md)
 - [Release notes 0.4.0](docs/RELEASE-0.4.0.md)
 - [Release notes 0.3.0](docs/RELEASE-0.3.0.md)
@@ -189,4 +190,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.5.0-beta.1 Sync Foundation` — stabilny tryb lokalny + opcjonalne konto Magic Link i bezpieczny fundament synchronizacji trybu osobistego. Local-first pozostaje zasadą: START/STOP i wpisy działają bez internetu. Chmura jest nadal fail-closed do zakończenia testów wielu kont, konfliktów offline i synchronizacji usunięć.
+`0.5.0-beta.2 Pull & Merge` — tryb osobisty ma przygotowaną dwukierunkową synchronizację push/pull z regułą „nowszy timestamp wygrywa”. Brakujące wpisy z innego urządzenia są scalane lokalnie, a nowsza wersja lokalna nie jest nadpisywana. Synchronizacja usunięć nadal jest celowo wyłączona. Local-first pozostaje zasadą.
