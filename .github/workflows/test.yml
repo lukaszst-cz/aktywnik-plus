@@ -20,6 +20,7 @@ jobs:
       - name: Syntax and PWA asset checks
         run: |
           node --check app.js
+          node --check i18n.js
           node --check install.js
           node --check share.js
           node --check paper.js
@@ -97,6 +98,24 @@ jobs:
           sleep 2
           node tests/run-smoke.mjs 9222 'http://127.0.0.1:8765/tests/smoke.html'
           echo "Aktywnik+ browser smoke PASS"
+
+      - name: I18n browser smoke test
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --no-first-run \
+            --remote-debugging-port=9224 \
+            --user-data-dir=/tmp/aktywnik-chrome-i18n \
+            'http://127.0.0.1:8765/tests/i18n-smoke.html' \
+            >/tmp/aktywnik-chrome-i18n.log 2>&1 &
+          echo $! > /tmp/aktywnik-chrome-i18n.pid
+          sleep 2
+          node tests/run-smoke.mjs 9224 'http://127.0.0.1:8765/tests/i18n-smoke.html'
+          echo "Aktywnik+ i18n smoke PASS"
 
       - name: PWA runtime smoke test
         run: |
