@@ -1,15 +1,17 @@
 # Aktywnik+
 
-Aktywnik+ to bezpłatna PWA do prostego rejestrowania dodatkowej aktywności dzieci, akceptacji rodzica i raportów okresowych dla nauczyciela.
+Aktywnik+ to bezpłatna PWA do prostego mierzenia i zapisywania aktywności — dla siebie, rodziny oraz pilotażowo dla szkoły lub klubu.
 
 **Twórca i właściciel projektu: Łukasz St‑cz.** Repozytorium: https://github.com/lukaszst-cz/aktywnik-plus
 
-## Bezpłatny pilot rodzicielski
+## Bezpłatny pilot uniwersalny
 
-Aktywnik+ jest obecnie **bezpłatnym projektem rodzicielskim w fazie pilotażowej**. Celem jest ułatwienie rodzinom dokumentowania dodatkowej aktywności dzieci i prostego przekazywania podsumowań nauczycielowi.
+Aktywnik+ jest obecnie **bezpłatnym projektem w fazie pilotażowej**. Można używać go samodzielnie jako prostego trackera aktywności albo w trybie rodzinnym z oddzielną strefą rodzica.
 
 Na tym etapie:
 - nie ma opłat;
+- dostępny jest tryb **Dla siebie** bez PIN-u rodzica i bez procesu zatwierdzania;
+- dostępny jest tryb **Rodzina** z profilem dziecka, PIN-em i zatwierdzaniem wpisów;
 - nie trzeba zakładać konta;
 - dziecko korzysta z własnego, uproszczonego widoku;
 - strefa rodzica jest chroniona lokalnym PIN-em i automatycznie się blokuje;
@@ -38,8 +40,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.3.0 — Daily UX & Reliability**
+**Aktywnik+ 0.4.0 — Universal**
 
+- [Release notes 0.4.0](docs/RELEASE-0.4.0.md)
 - [Release notes 0.3.0](docs/RELEASE-0.3.0.md)
 
 - [Release notes 0.2.1](docs/RELEASE-0.2.1.md)
@@ -51,6 +54,10 @@ Przeczytaj przed pilotażem:
 
 ## Co już działa
 
+- szybki onboarding: **Dla siebie** albo **Rodzina**;
+- tryb osobisty zapisujący aktywności od razu, bez rodzica;
+- własna nazwa aktywności oraz dodatkowe aktywności dla starszych użytkowników;
+- eksport CSV i kopia JSON również w trybie osobistym;
 - panel dziecka z dużą listą aktywności;
 - szybki podgląd tygodnia bez celów, rankingów i porównywania dzieci;
 - przycisk „Powtórz ostatnią aktywność” wypełniający ostatni typ, czas i poziom wysiłku;
@@ -179,4 +186,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.3.0 Daily UX & Reliability` — lokalny pilot rodzinny z PIN-em rodzica, wieloma profilami dzieci, szybszym codziennym przepływem i mocniejszą kontrolą zapisu lokalnego. Dane pozostają lokalnie na urządzeniu. Osobne konta dziecka, synchronizacja między telefonami i prawdziwe role szkoły pozostają wyłączone do czasu uruchomienia backendu.
+`0.4.0 Universal` — lokalny pilot dla użytkownika samodzielnego i rodziny. Tryb osobisty nie wymaga rodzica ani PIN-u; tryb rodzinny zachowuje wieloprofilowość, akceptację i ochronę strefy rodzica. Dane nadal pozostają lokalnie na urządzeniu. Synchronizacja między urządzeniami i produkcyjne role szkoły pozostają wyłączone do czasu uruchomienia backendu.
