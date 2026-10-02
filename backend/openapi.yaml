@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: Aktywnik+ API
+  version: 0.1.3
+  description: >
+    Backendowy kontrakt Aktywnik+. Publiczny pilot działa lokalnie.
+    Funkcje chmurowe są domyślnie wyłączone.
+servers:
+  - url: https://aktywnik-plus.vercel.app
+paths:
+  /api/health:
+    get:
+      summary: Stan backendu
+      responses:
+        '200':
+          description: Backend odpowiada
+  /api/capabilities:
+    get:
+      summary: Dostępne możliwości
+      responses:
+        '200':
+          description: Lista aktywnych możliwości
+  /api/v1/classes:
+    get:
+      summary: Lista klas użytkownika
+      responses:
+        '503':
+          description: Cloud sync wyłączony
+        '501':
+          description: Adapter bazy jeszcze niepodłączony
+    post:
+      summary: Utworzenie klasy
+      responses:
+        '503':
+          description: Cloud sync wyłączony
+        '501':
+          description: Adapter bazy jeszcze niepodłączony
+  /api/v1/sync:
+    get:
+      summary: Stan synchronizacji
+      responses:
+        '503':
+          description: Cloud sync wyłączony
+        '501':
+          description: Adapter bazy jeszcze niepodłączony
+    post:
+      summary: Synchronizacja danych
+      responses:
+        '503':
+          description: Cloud sync wyłączony
+        '501':
+          description: Adapter bazy jeszcze niepodłączony
