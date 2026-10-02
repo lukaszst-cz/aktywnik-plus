@@ -7,6 +7,10 @@ const MAX_ENTRIES=5000;
 const MAX_CLASSES=100;
 const MAX_JOIN_REQUESTS=1000;
 const PARENT_SESSION_KEY='aktywnik-plus-parent-unlocked-until';
+const PARENT_PIN_FAIL_KEY='aktywnik-plus-parent-pin-fails';
+const PARENT_PIN_LOCK_KEY='aktywnik-plus-parent-pin-lock-until';
+const MAX_PIN_ATTEMPTS=5;
+const PIN_LOCK_MS=30000;
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
 const defaultState={schemaVersion:4,pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
@@ -36,6 +40,18 @@ async function derivePin(pin,saltB64,iterations=PIN_ITERATIONS){const key=await 
 async function setParentPin(pin){const salt=crypto.getRandomValues(new Uint8Array(16)),pinSalt=bytesToB64(salt),pinHash=await derivePin(pin,pinSalt,PIN_ITERATIONS);state.parentAuth={pinSalt,pinHash,iterations:PIN_ITERATIONS,autoLockMinutes:5}}
 async function verifyParentPin(pin){if(!pinConfigured())return false;return await derivePin(pin,state.parentAuth.pinSalt,state.parentAuth.iterations||PIN_ITERATIONS)===state.parentAuth.pinHash}
 function parentUnlocked(){return Number(sessionStorage.getItem(PARENT_SESSION_KEY)||0)>Date.now()}
+function pinLockRemainingMs(){return Math.max(0,Number(sessionStorage.getItem(PARENT_PIN_LOCK_KEY)||0)-Date.now())}
+function clearPinFailures(){sessionStorage.removeItem(PARENT_PIN_FAIL_KEY);sessionStorage.removeItem(PARENT_PIN_LOCK_KEY)}
+function registerPinFailure(){
+  const fails=clampInt(sessionStorage.getItem(PARENT_PIN_FAIL_KEY),0,MAX_PIN_ATTEMPTS,0)+1;
+  if(fails>=MAX_PIN_ATTEMPTS){
+    sessionStorage.removeItem(PARENT_PIN_FAIL_KEY);
+    sessionStorage.setItem(PARENT_PIN_LOCK_KEY,String(Date.now()+PIN_LOCK_MS));
+    return true;
+  }
+  sessionStorage.setItem(PARENT_PIN_FAIL_KEY,String(fails));
+  return false;
+}
 function touchParentSession(){const mins=clampInt(state.parentAuth?.autoLockMinutes,1,30,5);sessionStorage.setItem(PARENT_SESSION_KEY,String(Date.now()+mins*60*1000))}
 function addApprovalEvent(action,entry,actor,note='',before=null,after=null){state.approvalEvents=state.approvalEvents||[];state.approvalEvents.unshift({id:uuid(),entryId:entry?.id||'',childId:entry?.childId||parentChild()?.id||activeChild()?.id||'',action,actor,note:cleanText(note,240),before,after,at:nowIso()});state.approvalEvents=state.approvalEvents.slice(0,10000)}
 
@@ -198,11 +214,23 @@ function renderFavoritesEditor(){
 }
 function openParentGate(){
   if(!pinConfigured()){document.querySelector('#pilotSetupCard')?.scrollIntoView({behavior:'smooth',block:'center'});return}
-  $('#parentPinInput').value='';$('#parentPinError').classList.add('hidden');$('#parentUnlockDialog').showModal();setTimeout(()=>$('#parentPinInput').focus(),20);
+  $('#parentPinInput').value='';
+  const error=$('#parentPinError'),wait=Math.ceil(pinLockRemainingMs()/1000);
+  if(wait>0){error.textContent='Za dużo błędnych prób. Spróbuj ponownie za '+wait+' s.';error.classList.remove('hidden')}
+  else{error.textContent='Nieprawidłowy PIN.';error.classList.add('hidden')}
+  $('#parentUnlockDialog').showModal();setTimeout(()=>$('#parentPinInput').focus(),20);
 }
 async function unlockParent(){
+  const error=$('#parentPinError'),wait=Math.ceil(pinLockRemainingMs()/1000);
+  if(wait>0){error.textContent='Za dużo błędnych prób. Spróbuj ponownie za '+wait+' s.';error.classList.remove('hidden');return}
   const ok=await verifyParentPin($('#parentPinInput').value);
-  if(!ok){$('#parentPinError').classList.remove('hidden');return}
+  if(!ok){
+    const locked=registerPinFailure();
+    const seconds=Math.ceil(pinLockRemainingMs()/1000);
+    error.textContent=locked?'Za dużo błędnych prób. Spróbuj ponownie za '+seconds+' s.':'Nieprawidłowy PIN.';
+    error.classList.remove('hidden');return;
+  }
+  clearPinFailures();error.textContent='Nieprawidłowy PIN.';error.classList.add('hidden');
   touchParentSession();$('#parentUnlockDialog').close();parentSelectedChildId=getChild(parentSelectedChildId)?.id||state.activeChildId;switchMode('parent',true);
 }
 function lockParent(){sessionStorage.removeItem(PARENT_SESSION_KEY);currentMode='child';switchMode('child',true)}
