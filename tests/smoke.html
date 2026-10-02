@@ -19,14 +19,20 @@ async function run(){
   try{
     localStorage.removeItem(KEY);
     const f=document.getElementById('appFrame');
-    f.src='../app.html?smoke='+Date.now();
-    await new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>reject(new Error('app load timeout')),5000);
-      f.onload=()=>{clearTimeout(timer);resolve()}
-    });
-    await sleep(300);
-    const w=f.contentWindow,d=f.contentDocument;
+
+    async function loadApp(label){
+      f.src='../app.html?smoke='+label+'-'+Date.now();
+      await new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(new Error('app load timeout')),5000);
+        f.onload=()=>{clearTimeout(timer);resolve()}
+      });
+      await sleep(300);
+      return {w:f.contentWindow,d:f.contentDocument};
+    }
+
+    let {w,d}=await loadApp('first');
     if(!d.getElementById('pilotSetupCard')) throw new Error('pilot setup missing');
+
     d.getElementById('pilotChildName').value='Test D.';
     d.getElementById('startPilotBtn').click();
     await sleep(100);
@@ -65,14 +71,15 @@ async function run(){
 
     if(!('serviceWorker' in navigator)) throw new Error('service worker API unavailable');
     let regs=[];
-    for(let i=0;i<20;i++){
+    for(let i=0;i<30;i++){
       regs=await navigator.serviceWorker.getRegistrations();
       if(regs.length) break;
       await sleep(100);
     }
     if(!regs.length) throw new Error('service worker not registered');
+
     let cacheNames=[];
-    for(let i=0;i<20;i++){
+    for(let i=0;i<30;i++){
       cacheNames=await caches.keys();
       if(cacheNames.some(n=>n.startsWith('aktywnik-plus-'))) break;
       await sleep(100);
@@ -83,22 +90,19 @@ async function run(){
     if(manifest.start_url!=='./app.html') throw new Error('manifest start_url invalid');
     if(!Array.isArray(manifest.icons) || manifest.icons.length<2) throw new Error('manifest icons missing');
 
-    location.reload();
-  }catch(e){fail(e.message)}
-}
-if(sessionStorage.getItem('aktywnik-smoke-reload')==='1'){
-  sessionStorage.removeItem('aktywnik-smoke-reload');
-  try{
-    const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
-    if(saved.entries?.length!==1 || saved.entries[0].status!=='approved') throw new Error('data did not persist after reload');
-    if(saved.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name did not persist');
+    ({w,d}=await loadApp('reload'));
+    const persisted=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(persisted.entries?.length!==1 || persisted.entries[0].status!=='approved') throw new Error('data did not persist after reload');
+    if(persisted.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name did not persist');
+    if(!d.getElementById('childDisplayName').textContent.includes('Test D.')) throw new Error('reloaded UI did not restore pilot name');
+
     pass('pilot, activity, approval, report, local class demo, backup, service worker, cache, manifest and persistence');
     localStorage.removeItem(KEY);
-  }catch(e){fail(e.message)}
-}else{
-  sessionStorage.setItem('aktywnik-smoke-reload','1');
-  run();
+  }catch(e){
+    fail(e.message);
+  }
 }
+run();
 </script>
 </body>
 </html>
