@@ -39,8 +39,28 @@ async function run(){
     await sleep(100);
     if(!d.getElementById('pilotSetupCard').classList.contains('hidden')) throw new Error('pilot setup did not close');
 
-    const spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));
+    let spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));
     if(!spacer) throw new Error('activity button missing');
+
+    spacer.click();
+    d.getElementById('activityNote').value='timer smoke';
+    d.getElementById('startTimerBtn').click();
+    await sleep(100);
+    let timerSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(!timerSaved.activeTimer || timerSaved.activeTimer.activity!=='Spacer') throw new Error('timer did not start');
+
+    timerSaved.activeTimer.startAt=new Date(Date.now()-125000).toISOString();
+    localStorage.setItem(KEY,JSON.stringify(timerSaved));
+    ({w,d}=await loadApp('timer-reload'));
+    if(d.getElementById('timerStatusCard').classList.contains('hidden')) throw new Error('timer did not survive reload');
+    d.getElementById('stopTimerBtn').click();
+    await sleep(100);
+
+    timerSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(timerSaved.activeTimer) throw new Error('timer did not stop');
+    if(timerSaved.entries?.length!==1 || timerSaved.entries[0].source!=='timer') throw new Error('timer entry not saved');
+
+    spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));
     spacer.click();
     d.getElementById('activityDuration').value='25';
     d.getElementById('activityNote').value='smoke test';
@@ -49,14 +69,14 @@ async function run(){
 
     d.getElementById('parentModeBtn').click();
     await sleep(50);
-    if(d.getElementById('pendingCount').textContent!=='1') throw new Error('pending count is not 1');
+    if(d.getElementById('pendingCount').textContent!=='2') throw new Error('pending count is not 2');
     d.getElementById('approveAllBtn').click();
     await sleep(100);
 
     let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name not saved');
-    if(saved.entries?.length!==1) throw new Error('entry not saved');
-    if(saved.entries[0].status!=='approved') throw new Error('entry not approved');
+    if(saved.entries?.length!==2) throw new Error('entries not saved');
+    if(saved.entries.some(e=>e.status!=='approved')) throw new Error('entries not approved');
     if(!d.getElementById('parentReport').textContent.includes('Test D.')) throw new Error('report does not contain pilot name');
 
     d.getElementById('schoolModeBtn').click();
@@ -94,9 +114,9 @@ async function run(){
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.joinRequests.filter(x=>x.status==='accepted').length!==1) throw new Error('second join request handler failed');
 
-    const payload={format:'aktywnik-plus-backup',version:2,data:saved};
+    const payload={format:'aktywnik-plus-backup',version:3,data:saved};
     const restored=w.safeBackupState(payload);
-    if(restored.entries?.length!==1 || restored.pilot?.childDisplayName!=='Test D.') throw new Error('backup validation failed');
+    if(restored.entries?.length!==2 || restored.pilot?.childDisplayName!=='Test D.') throw new Error('backup validation failed');
 
     if(!skipPwaChecks){
       if(!('serviceWorker' in navigator)) throw new Error('service worker API unavailable');
@@ -123,11 +143,11 @@ async function run(){
 
     ({w,d}=await loadApp('reload'));
     const persisted=JSON.parse(localStorage.getItem(KEY)||'{}');
-    if(persisted.entries?.length!==1 || persisted.entries[0].status!=='approved') throw new Error('data did not persist after reload');
+    if(persisted.entries?.length!==2 || persisted.entries.some(e=>e.status!=='approved')) throw new Error('data did not persist after reload');
     if(persisted.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name did not persist');
     if(!d.getElementById('childDisplayName').textContent.includes('Test D.')) throw new Error('reloaded UI did not restore pilot name');
 
-    pass(skipPwaChecks?'pilot, activity, approval, report, multi-item class handlers, backup, manifest and persistence':'pilot, activity, approval, report, multi-item class handlers, backup, service worker, cache, manifest and persistence');
+    pass(skipPwaChecks?'pilot, timer, manual activity, approval, report, multi-item class handlers, backup, manifest and persistence':'pilot, timer, manual activity, approval, report, multi-item class handlers, backup, service worker, cache, manifest and persistence');
     localStorage.removeItem(KEY);
   }catch(e){
     fail(e.message);
