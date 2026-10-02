@@ -16,6 +16,7 @@ Na tym etapie:
 Przed formalnym wdrożeniem szkolnym należy przejść do wersji z backendem, kontami, uprawnieniami i uzgodnionym modelem ochrony danych.
 
 Przeczytaj przed pilotażem:
+- **[Start dla rodzica i nauczyciela](docs/START-DLA-RODZICA-I-NAUCZYCIELA.md)**
 - **[Warunki krytyczne pilota](docs/WARUNKI-KRYTYCZNE-PILOTA.md)**
 - **[Pilot w jednej klasie](docs/PILOT-JEDNEJ-KLASY.md)**
 - **[Jak zainstalować PWA](docs/INSTALACJA-PWA.md)**
