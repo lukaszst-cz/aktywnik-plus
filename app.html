@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="description" content="Aktywnik+ — prosty dziennik aktywności dziecka z akceptacją rodzica i raportami." />
   <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
   <title>Aktywnik+ — aplikacja</title>
 </head>
@@ -15,6 +16,7 @@
       <strong class="brand">Aktywnik+</strong>
       <span class="tagline">ruch bez presji</span>
     </div>
+    <button class="install-mini" type="button" data-install-pwa>Zainstaluj</button>
     <nav class="mode-switch" aria-label="Tryb aplikacji">
       <button id="childModeBtn" class="active">Dziecko</button>
       <button id="parentModeBtn">Rodzic</button>
@@ -190,5 +192,6 @@
   </dialog>
 
   <script src="app.js"></script>
+  <script src="install.js"></script>
 </body>
 </html>
