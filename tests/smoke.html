@@ -63,6 +63,16 @@ async function run(){
     const restored=w.safeBackupState(payload);
     if(restored.entries?.length!==1 || restored.pilot?.childDisplayName!=='Test D.') throw new Error('backup validation failed');
 
+    if(!('serviceWorker' in navigator)) throw new Error('service worker API unavailable');
+    const reg=await navigator.serviceWorker.ready;
+    if(!reg) throw new Error('service worker not ready');
+    const cacheNames=await caches.keys();
+    if(!cacheNames.some(n=>n.startsWith('aktywnik-plus-'))) throw new Error('PWA cache missing');
+
+    const manifest=await fetch('../manifest.webmanifest').then(r=>r.json());
+    if(manifest.start_url!=='./app.html') throw new Error('manifest start_url invalid');
+    if(!Array.isArray(manifest.icons) || manifest.icons.length<2) throw new Error('manifest icons missing');
+
     location.reload();
   }catch(e){fail(e.message)}
 }
@@ -72,7 +82,7 @@ if(sessionStorage.getItem('aktywnik-smoke-reload')==='1'){
     const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.entries?.length!==1 || saved.entries[0].status!=='approved') throw new Error('data did not persist after reload');
     if(saved.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name did not persist');
-    pass('pilot, activity, approval, report, local class demo, backup validation and persistence');
+    pass('pilot, activity, approval, report, local class demo, backup, service worker, cache, manifest and persistence');
     localStorage.removeItem(KEY);
   }catch(e){fail(e.message)}
 }else{
