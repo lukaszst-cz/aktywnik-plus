@@ -25,7 +25,12 @@ async function run(){
   try{
     localStorage.removeItem(KEY);sessionStorage.clear();
     let ctx=await loadApp('initial'),w=ctx.w,d=ctx.d;
-    if(d.getElementById('pilotSetupCard').classList.contains('hidden'))throw new Error('initial parent setup missing');
+    if(d.getElementById('pilotSetupCard').classList.contains('hidden')){
+      let diag='renderAll='+typeof w.renderAll;
+      if(typeof w.renderAll==='function'){try{w.renderAll();await sleep(20)}catch(e){diag+='; renderAll error='+String(e?.message||e)}}
+      if(!d.getElementById('pilotSetupCard').classList.contains('hidden'))diag+='; manual render recovered';
+      throw new Error('initial parent setup missing; '+diag);
+    }
     if(d.getElementById('childModeBtn')||d.getElementById('parentModeBtn')||d.getElementById('schoolModeBtn'))throw new Error('legacy role switch still visible');
     if(!d.getElementById('parentPinSetup')||!d.getElementById('parentPinConfirm'))throw new Error('PIN setup controls missing');
     if(!d.getElementById('saveStatusBadge')||!d.getElementById('childWeekSnapshot')||!d.getElementById('repeatLastActivityBtn'))throw new Error('0.3.0 daily overview UI missing');
