@@ -69,6 +69,8 @@ async function run(){
 
     d.getElementById('parentModeBtn').click();
     await sleep(50);
+    if(!d.getElementById('exportCsvBtn')) throw new Error('CSV export button missing');
+    if(typeof w.exportReportCsv!=='function') throw new Error('CSV export function missing');
     if(d.getElementById('pendingCount').textContent!=='2') throw new Error('pending count is not 2');
     d.getElementById('approveAllBtn').click();
     await sleep(100);
