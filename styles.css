@@ -36,3 +36,17 @@ dialog input,dialog select{width:100%;padding:12px 13px;border:1px solid #cbd5e1
   .secure-actions button{flex:1}
   #parentPanel .actions button{flex:1 1 100%}
 }
+
+
+.duration-box{display:grid;gap:8px}
+.duration-label{font-weight:800;font-size:.86rem;color:#475569}
+.duration-presets{display:flex;flex-wrap:wrap;gap:8px}
+.duration-presets button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:999px;padding:9px 12px;font-weight:800;cursor:pointer}
+.duration-presets button:hover,.duration-presets button.selected{border-color:#22c55e;background:#dcfce7;color:#166534}
+.duration-box small{color:#64748b;line-height:1.4}
+textarea{width:100%;margin-top:6px;border:1px solid #cbd5e1;border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}
+.import-preview{margin-top:14px;overflow-x:auto}
+.import-table{display:grid;grid-template-columns:130px minmax(170px,1.5fr) 80px 80px minmax(180px,1fr);gap:6px;min-width:720px;align-items:center}
+.import-table input{width:100%;padding:8px}
+.import-head{font-weight:800;font-size:.78rem;color:#475569;padding:3px 6px}
+button:disabled{opacity:.5;cursor:not-allowed}
