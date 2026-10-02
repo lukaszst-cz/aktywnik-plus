@@ -15,7 +15,7 @@ module.exports = function handler(req,res){
   return res.status(200).json({
     ok:true,
     service:'aktywnik-plus-api',
-    version:'0.5.0-beta.1',
+    version:'0.5.0-beta.2',
     environment:process.env.VERCEL_ENV || 'local',
     backend:'sync-foundation',
     databaseConfigured:cloud.databaseConfigured,
