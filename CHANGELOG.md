@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — Draft hardening
+
+### Niezawodność wpisów
+- poprawiono szybki wybór czasu po przywróceniu szkicu;
+- szkice niedokończonych wpisów są rozdzielone między profile dzieci;
+- zmiana profilu nie przenosi formularza ani szkicu do innego dziecka;
+- anulowanie zwykłego wpisu czyści jego szkic, ale edycja wpisu oczekującego nie usuwa wcześniej rozpoczętego szkicu;
+- import kopii, usunięcie profilu i wyczyszczenie danych usuwają nieaktualne szkice;
+- zachowana jest migracja wcześniejszego pojedynczego klucza szkicu.
+
+
 ## 0.4.0 — Universal
 
 ### Tryb osobisty
