@@ -9,41 +9,42 @@
   <title>Aktywnik+ — konto i synchronizacja</title>
 </head>
 <body>
-<header class="nav"><a class="logo" href="./">Aktywnik+</a><nav><a href="app.html">Aplikacja</a><a href="prywatnosc.html">Prywatność</a><a href="./">Start</a></nav></header>
+<header class="nav"><a class="logo" href="./">Aktywnik+</a><nav><a href="app.html" data-i18n="account.navApp">Aplikacja</a><a href="prywatnosc.html" data-i18n="account.navPrivacy">Prywatność</a><a href="./" data-i18n="account.navStart">Start</a><select class="language-switch" data-language-switch><option value="pl">PL</option><option value="en">EN</option></select></nav></header>
 <main class="section">
   <span class="pill">0.5 Sync Foundation</span>
-  <h1>Konto Aktywnik+</h1>
-  <p>Konto jest opcjonalne. Tryb lokalny nadal działa bez logowania. Konto będzie służyć do synchronizacji między urządzeniami i bezpiecznej kopii chmurowej.</p>
+  <h1 data-i18n="account.title">Konto Aktywnik+</h1>
+  <p data-i18n="account.intro">Konto jest opcjonalne. Tryb lokalny nadal działa bez logowania. Konto służy do bezpiecznej synchronizacji między urządzeniami.</p>
 
   <section id="loginCard" class="section action">
-    <h2>Zaloguj się bez hasła</h2>
-    <p>Podaj e-mail. Otrzymasz jednorazowy Magic Link. Nie musisz tworzyć ani pamiętać hasła.</p>
-    <label>Adres e-mail
-      <input id="accountEmailInput" type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="twoj@email.pl">
+    <h2 data-i18n="account.loginTitle">Zaloguj się bez hasła</h2>
+    <p data-i18n="account.loginText">Podaj e-mail. Otrzymasz jednorazowy Magic Link. Nie musisz tworzyć ani pamiętać hasła.</p>
+    <label><span data-i18n="account.email">Adres e-mail</span>
+      <input id="accountEmailInput" type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="twoj@email.pl" data-i18n-placeholder="account.emailPlaceholder">
     </label>
-    <div class="cta"><button id="sendMagicLinkBtn" class="primary" type="button">Wyślij link logowania</button></div>
+    <div class="cta"><button id="sendMagicLinkBtn" class="primary" type="button" data-i18n="account.send">Wyślij link logowania</button></div>
   </section>
 
   <section id="loggedInCard" class="section action hidden">
-    <h2>Zalogowano</h2>
+    <h2 data-i18n="account.logged">Zalogowano</h2>
     <p>Konto: <strong id="accountEmail">—</strong></p>
     <div class="cta">
-      <a class="primary" href="app.html">Otwórz Aktywnik+</a>
-      <button id="signOutBtn" class="secondary" type="button">Wyloguj</button>
+      <a class="primary" href="app.html" data-i18n="account.open">Otwórz Aktywnik+</a>
+      <button id="signOutBtn" class="secondary" type="button" data-i18n="account.logout">Wyloguj</button>
     </div>
   </section>
 
-  <p id="accountStatus" class="account-status" role="status" aria-live="polite">Sprawdzanie stanu konta…</p>
+  <p id="accountStatus" class="account-status" role="status" aria-live="polite" data-i18n="account.checking">Sprawdzanie stanu konta…</p>
 
   <div class="cards">
-    <article><h3>🔒 Lokalnie nadal działa</h3><p>Brak konta nie blokuje Start/Stop, wpisów, statystyk, CSV ani kopii JSON.</p></article>
-    <article><h3>☁️ Synchronizacja etapami</h3><p>Najpierw logowanie i test izolacji RLS. Dopiero potem włączymy synchronizację wpisów między urządzeniami.</p></article>
-    <article><h3>👨‍👩‍👧 Rodzina</h3><p>Rodzic będzie mógł powiązać kilka profili dzieci bez udostępniania im swojego konta.</p></article>
+    <article><h3 data-i18n="account.localTitle">🔒 Lokalnie nadal działa</h3><p data-i18n="account.localText">Brak konta nie blokuje Start/Stop, wpisów, statystyk, CSV ani kopii JSON.</p></article>
+    <article><h3 data-i18n="account.syncTitle">☁️ Synchronizacja etapami</h3><p data-i18n="account.syncText">Tryb osobisty ma już bezpieczny fundament synchronizacji RLS. Chmura pozostaje betą do zakończenia testów wielu kont i konfliktów offline.</p></article>
+    <article><h3 data-i18n="account.familyTitle">👨‍👩‍👧 Rodzina</h3><p data-i18n="account.familyText">Rodzic będzie mógł powiązać kilka profili dzieci bez udostępniania im swojego konta.</p></article>
   </div>
 
-  <p><small>Aktywnik+ używa publicznego klucza Supabase po stronie przeglądarki. Klucze administracyjne i serwerowe nie są wysyłane do użytkownika.</small></p>
+  <p><small data-i18n="account.keyNote">Aktywnik+ używa publicznego klucza Supabase po stronie przeglądarki. Klucze administracyjne i serwerowe nie są wysyłane do użytkownika.</small></p>
 </main>
 <footer>Aktywnik+ • bezpłatny projekt aktywności • <a href="https://github.com/lukaszst-cz/aktywnik-plus" target="_blank" rel="noopener">GitHub</a></footer>
+<script src="i18n.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
 </body>
