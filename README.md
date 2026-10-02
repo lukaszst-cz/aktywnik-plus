@@ -11,8 +11,10 @@ Aktywnik+ jest obecnie **bezpłatnym projektem rodzicielskim w fazie pilotażowe
 Na tym etapie:
 - nie ma opłat;
 - nie trzeba zakładać konta;
-- bezpośrednie wejście rolą: dziecko / rodzic / nauczyciel;
-- aplikacja pamięta ostatnio używany tryb na danym urządzeniu;
+- dziecko korzysta z własnego, uproszczonego widoku;
+- strefa rodzica jest chroniona lokalnym PIN-em i automatycznie się blokuje;
+- jeden rodzic może prowadzić wiele profili dzieci;
+- zmiana aktywnego profilu dziecka na urządzeniu wymaga odblokowanej strefy rodzica;
 - nie potrzeba własnego serwera;
 - dane prototypu pozostają lokalnie na urządzeniu;
 - rodzina może wybrać aplikację, tryb hybrydowy albo papier.
@@ -36,9 +38,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.1.3 — Pilot**
+**Aktywnik+ 0.2.0 — Family Roles Pilot**
 
-- [Release notes 0.1.3](docs/RELEASE-0.1.3.md)
+- [Release notes 0.2.0](docs/RELEASE-0.2.0.md)
 - [Changelog](CHANGELOG.md)
 - [Pobierz / zainstaluj](pobierz.html)
 - [FAQ](faq.html)
@@ -49,7 +51,12 @@ Przeczytaj przed pilotażem:
 - ulubione aktywności do szybkiego wyboru;
 - wpis aktywności z datą, czasem, wysiłkiem i notatką;
 - **Start/Stop aktywności** — pomiar czasu oparty na zapisanym czasie startu, działający także po zminimalizowaniu lub ponownym otwarciu PWA;
-- wieczorna lista wpisów do akceptacji przez rodzica;
+- wiele profili dzieci w jednej rodzinie, z osobnymi wpisami, statystykami i raportami;
+- lokalna strefa rodzica chroniona PIN-em PBKDF2 + losową solą;
+- automatyczna blokada strefy rodzica po bezczynności;
+- dziecko może poprawić wpis oczekujący lub odrzucony, ale nie zatwierdzi własnego wpisu;
+- rodzic może **zatwierdzić / poprawić i zatwierdzić / odrzucić z powodem**;
+- lokalna historia decyzji rodzica i ponownych wysłań;
 - raporty: miesięczny, kwartalny, półroczny i roczny;
 - **Eksport CSV** zatwierdzonych wpisów dla nauczyciela;
 - **Skan/import kart papierowych** — CSV/JSON/TXT lub wklejony OCR, z podglądem i poprawkami;
@@ -95,6 +102,7 @@ Dokumentacja:
 - **[Dane i prywatność](docs/DANE-I-PRYWATNOSC.md)**
 - **[Architektura backendu](docs/ARCHITEKTURA-BACKENDU.md)**
 - **[Klasy i dołączanie dzieci](docs/KLASY-I-DOLACZANIE.md)**
+- **[Rodzina, urządzenia i synchronizacja](docs/FAMILY-SYNC.md)**
 
 ## Prywatność i podejście
 
@@ -144,9 +152,11 @@ Backendowy fundament jest już w repo:
 - `/api/capabilities`;
 - `backend/migrations/001_core.sql`;
 - `backend/migrations/002_supabase_rls.sql`;
+- `backend/migrations/003_family_roles.sql`;
+- `backend/migrations/004_family_rls.sql`;
 - `.env.example`.
 
-Backend jest domyślnie wyłączony dla synchronizacji chmurowej. Włączenie wymaga prawdziwej bazy, autoryzacji i przejścia testów RLS.
+Backend jest domyślnie wyłączony dla synchronizacji chmurowej. Migracje 003/004 przygotowują konta dziecka, wiele dzieci na opiekuna, jednorazowe kody parowania i RLS. Włączenie wymaga prawdziwej bazy, autoryzacji i przejścia testów RLS.
 
 ## Wersja produkcyjna
 
@@ -160,4 +170,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.1.3 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
+`0.2.0 Family Roles Pilot` — lokalny pilot rodzinny z PIN-em rodzica i wieloma profilami dzieci. Dane pozostają lokalnie na urządzeniu. Osobne konta dziecka, synchronizacja między telefonami i prawdziwe role szkoły pozostają wyłączone do czasu uruchomienia backendu.

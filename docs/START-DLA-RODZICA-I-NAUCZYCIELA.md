@@ -3,12 +3,14 @@
 ## Rodzic
 
 1. Otwórz publiczny link Aktywnik+.
-2. Naciśnij **Zainstaluj Aktywnik+**.
-3. Jeżeli przeglądarka nie pokaże instalacji, użyj opcji **Dodaj do ekranu głównego** / **Zainstaluj aplikację**.
-4. Otwórz panel **Dziecko** i dodaj pierwszą aktywność — ręcznie albo używając **Start/Stop**.
-5. Wieczorem przejdź do panelu **Rodzic** i zatwierdź wpisy.
-6. Na koniec miesiąca lub innego okresu wygeneruj raport.
-7. Przekaż raport nauczycielowi jako PDF lub wydruk.
+2. Utwórz pierwszy profil dziecka i ustaw **PIN rodzica (4–8 cyfr)**.
+3. Opcjonalnie zainstaluj PWA przez **Zainstaluj Aktywnik+** / **Dodaj do ekranu głównego**.
+4. Jeżeli masz więcej dzieci, wejdź do **Strefy rodzica 🔒** i dodaj ich profile.
+5. W strefie rodzica ustaw, który profil ma być aktywny na tym urządzeniu.
+6. Dziecko korzysta już tylko ze swojego ekranu: wpis ręczny lub **Start/Stop**.
+7. Rodzic otwiera strefę PIN-em i dla wybranego dziecka używa **Zatwierdź / Popraw / Odrzuć**.
+8. Na koniec okresu generuje raport lub CSV osobno dla każdego dziecka.
+9. W ustawieniach bezpieczeństwa może zmienić PIN i czas automatycznej blokady.
 
 Obecny pilot zapisuje dane lokalnie na urządzeniu. Nie wymaga konta ani serwera.
 
@@ -60,3 +62,10 @@ Rodzic może:
 - wydrukować raport;
 - zapisać raport jako PDF;
 - wyeksportować zatwierdzone wpisy do CSV.
+
+
+## Rodzic z kilkorgiem dzieci
+
+Nie trzeba instalować osobnej aplikacji dla każdego dziecka na jednym urządzeniu rodzica. Strefa rodzica ma selektor profilu.
+
+Jeżeli dzieci korzystają z osobnych telefonów, obecny pilot 0.2.0 nadal nie synchronizuje tych urządzeń. Docelowy przepływ z kontem dziecka i kodem/QR jest opisany w [FAMILY-SYNC.md](FAMILY-SYNC.md).
