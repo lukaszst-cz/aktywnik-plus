@@ -134,7 +134,28 @@ function exportReportCsv(){
 }
 function renderParentReport(){const s=stats(reportType),child=escapeHtml(state.pilot?.childDisplayName||'Profil dziecka');$('#parentReport').innerHTML=`<div class="parent-only-print"><h2>${reportTitle(reportType)} — Aktywnik+</h2><p><strong>Dziecko / identyfikator:</strong> ${child}</p><p><small>Raport z bezpłatnej wersji pilotażowej — dane prowadzone lokalnie i zatwierdzone przez rodzica.</small></p><p><strong>Łączny czas:</strong> ${fmtMin(s.minutes)} · <strong>Aktywne dni:</strong> ${s.days} · <strong>Liczba aktywności:</strong> ${s.es.length} · <strong>Różne rodzaje:</strong> ${s.types}</p><div class="list">${s.es.map(e=>`<div class="entry"><div><strong>${escapeHtml(e.date)} — ${escapeHtml(e.activity)}</strong><small>${fmtMin(e.minutes)} · wysiłek ${e.effort}/5${e.note?` · ${escapeHtml(e.note)}`:''}</small></div></div>`).join('')||'<small>Brak zatwierdzonych wpisów w tym okresie.</small>'}</div><h3>Uwagi rodzica</h3><p>....................................................................................................</p><h3>Uwagi nauczyciela / wychowawcy</h3><p>....................................................................................................</p><p>....................................................................................................</p></div>`}
 function renderFavoritesEditor(){const box=$('#favoritesEditor');box.innerHTML='';ACTIVITIES.forEach(([name,emoji])=>{const l=document.createElement('label');l.innerHTML=`<input type="checkbox" ${state.favorites.includes(name)?'checked':''} data-fav="${name}"> ${emoji} ${name}`;box.append(l)});$$('[data-fav]').forEach(c=>c.onchange=()=>{if(c.checked&&!state.favorites.includes(c.dataset.fav))state.favorites.push(c.dataset.fav);if(!c.checked)state.favorites=state.favorites.filter(x=>x!==c.dataset.fav);persist();renderFavoritesEditor()})}
-function switchMode(mode){const child=mode==='child',parent=mode==='parent',school=mode==='school';$('#childPanel').classList.toggle('hidden',!child);$('#parentPanel').classList.toggle('hidden',!parent);$('#schoolPanel').classList.toggle('hidden',!school);$('#childModeBtn').classList.toggle('active',child);$('#parentModeBtn').classList.toggle('active',parent);$('#schoolModeBtn').classList.toggle('active',school)}
+function openParentGate(){
+  if(!pinConfigured()){document.querySelector('#pilotSetupCard')?.scrollIntoView({behavior:'smooth',block:'center'});return}
+  $('#parentPinInput').value='';$('#parentPinError').classList.add('hidden');$('#parentUnlockDialog').showModal();setTimeout(()=>$('#parentPinInput').focus(),20);
+}
+async function unlockParent(){
+  const ok=await verifyParentPin($('#parentPinInput').value);
+  if(!ok){$('#parentPinError').classList.remove('hidden');return}
+  touchParentSession();$('#parentUnlockDialog').close();parentSelectedChildId=getChild(parentSelectedChildId)?.id||state.activeChildId;switchMode('parent',true);
+}
+function lockParent(){sessionStorage.removeItem(PARENT_SESSION_KEY);currentMode='child';switchMode('child',true)}
+function guardParent(){if(!parentUnlocked()){openParentGate();return false}touchParentSession();return true}
+function switchMode(mode,bypass=false){
+  if((mode==='parent'||mode==='school')&&!bypass&&!guardParent())return;
+  if((mode==='parent'||mode==='school')&&!parentUnlocked())mode='child';
+  currentMode=mode;
+  const ready=appReady();
+  $('#childPanel').classList.toggle('hidden',!ready||mode!=='child');
+  $('#parentPanel').classList.toggle('hidden',!ready||mode!=='parent');
+  $('#schoolPanel').classList.toggle('hidden',!ready||mode!=='school');
+  if(mode==='parent'||mode==='school')touchParentSession();
+  renderAll();
+}
 function renderSchoolSettings(){const c=state.school||defaultState.school;$('#deploymentModel').value=c.deploymentModel||'school_saas';$('#schoolMode').value=c.mode;$('#requireParentApproval').value=c.requireParentApproval?'yes':'no';$('#useEffort').value=c.useEffort?'yes':'no';$('#usePluses').value=c.usePluses?'yes':'no';$('#gradeRule').value=c.gradeRule||'manual';$('#maxCountedMinutes').value=c.maxCountedMinutes??'';$('#rewardDate').value=$('#rewardDate').value||today();const box=$('#rewardHistory');box.innerHTML='';[...(state.rewards||[])].sort((a,b)=>String(b.date??'').localeCompare(String(a.date??''))).forEach(r=>{const el=document.createElement('div');el.className='entry';el.innerHTML=`<div><strong>${r.type==='plus'?'Plus':'Ocena'} · ${escapeHtml(r.value)}</strong><small>${escapeHtml(r.date)}${r.note?` · ${escapeHtml(r.note)}`:''}</small></div>`;box.append(el)});if(!(state.rewards||[]).length)box.innerHTML='<small>Brak zapisanych plusów i ocen.</small>'}
 function saveSchoolSettings(){state.school={deploymentModel:$('#deploymentModel').value,mode:$('#schoolMode').value,requireParentApproval:$('#requireParentApproval').value==='yes',useEffort:$('#useEffort').value==='yes',usePluses:$('#usePluses').value==='yes',gradeRule:$('#gradeRule').value,maxCountedMinutes:$('#maxCountedMinutes').value?Number($('#maxCountedMinutes').value):null};persist()}
 function saveReward(){const value=$('#rewardValue').value.trim();if(!value)return;state.rewards=state.rewards||[];state.rewards.unshift({id:crypto.randomUUID(),type:$('#rewardType').value,value,date:$('#rewardDate').value||today(),note:$('#rewardNote').value.trim(),createdAt:new Date().toISOString()});$('#rewardValue').value='';$('#rewardNote').value='';persist()}
@@ -148,8 +169,29 @@ function setReportStatus(classId,childId,status){const klass=(state.classes||[])
 function renderClasses(){const classes=(state.classes||[]).filter(c=>!c.archived);const box=$('#classList');if(!box)return;box.innerHTML='';classes.forEach(c=>{const children=c.children||[];const el=document.createElement('div');el.className='entry';const childRows=children.map(ch=>`<div class="class-child"><span><strong>${escapeHtml(ch.name)}</strong> · ${ch.mode==='paper'?'papier':ch.mode==='hybrid'?'hybrydowo':'cyfrowo'}</span><select data-report-class="${escapeAttr(c.id)}" data-report-child="${escapeAttr(ch.id)}"><option value="missing" ${ch.reportStatus==='missing'?'selected':''}>brak raportu</option><option value="preparing" ${ch.reportStatus==='preparing'?'selected':''}>w przygotowaniu</option><option value="submitted" ${ch.reportStatus==='submitted'?'selected':''}>oddany</option><option value="reviewed" ${ch.reportStatus==='reviewed'?'selected':''}>sprawdzony</option></select></div>`).join('');el.innerHTML=`<div style="width:100%"><strong>${escapeHtml(c.name)}</strong><small>${escapeHtml(c.schoolYear)} · kod klasy: <b>${escapeHtml(c.code)}</b> · ${children.length} dzieci</small>${childRows?'<div class="class-children">'+childRows+'</div>':'<small>Brak dzieci w klasie.</small>'}</div>`;box.append(el)});if(!classes.length)box.innerHTML='<small>Nie utworzono jeszcze żadnej klasy.</small>';const select=$('#paperClassId');if(select)select.innerHTML=classes.map(c=>`<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)} — ${escapeHtml(c.schoolYear)}</option>`).join('');$$('[data-report-child]').forEach(s=>s.onchange=()=>setReportStatus(s.dataset.reportClass,s.dataset.reportChild,s.value))}
 function renderJoinRequests(){const pending=(state.joinRequests||[]).filter(r=>r.status==='pending');const box=$('#classJoinRequests');if(!box)return;$('#classRequestBadge').textContent=pending.length?`${pending.length} oczekuje`:'';box.innerHTML='';pending.forEach(r=>{const klass=(state.classes||[]).find(c=>c.id===r.classId);const el=document.createElement('div');el.className='entry';el.innerHTML=`<div><strong>${escapeHtml(r.childName)}</strong><small>${escapeHtml(klass?.name||'Klasa')} · ${r.mode==='paper'?'papier':r.mode==='hybrid'?'hybrydowo':'cyfrowo'}</small></div><div class="entry-actions"><button class="primary" data-join-accept="${escapeAttr(r.id)}">Akceptuj</button><button class="ghost" data-join-reject="${escapeAttr(r.id)}">Odrzuć</button></div>`;box.append(el)});if(!pending.length)box.innerHTML='<small>Brak oczekujących zgłoszeń.</small>';$$('[data-join-accept]').forEach(b=>b.onclick=()=>acceptJoinRequest(b.dataset.joinAccept));$$('[data-join-reject]').forEach(b=>b.onclick=()=>rejectJoinRequest(b.dataset.joinReject))}
 
-function startPilot(){const name=$('#pilotChildName').value.trim();state.pilot={started:true,childDisplayName:name||'Profil dziecka'};persist()}
-function renderPilot(){const card=$('#pilotSetupCard');if(!card)return;card.classList.toggle('hidden',!!state.pilot?.started);const label=$('#childDisplayName');if(label)label.textContent=state.pilot?.childDisplayName?`· ${state.pilot.childDisplayName}`:''}
+async function startPilot(){
+  const name=cleanText($('#pilotChildName').value,60),pin=$('#parentPinSetup').value,confirmPin=$('#parentPinConfirm').value;
+  if(!name){alert('Podaj nazwę dziecka.');return}
+  if(!/^\d{4,8}$/.test(pin)){alert('PIN rodzica musi mieć 4–8 cyfr.');return}
+  if(pin!==confirmPin){alert('PIN-y nie są takie same.');return}
+  if(!state.children.length){
+    const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:true,createdAt:nowIso()};
+    state.children=[child];state.activeChildId=child.id;parentSelectedChildId=child.id;state.pilot={started:true};
+  }else{
+    state.children[0].displayName=name;state.activeChildId=state.activeChildId||state.children[0].id;parentSelectedChildId=state.activeChildId;
+  }
+  await setParentPin(pin);$('#parentPinSetup').value='';$('#parentPinConfirm').value='';persist();switchMode('child',true);
+}
+function renderPilot(){
+  const ready=appReady(),card=$('#pilotSetupCard');card.classList.toggle('hidden',ready);
+  if(!ready&&state.children[0])$('#pilotChildName').value=$('#pilotChildName').value||state.children[0].displayName;
+  const child=activeChild();
+  $('#childDisplayName').textContent=child?'· '+child.displayName:'';
+  $('#deviceChildBadge').textContent=child?'Profil: '+child.displayName:'Brak profilu';
+  $('#parentAccessBtn').disabled=!ready;
+  $('#childPanel').classList.toggle('hidden',!ready||currentMode!=='child');
+  if(!ready){$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden')}
+}
 function safeBackupState(raw){
   const base=structuredClone(defaultState);
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Nieprawidłowy plik kopii.');
