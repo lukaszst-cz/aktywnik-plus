@@ -450,7 +450,7 @@ function renderAll(){
   $('#schoolPanel').classList.toggle('hidden',currentMode!=='school');
 }
 $('#activitySearch').oninput=renderActivities;
-$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
+$$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
 $('#startPilotBtn').onclick=startPilot;
 $('#parentAccessBtn').onclick=openParentGate;
 $('#unlockParentBtn').onclick=unlockParent;
