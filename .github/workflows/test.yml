@@ -25,6 +25,9 @@ jobs:
           node --check sw.js
           node --check api/health.js
           node --check api/capabilities.js
+          node --check api/_lib/backend.js
+          node --check api/v1/classes.js
+          node --check api/v1/sync.js
           python3 - <<'PY'
           import json, os, re
           with open("manifest.webmanifest", encoding="utf-8") as f:
@@ -90,4 +93,14 @@ jobs:
           health({method:'POST'},denied);
           if(denied.out.statusCode!==405) throw new Error('health method guard');
           console.log('backend API smoke OK');
+
+          const classes=require('./api/v1/classes.js');
+          const sync=require('./api/v1/sync.js');
+          for (const handler of [classes,sync]){
+            const res=mock();
+            handler({method:'GET'},res);
+            if(res.out.statusCode!==503) throw new Error('cloud endpoint must fail closed');
+            if(res.out.body?.error!=='cloud_sync_disabled') throw new Error('cloud endpoint guard missing');
+          }
+          console.log('backend fail-closed guards OK');
           NODE
