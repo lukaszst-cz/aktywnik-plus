@@ -23,7 +23,9 @@
     <button class="install-mini" type="button" data-install-pwa data-i18n="common.install">Zainstaluj</button>
     <div class="secure-actions">
       <span id="saveStatusBadge" class="badge save-status" aria-live="polite" data-i18n="app.saveLocal">zapis lokalny</span>
+      <span id="cloudSyncBadge" class="badge" aria-live="polite">lokalnie · sync opcjonalny</span>
       <span id="deviceChildBadge" class="badge"></span>
+      <a class="ghost button-link" href="konto.html">Konto / Sync ☁️</a>
       <button id="parentAccessBtn" class="ghost" data-i18n="app.parentZone">Strefa rodzica 🔒</button>
     </div>
   </header>
@@ -433,6 +435,9 @@
   <footer class="app-footer">Aktywnik+ • bezpłatny projekt rodzicielski • Twórca i właściciel projektu: Łukasz St‑cz • <a href="https://github.com/lukaszst-cz/aktywnik-plus" target="_blank" rel="noopener">GitHub Łukasza St‑cz</a></footer>
 
   <script src="i18n.js"></script>
+  <script src="auth-config.js"></script>
+  <script src="auth.js"></script>
+  <script src="sync-client.js"></script>
   <script src="app.js"></script>
   <script src="install.js"></script>
 </body>
