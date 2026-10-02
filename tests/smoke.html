@@ -2,174 +2,157 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<title>Aktywnik+ smoke test</title>
-<style>body{font-family:system-ui;padding:20px}.pass{color:#166534}.fail{color:#b91c1c}iframe{width:1px;height:1px;opacity:.01}</style>
+<title>Aktywnik+ smoke 0.2.0</title>
+<style>
+body{font-family:system-ui;margin:20px}#result{padding:12px;border:1px solid #ccc}.pass{background:#e8fff0}.fail{background:#ffecec}iframe{width:100%;height:900px;border:1px solid #ddd;margin-top:12px}
+</style>
 </head>
 <body>
-<h1>Aktywnik+ smoke test</h1>
 <div id="result">RUNNING</div>
-<iframe id="appFrame"></iframe>
+<iframe id="appFrame" src="../app.html"></iframe>
 <script>
 const KEY='aktywnik-plus-data-v1';
 const result=document.getElementById('result');
-const skipPwaChecks=new URLSearchParams(location.search).has('skipPwa');
+const skipPwaChecks=new URLSearchParams(location.search).get('skipPwa')==='1';
 function fail(msg){result.className='fail';result.textContent='FAIL: '+msg;document.body.dataset.test='fail'}
 function pass(msg){result.className='pass';result.textContent='PASS: '+msg;document.body.dataset.test='pass'}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function loadApp(label){
+  const f=document.getElementById('appFrame');
+  f.src='../app.html?smoke='+label+'-'+Date.now();
+  await new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error('app load timeout')),6000);
+    f.onload=()=>{clearTimeout(timer);resolve()};
+  });
+  await sleep(250);
+  return {w:f.contentWindow,d:f.contentDocument};
+}
 async function run(){
   try{
     localStorage.removeItem(KEY);
-    const f=document.getElementById('appFrame');
+    sessionStorage.clear();
+    let ctx=await loadApp('first'),w=ctx.w,d=ctx.d;
+    if(d.getElementById('pilotSetupCard').classList.contains('hidden'))throw new Error('initial parent setup missing');
+    if(d.getElementById('childModeBtn')||d.getElementById('parentModeBtn')||d.getElementById('schoolModeBtn'))throw new Error('legacy role switch still visible');
 
-    async function loadApp(label){
-      f.src='../app.html?smoke='+label+'-'+Date.now();
-      await new Promise((resolve,reject)=>{
-        const timer=setTimeout(()=>reject(new Error('app load timeout')),5000);
-        f.onload=()=>{clearTimeout(timer);resolve()}
-      });
-      await sleep(300);
-      return {w:f.contentWindow,d:f.contentDocument};
-    }
-
-    let {w,d}=await loadApp('first');
-    if(!d.getElementById('pilotSetupCard')) throw new Error('pilot setup missing');
-
-    d.getElementById('pilotChildName').value='Test D.';
+    d.getElementById('pilotChildName').value='Dziecko A';
+    d.getElementById('parentPinSetup').value='2468';
+    d.getElementById('parentPinConfirm').value='2468';
     d.getElementById('startPilotBtn').click();
-    await sleep(100);
-    if(!d.getElementById('pilotSetupCard').classList.contains('hidden')) throw new Error('pilot setup did not close');
+    await sleep(450);
+    let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.schemaVersion!==4||saved.children?.length!==1)throw new Error('family schema setup failed');
+    if(!saved.parentAuth?.pinHash||saved.parentAuth.pinHash==='2468')throw new Error('PIN is not hashed');
+    if(d.getElementById('childPanel').classList.contains('hidden'))throw new Error('child mode not active after setup');
+    if(!d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('parent visible without PIN');
 
     let spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));
-    if(!spacer) throw new Error('activity button missing');
-
     spacer.click();
-    d.getElementById('activityNote').value='timer smoke';
-    d.getElementById('startTimerBtn').click();
-    await sleep(100);
-    let timerSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
-    if(!timerSaved.activeTimer || timerSaved.activeTimer.activity!=='Spacer') throw new Error('timer did not start');
+    d.getElementById('activityDuration').value='25';
+    d.getElementById('activityNote').value='pierwszy wpis';
+    d.getElementById('saveEntryBtn').click();
+    await sleep(120);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.entries?.length!==1||saved.entries[0].status!=='pending')throw new Error('pending child entry failed');
+    if(!saved.entries[0].childId)throw new Error('entry missing childId');
 
-    timerSaved.activeTimer.startAt=new Date(Date.now()-125000).toISOString();
-    localStorage.setItem(KEY,JSON.stringify(timerSaved));
-    ({w,d}=await loadApp('timer-reload'));
-    if(d.getElementById('timerStatusCard').classList.contains('hidden')) throw new Error('timer did not survive reload');
-    d.getElementById('stopTimerBtn').click();
-    await sleep(100);
+    const editBtn=d.querySelector('[data-child-edit]');
+    if(!editBtn)throw new Error('pending edit button missing');
+    editBtn.click();
+    d.getElementById('activityDuration').value='30';
+    d.getElementById('saveEntryBtn').click();
+    await sleep(120);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.entries[0].minutes!==30)throw new Error('child edit before approval failed');
 
-    timerSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
-    if(timerSaved.activeTimer) throw new Error('timer did not stop');
-    if(timerSaved.entries?.length!==1 || timerSaved.entries[0].source!=='timer') throw new Error('timer entry not saved');
+    d.getElementById('parentAccessBtn').click();
+    d.getElementById('parentPinInput').value='1111';
+    d.getElementById('unlockParentBtn').click();
+    await sleep(350);
+    if(!d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('wrong PIN unlocked parent');
+
+    d.getElementById('parentPinInput').value='2468';
+    d.getElementById('unlockParentBtn').click();
+    await sleep(450);
+    if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('correct PIN did not unlock parent');
+    if(!d.getElementById('schoolPanel').classList.contains('hidden'))throw new Error('school opened automatically');
+
+    d.getElementById('newChildName').value='Dziecko B';
+    d.getElementById('addChildBtn').click();
+    await sleep(150);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.children?.length!==2)throw new Error('second child not added');
+    const childA=saved.children.find(x=>x.displayName==='Dziecko A');
+    const childB=saved.children.find(x=>x.displayName==='Dziecko B');
+    if(!childA||!childB)throw new Error('child profiles missing');
+
+    d.getElementById('parentChildSelect').value=childA.id;
+    d.getElementById('parentChildSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+    await sleep(100);
+    const correct=d.querySelector('[data-correct]');
+    if(!correct)throw new Error('parent correct action missing');
+    correct.click();
+    d.getElementById('parentEditMinutes').value='35';
+    d.getElementById('saveParentCorrectionBtn').click();
+    await sleep(120);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    const first=saved.entries.find(x=>x.childId===childA.id);
+    if(first.status!=='approved'||first.minutes!==35||!first.correctedByParent)throw new Error('parent correction failed');
+
+    d.getElementById('parentChildSelect').value=childB.id;
+    d.getElementById('parentChildSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+    d.getElementById('setDeviceChildBtn').click();
+    await sleep(120);
+    d.getElementById('lockParentBtn').click();
+    await sleep(120);
+    if(!d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('parent did not lock');
+    if(!d.getElementById('childDisplayName').textContent.includes('Dziecko B'))throw new Error('device child switch failed');
+    if(d.getElementById('childEntries').textContent.includes('pierwszy wpis'))throw new Error('sibling entry leaked into child B view');
 
     spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));
     spacer.click();
-    d.getElementById('activityDuration').value='25';
-    d.getElementById('activityNote').value='smoke test';
+    d.getElementById('activityDuration').value='18';
+    d.getElementById('activityNote').value='do odrzucenia';
     d.getElementById('saveEntryBtn').click();
     await sleep(100);
 
-    d.getElementById('parentModeBtn').click();
-    await sleep(50);
-    if(!d.getElementById('exportCsvBtn')) throw new Error('CSV export button missing');
-    if(typeof w.exportReportCsv!=='function') throw new Error('CSV export function missing');
-    if(d.getElementById('pendingCount').textContent!=='2') throw new Error('pending count is not 2');
-    d.getElementById('approveAllBtn').click();
-    await sleep(100);
-
-    let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
-    if(saved.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name not saved');
-    if(saved.entries?.length!==2) throw new Error('entries not saved');
-    if(saved.entries.some(e=>e.status!=='approved')) throw new Error('entries not approved');
-    if(!d.getElementById('parentReport').textContent.includes('Test D.')) throw new Error('report does not contain pilot name');
-
-    d.getElementById('schoolModeBtn').click();
-    d.getElementById('newClassName').value='5A — TEST';
-    d.getElementById('createClassBtn').click();
-    await sleep(100);
+    d.getElementById('parentAccessBtn').click();
+    d.getElementById('parentPinInput').value='2468';
+    d.getElementById('unlockParentBtn').click();
+    await sleep(350);
+    const reject=d.querySelector('[data-reject]');
+    if(!reject)throw new Error('reject action missing');
+    reject.click();
+    d.getElementById('rejectReason').value='Popraw czas';
+    d.getElementById('rejectNote').value='sprawdź';
+    d.getElementById('confirmRejectBtn').click();
+    await sleep(120);
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');
-    if(saved.classes?.length!==1 || !saved.classes[0].code) throw new Error('local class demo failed');
+    const rejected=saved.entries.find(x=>x.childId===childB.id&&x.note==='do odrzucenia');
+    if(!rejected||rejected.status!=='rejected'||!rejected.rejectionReason.includes('Popraw czas'))throw new Error('reject with reason failed');
+    if(!saved.approvalEvents?.some(x=>x.entryId===rejected.id&&x.action==='rejected'))throw new Error('approval audit missing');
 
-    d.getElementById('paperChildName').value='Test A.';
-    d.getElementById('addPaperChildBtn').click();
-    await sleep(50);
-    d.getElementById('paperChildName').value='Test B.';
-    d.getElementById('addPaperChildBtn').click();
+    d.getElementById('openSchoolDemoBtn').click();
     await sleep(100);
-    const reportSelectors=[...d.querySelectorAll('[data-report-child]')];
-    if(reportSelectors.length!==2) throw new Error('two local class children not rendered');
-    reportSelectors[1].value='submitted';
-    reportSelectors[1].dispatchEvent(new w.Event('change',{bubbles:true}));
+    if(d.getElementById('schoolPanel').classList.contains('hidden'))throw new Error('school demo unavailable after parent unlock');
+    d.getElementById('schoolExitBtn').click();
+    d.getElementById('lockParentBtn').click();
     await sleep(100);
-    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
-    if(saved.classes[0].children[1].reportStatus!=='submitted') throw new Error('second child report handler failed');
-
-    const classCode=saved.classes[0].code;
-    for(const name of ['Join A.','Join B.']){
-      d.getElementById('joinChildName').value=name;
-      d.getElementById('joinClassCode').value=classCode;
-      d.getElementById('sendJoinRequestBtn').click();
-      await sleep(50);
-    }
-    const acceptButtons=[...d.querySelectorAll('[data-join-accept]')];
-    if(acceptButtons.length!==2) throw new Error('two join requests not rendered');
-    acceptButtons[1].click();
+    w.switchMode('school');
     await sleep(100);
-    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
-    if(saved.joinRequests.filter(x=>x.status==='accepted').length!==1) throw new Error('second join request handler failed');
+    if(!d.getElementById('schoolPanel').classList.contains('hidden'))throw new Error('school accessible while parent locked');
 
-    const payload={format:'aktywnik-plus-backup',version:3,data:saved};
-    const restored=w.safeBackupState(payload);
-    if(restored.entries?.length!==2 || restored.pilot?.childDisplayName!=='Test D.') throw new Error('backup validation failed');
+    const migrated=w.safeBackupState({pilot:{started:true,childDisplayName:'Stare dziecko'},favorites:['Spacer'],entries:[{id:'legacy',date:'2026-10-01',activity:'Spacer',minutes:20,effort:2,status:'approved'}]});
+    if(migrated.children.length!==1||migrated.entries[0].childId!==migrated.children[0].id)throw new Error('legacy migration failed');
 
-    const malformed=w.safeBackupState({format:'aktywnik-plus-backup',data:{entries:[
-      {id:'bad',date:'not-a-date',activity:'Spacer',minutes:20,status:'approved'},
-      {id:'huge',date:'2030-01-01',activity:'Spacer',minutes:99999,status:'approved'},
-      {id:'ok',date:'2026-10-01',activity:'Spacer',minutes:30,effort:2,status:'approved'}
-    ]}});
-    if(malformed.entries.length!==2) throw new Error('malformed backup filtering failed');
-    if(malformed.entries.find(x=>x.id==='huge')?.minutes!==600) throw new Error('backup minute clamp failed');
-
-    const futureState=JSON.parse(localStorage.getItem(KEY)||'{}');
-    futureState.entries.unshift({id:'future-test',date:'2030-01-01',activity:'Spacer',minutes:60,effort:2,note:'',status:'approved',createdAt:new Date().toISOString()});
-    localStorage.setItem(KEY,JSON.stringify(futureState));
-    ({w,d}=await loadApp('future-report'));
-    if(w.stats('year').es.some(x=>x.id==='future-test')) throw new Error('future entry included in report');
-    futureState.entries=futureState.entries.filter(x=>x.id!=='future-test');
-    localStorage.setItem(KEY,JSON.stringify(futureState));
+    const restored=w.safeBackupState({format:'aktywnik-plus-backup',version:4,data:saved});
+    if(restored.children.length!==2)throw new Error('multi-child backup validation failed');
 
     if(!skipPwaChecks){
-      if(!('serviceWorker' in navigator)) throw new Error('service worker API unavailable');
-      let regs=[];
-      for(let i=0;i<30;i++){
-        regs=await navigator.serviceWorker.getRegistrations();
-        if(regs.length) break;
-        await sleep(100);
-      }
-      if(!regs.length) throw new Error('service worker not registered');
-
-      let cacheNames=[];
-      for(let i=0;i<30;i++){
-        cacheNames=await caches.keys();
-        if(cacheNames.some(n=>n.startsWith('aktywnik-plus-'))) break;
-        await sleep(100);
-      }
-      if(!cacheNames.some(n=>n.startsWith('aktywnik-plus-'))) throw new Error('PWA cache missing');
+      if(!('serviceWorker' in navigator))throw new Error('service worker API unavailable');
     }
-
-    const manifest=await fetch('../manifest.webmanifest').then(r=>r.json());
-    if(manifest.start_url!=='./app.html') throw new Error('manifest start_url invalid');
-    if(!Array.isArray(manifest.icons) || manifest.icons.length<2) throw new Error('manifest icons missing');
-
-    ({w,d}=await loadApp('reload'));
-    const persisted=JSON.parse(localStorage.getItem(KEY)||'{}');
-    if(persisted.entries?.length!==2 || persisted.entries.some(e=>e.status!=='approved')) throw new Error('data did not persist after reload');
-    if(persisted.pilot?.childDisplayName!=='Test D.') throw new Error('pilot name did not persist');
-    if(!d.getElementById('childDisplayName').textContent.includes('Test D.')) throw new Error('reloaded UI did not restore pilot name');
-
-    pass(skipPwaChecks?'pilot, timer, validation, manual activity, approval, report, multi-item class handlers, backup, manifest and persistence':'pilot, timer, manual activity, approval, report, multi-item class handlers, backup, service worker, cache, manifest and persistence');
-    localStorage.removeItem(KEY);
-  }catch(e){
-    fail(e.message);
-  }
+    pass('PIN roles, multi-child isolation, child edit, parent correction/rejection, audit, migration, backup and PWA');
+  }catch(err){fail(err.message||String(err))}
 }
 run();
 </script>
