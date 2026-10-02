@@ -279,6 +279,12 @@ function exportReportCsv(){
   const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='aktywnik-'+child.displayName.replace(/[^A-Za-z0-9_-]+/g,'-')+'-'+reportType+'-'+parentReportMonth+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+function exportSelfCsv(){
+  if(!isSelfMode())return;const child=activeChild();if(!child)return;const type=$('#reportPeriod')?.value||'month',es=filtered(type,child.id,new Date());
+  const rows=[['Profil','Data','Aktywność','Minuty','Wysiłek','Źródło','Notatka'],...es.map(e=>[child.displayName,e.date,e.activity,e.minutes,e.effort,e.source==='timer'?'Start/Stop':'Ręczny',e.note||''])];
+  const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='aktywnik-'+child.displayName.replace(/[^A-Za-z0-9_-]+/g,'-')+'-'+type+'-'+today().slice(0,7)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 function reportPeriodLabel(type,referenceDate){
   const start=startFor(type,referenceDate),end=endFor(type,referenceDate),fmt=d=>d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});
   return fmt(start)+' – '+fmt(end);
@@ -541,6 +547,7 @@ function renderPilot(){
   $('#deviceChildBadge').textContent=child?'Profil: '+child.displayName:'Brak profilu';
   $('#parentAccessBtn').disabled=!ready||isSelfMode();
   $('#parentAccessBtn').classList.toggle('hidden',isSelfMode());
+  const selfData=$('#selfDataCard');if(selfData)selfData.classList.toggle('hidden',!ready||!isSelfMode());
   $('#childPanel').classList.toggle('hidden',!ready||currentMode!=='child');
   if(!ready||isSelfMode()){$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(isSelfMode())currentMode='child'}
 }
@@ -579,26 +586,28 @@ function safeBackupState(raw){
   const rawMeta=d.meta&&typeof d.meta==='object'?d.meta:{},meta={lastBackupAt:safeIso(rawMeta.lastBackupAt),lastWriteAt:safeIso(rawMeta.lastWriteAt)};
   return {...base,schemaVersion:6,profileMode:d.profileMode==='self'?'self':'family',meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
+function canManageLocalData(){return isSelfMode()||guardParent()}
+function setStorageMessage(message){const parentEl=$('#storageStatus'),selfEl=$('#selfStorageStatus');if(parentEl)parentEl.textContent=message;if(selfEl)selfEl.textContent=message}
 function exportBackup(){
-  if(!guardParent())return;
+  if(!canManageLocalData())return;
   state.meta={...(state.meta||{}),lastBackupAt:nowIso()};persist();
   const payload={format:'aktywnik-plus-backup',version:6,exportedAt:nowIso(),data:state},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='aktywnik-plus-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('#backupStatus').textContent='dziś';
+  a.href=url;a.download='aktywnik-plus-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);const badge=$('#backupStatus');if(badge)badge.textContent='dziś';
 }
 async function importBackup(file){
-  if(!guardParent()||!file)return;
-  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());if(parsed.format&&parsed.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');const candidate=safeBackupState(parsed),summary='Kopia zawiera '+candidate.children.length+' profili dzieci i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne?';if(!confirm(summary))return;state=candidate;localStorage.setItem(KEY,JSON.stringify(state));sessionStorage.removeItem(PARENT_SESSION_KEY);alert('Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{$('#importBackupInput').value=''}
+  if(!canManageLocalData()||!file)return;
+  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());if(parsed.format&&parsed.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');const candidate=safeBackupState(parsed),summary='Kopia zawiera '+candidate.children.length+' profili i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne?';if(!confirm(summary))return;state=candidate;localStorage.setItem(KEY,JSON.stringify(state));sessionStorage.removeItem(PARENT_SESSION_KEY);alert(isSelfMode()?'Kopia została przywrócona.':'Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{const a=$('#importBackupInput'),b=$('#selfImportBackupInput');if(a)a.value='';if(b)b.value=''}
 }
-async function requestPersistentStorage(){if(!guardParent())return;try{const ok=await navigator.storage?.persist?.();$('#storageStatus').textContent=ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.'}catch{$('#storageStatus').textContent='Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.'}}
-async function renderStorageStatus(){const el=$('#storageStatus');if(!el||!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();el.textContent=persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.'}catch{el.textContent='Dane są zapisane lokalnie w tej przeglądarce.'}}
-function deleteLocalData(){if(!guardParent())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;localStorage.removeItem(KEY);sessionStorage.removeItem(PARENT_SESSION_KEY);location.reload()}
+async function requestPersistentStorage(){if(!canManageLocalData())return;try{const ok=await navigator.storage?.persist?.();setStorageMessage(ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.')}catch{setStorageMessage('Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.')}}
+async function renderStorageStatus(){if(!isSelfMode()&&!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();setStorageMessage(persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.')}catch{setStorageMessage('Dane są zapisane lokalnie w tej przeglądarce.')}}
+function deleteLocalData(){if(!canManageLocalData())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;localStorage.removeItem(KEY);sessionStorage.removeItem(PARENT_SESSION_KEY);location.reload()}
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
 function renderAll(){
   renderSaveStatus();renderPilot();
   if(!appReady())return;
   const child=activeChild();if(!child)return;
-  renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();
+  renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();if(isSelfMode())renderStorageStatus();
   if(parentUnlocked()){
     renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();
   }else{
@@ -631,6 +640,11 @@ $('#exportBackupBtn').onclick=exportBackup;
 $('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
 $('#requestPersistentStorageBtn').onclick=requestPersistentStorage;
 $('#deleteLocalDataBtn').onclick=deleteLocalData;
+$('#selfExportCsvBtn').onclick=exportSelfCsv;
+$('#selfExportBackupBtn').onclick=exportBackup;
+$('#selfImportBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
+$('#selfPersistentStorageBtn').onclick=requestPersistentStorage;
+$('#selfDeleteLocalDataBtn').onclick=deleteLocalData;
 $('#createClassBtn').onclick=createClass;
 $('#sendJoinRequestBtn').onclick=sendJoinRequest;
 $('#addPaperChildBtn').onclick=addPaperChild;
