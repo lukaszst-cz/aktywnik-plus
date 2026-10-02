@@ -86,6 +86,9 @@ async function run(){
     if(!d.getElementById('parentReport').textContent.includes('Test D.')) throw new Error('report does not contain pilot name');
 
     d.getElementById('schoolModeBtn').click();
+    if(typeof w.parseDelimitedImport!=='function') throw new Error('paper import parser missing');
+    const imported=w.parseDelimitedImport('Data;Aktywność;Czas;Wysiłek;Uwagi\n2026-10-01;Judo;1,5 h;3;trening');
+    if(imported.length!==1 || imported[0].minutes!==90 || imported[0].activity!=='Judo') throw new Error('paper import parser failed');
     d.getElementById('newClassName').value='5A — TEST';
     d.getElementById('createClassBtn').click();
     await sleep(100);
