@@ -17,6 +17,12 @@ Na tym etapie:
 
 Przed formalnym wdrożeniem szkolnym należy przejść do wersji z backendem, kontami, uprawnieniami i uzgodnionym modelem ochrony danych.
 
+## ☕ Dobrowolne wsparcie
+
+Aktywnik+ pozostaje bezpłatny. Jeśli aplikacja jest przydatna, można dobrowolnie wesprzeć jej dalszy rozwój: [Buy Me a Coffee — nalesnik_plus_plus](https://buymeacoffee.com/nalesnik_plus_plus).
+
+Wsparcie nie odblokowuje żadnych funkcji i nie jest wymagane do korzystania z aplikacji.
+
 Przeczytaj przed pilotażem:
 - **[Start dla rodzica i nauczyciela](docs/START-DLA-RODZICA-I-NAUCZYCIELA.md)**
 - **[Warunki krytyczne pilota](docs/WARUNKI-KRYTYCZNE-PILOTA.md)**
