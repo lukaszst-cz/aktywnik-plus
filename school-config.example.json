@@ -1,7 +1,21 @@
 {
-  "mode": "hybrid",
-  "requireParentApproval": true,
-  "showEffort": true,
+  "deployment": {
+    "model": "school_saas",
+    "tenantIsolation": true,
+    "paperFallback": true
+  },
+  "dataGovernance": {
+    "schoolControlsStudentData": true,
+    "serviceAdminContentAccess": "disabled_by_default",
+    "supportAccessRequiresReason": true,
+    "auditAdministrativeActions": true,
+    "retentionPolicy": "configured_by_school"
+  },
+  "school": {
+    "mode": "hybrid",
+    "requireParentApproval": true,
+    "showEffort": true
+  },
   "rewards": {
     "enabled": true,
     "teacherDecides": true,
@@ -12,6 +26,5 @@
     "minimumActiveDays": null,
     "minimumMinutes": null,
     "maximumCountedMinutesPerDay": null
-  },
-  "paperFallback": true
+  }
 }
