@@ -13,6 +13,7 @@ create table if not exists tenants (
 create table if not exists profiles (
   id uuid primary key,
   display_name text,
+  profile_type text not null default 'adult' check (profile_type in ('adult','child')),
   created_at timestamptz not null default now()
 );
 
@@ -51,13 +52,28 @@ create table if not exists class_teachers (
 create table if not exists children (
   id uuid primary key default gen_random_uuid(),
   display_name text not null,
+  require_parent_approval boolean not null default true,
   created_at timestamptz not null default now()
 );
 
+-- Jeden rodzic może mieć wiele dzieci, a jedno dziecko więcej niż jednego opiekuna.
 create table if not exists guardians (
   child_id uuid not null references children(id) on delete cascade,
   guardian_id uuid not null references profiles(id) on delete cascade,
+  guardian_role text not null default 'guardian' check (guardian_role in ('guardian','manager')),
+  created_at timestamptz not null default now(),
   primary key (child_id,guardian_id)
+);
+
+-- Opcjonalne konto dziecka. Pozwala zalogować dziecko na osobnym urządzeniu
+-- bez nadawania mu uprawnień rodzica.
+create table if not exists child_accounts (
+  child_id uuid not null references children(id) on delete cascade,
+  user_id uuid not null unique references profiles(id) on delete cascade,
+  active boolean not null default true,
+  paired_at timestamptz,
+  revoked_at timestamptz,
+  primary key (child_id,user_id)
 );
 
 create table if not exists class_children (
@@ -79,15 +95,40 @@ create table if not exists activities (
   minutes integer not null check (minutes > 0 and minutes <= 600),
   effort smallint check (effort between 1 and 5),
   note text,
+  source text not null default 'manual' check (source in ('manual','timer')),
   status text not null default 'pending' check (status in ('pending','approved','rejected')),
-  created_at timestamptz not null default now()
+  rejection_reason text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz,
+  approved_at timestamptz
 );
 
-create table if not exists activity_approvals (
-  activity_id uuid primary key references activities(id) on delete cascade,
-  guardian_id uuid not null references profiles(id),
-  decision text not null check (decision in ('approved','rejected','corrected')),
+-- Historia jest append-only: każda decyzja/korekta tworzy nowe zdarzenie.
+create table if not exists activity_approval_events (
+  id uuid primary key default gen_random_uuid(),
+  activity_id uuid not null references activities(id) on delete cascade,
+  child_id uuid not null references children(id) on delete cascade,
+  guardian_id uuid references profiles(id) on delete set null,
+  actor_type text not null check (actor_type in ('child','guardian','system')),
+  decision text not null check (decision in ('created','edited','resubmitted','approved','approved_auto','rejected','corrected')),
+  reason text,
+  before_state jsonb,
+  after_state jsonb,
   decided_at timestamptz not null default now()
+);
+
+-- Jednorazowe kody/QR do sparowania konta/urządzenia dziecka.
+-- W bazie przechowujemy wyłącznie skrót tokenu, nigdy sam token.
+create table if not exists pairing_codes (
+  id uuid primary key default gen_random_uuid(),
+  child_id uuid not null references children(id) on delete cascade,
+  guardian_id uuid not null references profiles(id) on delete cascade,
+  token_hash text not null unique,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now(),
+  check (expires_at > created_at)
 );
 
 create table if not exists reports (
@@ -134,8 +175,12 @@ create table if not exists support_access_grants (
 );
 
 create index if not exists idx_activities_child_date on activities(child_id,activity_date);
+create index if not exists idx_approval_events_activity_time on activity_approval_events(activity_id,decided_at desc);
+create index if not exists idx_approval_events_child_time on activity_approval_events(child_id,decided_at desc);
+create index if not exists idx_pairing_codes_child_expiry on pairing_codes(child_id,expires_at);
 create index if not exists idx_classes_tenant on classes(tenant_id);
 create index if not exists idx_audit_tenant_time on audit_events(tenant_id,created_at desc);
 
--- Produkcja: włączyć Row Level Security dla tabel tenantowych
--- i egzekwować tenant_id / class membership po stronie bazy.
+-- Polityki RLS są opisane w backend/rls.sql.
+-- Przed produkcją należy uruchomić je w osobnym środowisku testowym i przeprowadzić
+-- testy "guardian / child / teacher / school_admin / tenant escape".
