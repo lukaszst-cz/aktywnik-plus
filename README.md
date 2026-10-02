@@ -2,6 +2,24 @@
 
 Aktywnik+ to prosty dziennik aktywności dziecka z szybkim wpisem na telefonie, akceptacją rodzica i raportami okresowymi.
 
+## Bezpłatny pilot rodzicielski
+
+Aktywnik+ jest obecnie **bezpłatnym projektem rodzicielskim w fazie pilotażowej**. Celem jest ułatwienie rodzinom dokumentowania dodatkowej aktywności dzieci i prostego przekazywania podsumowań nauczycielowi.
+
+Na tym etapie:
+- nie ma opłat;
+- nie trzeba zakładać konta;
+- nie potrzeba własnego serwera;
+- dane prototypu pozostają lokalnie na urządzeniu;
+- rodzina może wybrać aplikację, tryb hybrydowy albo papier.
+
+Przed formalnym wdrożeniem szkolnym należy przejść do wersji z backendem, kontami, uprawnieniami i uzgodnionym modelem ochrony danych.
+
+Przeczytaj przed pilotażem:
+- **[Warunki krytyczne pilota](docs/WARUNKI-KRYTYCZNE-PILOTA.md)**
+- **[Pilot w jednej klasie](docs/PILOT-JEDNEJ-KLASY.md)**
+- **[Jak zainstalować PWA](docs/INSTALACJA-PWA.md)**
+
 ## Co już działa
 
 - panel dziecka z dużą listą aktywności;
