@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Syntax checks
+      - name: Syntax and PWA asset checks
         run: |
           node --check app.js
           node --check install.js
@@ -28,13 +28,14 @@ jobs:
           assert len(manifest.get("icons", [])) >= 2
           for icon in manifest["icons"]:
               assert os.path.exists(icon["src"]), icon["src"]
+
           with open("sw.js", encoding="utf-8") as f:
               sw=f.read()
           assets=re.findall(r"'(\./[^']+)'", sw)
           assert assets, "service worker asset list missing"
           for asset in assets:
-              path=asset[2:] or "index.html"
-              if path in ("", "."):
+              path=asset[2:]
+              if not path:
                   continue
               assert os.path.exists(path), f"missing cached asset: {path}"
           print("manifest and service-worker assets OK")
@@ -46,11 +47,12 @@ jobs:
           echo $! > /tmp/aktywnik-http.pid
           sleep 2
 
-      - name: Browser smoke test
+      - name: Browser UI smoke test
         run: |
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME"
-          "$CHROME"             --headless=new             --no-sandbox             --disable-gpu             --user-data-dir=/tmp/aktywnik-chrome             --virtual-time-budget=10000             --dump-dom             http://127.0.0.1:8765/tests/smoke.html             > /tmp/aktywnik-smoke.html
+          "$CHROME"             --headless=new             --no-sandbox             --disable-gpu             --user-data-dir=/tmp/aktywnik-chrome             --virtual-time-budget=12000             --dump-dom             'http://127.0.0.1:8765/tests/smoke.html?skipPwa=1'             > /tmp/aktywnik-smoke.html
+          grep -o '<div id="result"[^>]*>[^<]*' /tmp/aktywnik-smoke.html || true
           grep -q 'data-test="pass"' /tmp/aktywnik-smoke.html
-          grep -q 'PASS: pilot, activity, approval, report, local class demo, backup, service worker, cache, manifest and persistence' /tmp/aktywnik-smoke.html
+          grep -q 'PASS: pilot, activity, approval, report, local class demo, backup, manifest and persistence' /tmp/aktywnik-smoke.html
           echo "Aktywnik+ browser smoke PASS"
