@@ -21,6 +21,23 @@
 <article><h3>💸 Pilot bezpłatny</h3><p>Obecny pilot jest bezpłatny, bez reklam. Rodzina może korzystać w przeglądarce, jako PWA albo całkowicie papierowo.</p></article>
 </div>
 <section class="section action">
+<h2>Udostępnij rodzicom w 10 sekund</h2>
+<p>Stały adres: <strong>https://aktywnik-plus.vercel.app</strong></p>
+<div class="cta">
+  <button class="primary" type="button" id="copyTeacherLink">Kopiuj link</button>
+  <button class="secondary" type="button" id="copyTeacherMessage">Kopiuj wiadomość do rodziców</button>
+</div>
+<p id="teacherShareStatus"></p>
+<textarea id="teacherShareMessage" rows="6" readonly>Szanowni Państwo,
+
+dla chętnych udostępniam Aktywnik+ — bezpłatną wersję cyfrową Dziennika Dodatkowej Aktywności Fizycznej. Można korzystać bez instalacji w przeglądarce, zainstalować aplikację PWA albo nadal prowadzić wersję papierową.
+
+https://aktywnik-plus.vercel.app
+
+Na koniec miesiąca można przygotować raport PDF lub CSV.</textarea>
+</section>
+
+<section class="section action">
 <h2>Najprostszy pilotaż</h2>
 <p><strong>1.</strong> Nauczyciel pokazuje link. <strong>2.</strong> Rodzice wybierają aplikację albo papier. <strong>3.</strong> Na koniec miesiąca nauczyciel dostaje raport/PDF/kartę. <strong>4.</strong> Kartę papierową można zeskanować i zaimportować po OCR.</p>
 <a class="primary" href="app.html">Otwórz panel Szkoła</a>
@@ -32,4 +49,13 @@
 </section>
 </main>
 <footer>Aktywnik+ • bezpłatny projekt rodzicielski • arkusz papierowy: Ewa Gębska • projekt cyfrowy: Łukasz St-cz</footer>
+<script>
+const teacherUrl='https://aktywnik-plus.vercel.app';
+async function copyText(text,msg){
+  const status=document.getElementById('teacherShareStatus');
+  try{await navigator.clipboard.writeText(text);status.textContent=msg}catch{status.textContent='Skopiuj ręcznie: '+text}
+}
+document.getElementById('copyTeacherLink').onclick=()=>copyText(teacherUrl,'Link skopiowany.');
+document.getElementById('copyTeacherMessage').onclick=()=>copyText(document.getElementById('teacherShareMessage').value,'Wiadomość do rodziców skopiowana.');
+</script>
 </body></html>
