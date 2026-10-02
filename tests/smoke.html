@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<title>Aktywnik+ smoke 0.2.1</title>
+<title>Aktywnik+ smoke 0.3.0</title>
 <style>body{font-family:system-ui;margin:20px}#result{padding:12px;border:1px solid #ccc}.pass{background:#e8fff0}.fail{background:#ffecec}iframe{width:100%;height:900px;border:1px solid #ddd;margin-top:12px}</style>
 </head>
 <body>
@@ -28,9 +28,10 @@ async function run(){
     if(d.getElementById('pilotSetupCard').classList.contains('hidden'))throw new Error('initial parent setup missing');
     if(d.getElementById('childModeBtn')||d.getElementById('parentModeBtn')||d.getElementById('schoolModeBtn'))throw new Error('legacy role switch still visible');
     if(!d.getElementById('parentPinSetup')||!d.getElementById('parentPinConfirm'))throw new Error('PIN setup controls missing');
+    if(!d.getElementById('saveStatusBadge')||!d.getElementById('childWeekSnapshot')||!d.getElementById('repeatLastActivityBtn'))throw new Error('0.3.0 daily overview UI missing');
 
     const childA={id:'child-a',displayName:'Dziecko A',favorites:['Spacer','Rower'],requireParentApproval:true,createdAt:new Date().toISOString()};
-    const seeded={schemaVersion:4,pilot:{started:true},parentAuth:{pinSalt:'test-salt',pinHash:'test-hash',iterations:120000,autoLockMinutes:5},children:[childA],activeChildId:childA.id,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
+    const seeded={schemaVersion:5,meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:true},parentAuth:{pinSalt:'test-salt',pinHash:'test-hash',iterations:120000,autoLockMinutes:5},children:[childA],activeChildId:childA.id,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
     localStorage.setItem(KEY,JSON.stringify(seeded));
     ctx=await loadApp('seeded');w=ctx.w;d=ctx.d;
     await w.setParentPin('2468');
@@ -73,6 +74,13 @@ async function run(){
     const editBtn=d.querySelector('[data-child-edit]');if(!editBtn)throw new Error('pending edit button missing');
     editBtn.click();d.getElementById('activityDuration').value='30';d.getElementById('saveEntryBtn').click();await sleep(80);
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');if(saved.entries[0].minutes!==30)throw new Error('child edit failed');
+    if(!saved.meta?.lastWriteAt)throw new Error('local write metadata missing');
+    if(!w.recentDuplicate('child-a',{date:saved.entries[0].date,activity:saved.entries[0].activity,minutes:saved.entries[0].minutes,note:saved.entries[0].note}))throw new Error('duplicate guard did not detect recent entry');
+    if(!d.getElementById('childWeekSnapshot').textContent.includes('30 min'))throw new Error('weekly child overview missing entry');
+    if(d.getElementById('repeatLastActivityBtn').classList.contains('hidden'))throw new Error('repeat last activity action missing');
+    d.getElementById('repeatLastActivityBtn').click();await sleep(40);
+    if(d.getElementById('activityDuration').value!=='30'||!d.getElementById('selectedActivityTitle').textContent.includes('Spacer'))throw new Error('repeat last activity failed');
+    d.getElementById('cancelEntryBtn').click();
 
     sessionStorage.setItem(SESSION_KEY,String(Date.now()+600000));w.switchMode('parent',true);await sleep(80);
     if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('authorized parent session not shown');
@@ -94,6 +102,7 @@ async function run(){
     correct.click();d.getElementById('parentEditMinutes').value='35';d.getElementById('saveParentCorrectionBtn').click();await sleep(80);
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');const first=saved.entries.find(x=>x.childId==='child-a');
     if(first.status!=='approved'||first.minutes!==35||!first.correctedByParent)throw new Error('parent correction failed');
+    if(!d.getElementById('parentSnapshot').textContent.includes('35 min'))throw new Error('parent quick snapshot missing approved activity');
     d.getElementById('parentReportMonth').value='2026-10';d.getElementById('parentReportMonth').dispatchEvent(new w.Event('change',{bubbles:true}));await sleep(60);
     if(!d.getElementById('parentReport').textContent.includes('35 min'))throw new Error('selected-month report missing approved entry');
     const printPages=w.buildSchoolPrintPages('child-a',new w.Date('2026-10-15T12:00:00'));
@@ -119,7 +128,8 @@ async function run(){
 
     const migrated=w.safeBackupState({pilot:{started:true,childDisplayName:'Stare dziecko'},favorites:['Spacer'],entries:[{id:'legacy',date:'2026-10-01',activity:'Spacer',minutes:20,effort:2,status:'approved'}]});
     if(migrated.children.length!==1||migrated.entries[0].childId!==migrated.children[0].id)throw new Error('legacy migration failed');
-    const restored=w.safeBackupState({format:'aktywnik-plus-backup',version:4,data:saved});if(restored.children.length!==2)throw new Error('multi-child backup failed');
+    const restored=w.safeBackupState({format:'aktywnik-plus-backup',version:5,data:{...saved,meta:{lastBackupAt:'2026-10-02T10:00:00.000Z',lastWriteAt:'2026-10-02T10:05:00.000Z'}}});if(restored.children.length!==2)throw new Error('multi-child backup failed');
+    if(restored.schemaVersion!==5||!restored.meta.lastBackupAt||!restored.meta.lastWriteAt)throw new Error('backup metadata migration failed');
 
     const purgeState=JSON.parse(localStorage.getItem(KEY)||'{}');
     purgeState.classes=[{id:'class-purge',name:'TEST',children:[{id:'row',familyChildId:'purge-child',name:'Purge'}]}];
@@ -134,7 +144,7 @@ async function run(){
     w.clearPinFailures();
     if(w.pinLockRemainingMs()>0)throw new Error('PIN lockout reset failed');
 
-    pass('PIN roles, PIN lockout, multi-child isolation, child edit, parent correction/rejection, month selection, A4 pagination, audit, migration, backup and PWA');
+    pass('0.3.0 daily overview, local write metadata, duplicate guard, PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
