@@ -50,3 +50,30 @@ textarea{width:100%;margin-top:6px;border:1px solid #cbd5e1;border-radius:12px;p
 .import-table input{width:100%;padding:8px}
 .import-head{font-weight:800;font-size:.78rem;color:#475569;padding:3px 6px}
 button:disabled{opacity:.5;cursor:not-allowed}
+
+
+.report-actions{align-items:flex-end}
+.report-month-picker{display:flex;flex-direction:column;gap:4px;font-size:.72rem;font-weight:800;color:#475569}
+.report-month-picker input{padding:8px 10px}
+.report-help{margin:-2px 0 14px;color:#64748b;font-size:.9rem}
+.report-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.report-head h3{margin:0 0 3px}.report-head>span{font-weight:900;font-size:1.15rem}
+.report-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.report-summary>div{background:#f8fafc;border-radius:12px;padding:10px}.report-summary b{display:block;font-size:1.15rem}.report-summary small{color:#64748b}
+.school-print-report{display:none}
+.school-print-page{width:210mm;min-height:297mm;padding:9mm 10mm;background:#fff;color:#111;font-family:Arial,sans-serif;page-break-after:always}
+.school-print-page:last-child{page-break-after:auto}
+.school-print-head{display:flex;justify-content:space-between;gap:12mm;border-bottom:2px solid #111;padding-bottom:5px;margin-bottom:7px;font-size:10px}
+.school-print-head h1{font-size:17px;margin:0 0 3px}.school-print-head p{margin:0}.school-print-head>div:last-child{text-align:right}
+.school-print-meta{display:grid;grid-template-columns:1.2fr .7fr 1fr;gap:8px;margin:7px 0 8px;font-size:10px}.school-print-meta span{display:inline-block;border-bottom:1px solid #555;min-width:70px;height:12px}
+.school-print-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.2px}.school-print-table th,.school-print-table td{border:1px solid #444;padding:2px 3px;height:5.2mm;vertical-align:middle}.school-print-table th{background:#eee;text-align:center}.school-print-table th:nth-child(1){width:6%}.school-print-table th:nth-child(2){width:13%}.school-print-table th:nth-child(3){width:27%}.school-print-table th:nth-child(4){width:12%}.school-print-table th:nth-child(5){width:13%}.school-print-table th:nth-child(6){width:29%}
+.school-print-summary{margin-top:7px;font-size:9px;line-height:1.35}.school-print-summary>div{display:flex;gap:6px;margin-top:5px}.school-print-summary span{flex:1;border-bottom:1px solid #666;height:12px}
+.school-print-footer{display:flex;justify-content:space-between;gap:10px;margin-top:6px;color:#555;font-size:7.5px}
+@media(max-width:720px){.report-actions{width:100%}.report-actions>*{flex:1 1 100%}.report-month-picker input{width:100%}.report-summary{grid-template-columns:1fr}}
+@media print{
+  body.school-print-mode{background:#fff}
+  body.school-print-mode > *:not(.school-print-report){display:none!important}
+  body.school-print-mode .school-print-report{display:block!important}
+  body.school-print-mode .school-print-page{margin:0;width:210mm;height:297mm;min-height:297mm;box-shadow:none}
+  @page{size:A4 portrait;margin:0}
+}
