@@ -4,6 +4,11 @@
   const STORAGE_KEY='aktywnik-plus-cloud-session-v1';
   const cfg=window.AKTYWNIK_AUTH_CONFIG||{};
   const $=s=>document.querySelector(s);
+  function t(key,fallback){
+    const i18n=window.AktywnikI18n;
+    const lang=i18n?.getLanguage?.()||document.documentElement.lang||'pl';
+    return i18n?.messages?.[lang]?.[key]||fallback;
+  }
 
   function authBase(){return String(cfg.supabaseUrl||'').replace(/\/$/,'')+'/auth/v1'}
   function headers(accessToken){
@@ -81,39 +86,41 @@
     el.textContent=message;el.dataset.kind=kind;
   }
   async function render(){
-    if(!cfg.supabaseUrl||!cfg.publishableKey){status('Logowanie online nie jest jeszcze skonfigurowane.','error');return}
+    if(!cfg.supabaseUrl||!cfg.publishableKey){status(t('account.status.configMissing','Logowanie online nie jest jeszcze skonfigurowane.'),'error');return}
     const fromHash=sessionFromHash();
     if(fromHash){
       writeSession(fromHash);
       history.replaceState({},document.title,location.pathname+location.search);
-      status('Logowanie potwierdzone.','ok');
+      status(t('account.status.loginConfirmed','Logowanie potwierdzone.'),'ok');
     }
     const user=await currentUser();
     const logged=$('#loggedInCard'),login=$('#loginCard');
     if(user){
       logged?.classList.remove('hidden');login?.classList.add('hidden');
       const email=$('#accountEmail');if(email)email.textContent=user.email||'konto';
-      status('Konto jest zalogowane. Synchronizacja danych pozostaje jeszcze wyłączona do zakończenia testów RLS.','ok');
+      status(t('account.status.loggedIn','Konto jest zalogowane.'),'ok');
     }else{
       logged?.classList.add('hidden');login?.classList.remove('hidden');
-      status('Możesz zalogować się linkiem wysłanym na e-mail. Dane lokalne pozostają na urządzeniu.','');
+      status(t('account.status.local','Możesz zalogować się linkiem wysłanym na e-mail.'),'');
     }
   }
 
   window.AktywnikAuth={readSession,validSession,currentUser,sendMagicLink,signOut};
+
+  window.addEventListener('aktywnik:languagechange',()=>render().catch(()=>{}));
 
   document.addEventListener('DOMContentLoaded',()=>{
     $('#sendMagicLinkBtn')?.addEventListener('click',async()=>{
       const btn=$('#sendMagicLinkBtn');btn.disabled=true;
       try{
         await sendMagicLink($('#accountEmailInput')?.value);
-        status('Link logowania został wysłany. Sprawdź skrzynkę e-mail.','ok');
-      }catch(err){status('Nie udało się wysłać linku: '+err.message,'error')}
+        status(t('account.status.sent','Link logowania został wysłany.'),'ok');
+      }catch(err){status(t('account.status.sendFail','Nie udało się wysłać linku:')+' '+err.message,'error')}
       finally{btn.disabled=false}
     });
     $('#signOutBtn')?.addEventListener('click',async()=>{
-      await signOut();status('Wylogowano.','ok');await render();
+      await signOut();status(t('account.status.loggedOut','Wylogowano.'),'ok');await render();
     });
-    render().catch(err=>status('Błąd konta: '+err.message,'error'));
+    render().catch(err=>status(t('account.status.error','Błąd konta:')+' '+err.message,'error'));
   });
 })();
