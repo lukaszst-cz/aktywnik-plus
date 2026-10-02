@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<title>Aktywnik+ — uniwersalny dziennik papierowy</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#111;background:#f1f5f9}*{box-sizing:border-box}body{margin:0}
+.toolbar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:12px;background:#0f172a}
+.toolbar button,.toolbar a{border:0;border-radius:10px;padding:10px 14px;font-weight:700;text-decoration:none;cursor:pointer}.toolbar button{background:#22c55e;color:#052e16}.toolbar a{background:#e2e8f0;color:#0f172a}
+.intro{max-width:940px;margin:18px auto;padding:16px 18px;background:white;border-radius:16px}.intro h1{margin:.1rem 0 .5rem}.intro p{line-height:1.5}
+.sheet{width:210mm;min-height:297mm;margin:14px auto;background:#fff;padding:9mm 10mm;box-shadow:0 5px 24px rgba(15,23,42,.12);page-break-after:always}.sheet:last-of-type{page-break-after:auto}
+.sheet-head{display:flex;justify-content:space-between;gap:14px;border-bottom:2px solid #111;padding-bottom:7px;margin-bottom:8px}.sheet-head h1{font-size:18px;margin:0 0 4px}.sheet-head p{margin:2px 0;font-size:10px}.credit{text-align:right;font-size:10px;line-height:1.4}
+.meta{display:grid;grid-template-columns:1.2fr .7fr 1fr;gap:8px;margin:7px 0 9px;font-size:10px}.meta span{display:inline-block;border-bottom:1px solid #555;min-width:85px;height:14px;vertical-align:bottom}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.5px}th,td{border:1px solid #444;padding:2px 3px;height:6.15mm;vertical-align:middle}th{background:#eee;text-align:center;font-weight:700}
+.col-lp{width:6%}.col-date{width:13%}.col-act{width:27%}.col-time{width:12%}.col-effort{width:13%}.col-note{width:29%}.summary{margin-top:7px;font-size:9px}.summary h3{font-size:10px;margin:6px 0 3px}.line{border-bottom:1px solid #666;height:15px}
+.footer{margin-top:6px;display:flex;justify-content:space-between;gap:10px;color:#555;font-size:7.5px}
+@media(max-width:900px){.sheet{width:100%;min-height:auto;margin:10px 0;box-shadow:none}.intro{margin:10px}.toolbar{position:static}}
+@media print{.toolbar,.intro{display:none!important}body{margin:0}.sheet{margin:0;box-shadow:none;width:210mm;height:297mm;min-height:297mm;padding:9mm 10mm;page-break-after:always}.sheet:last-of-type{page-break-after:auto}@page{size:A4 portrait;margin:0}}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button id="printPaperBtn" type="button">Drukuj / Zapisz jako PDF</button>
+  <a href="app.html">Wróć do Aktywnik+</a>
+  <a href="paper.html">Wzór źródłowy pilota</a>
+</div>
+<section class="intro">
+  <h1>Uniwersalny Dziennik Dodatkowej Aktywności Fizycznej — 70 wpisów</h1>
+  <p>Neutralny wzór Aktywnik+ dla klas i szkół, które chcą korzystać z wersji papierowej bez odwoływania się do lokalnego arkusza pierwszego pilota.</p>
+</section>
+<section class="sheet">
+  <div class="sheet-head"><div><h1>Dziennik Dodatkowej Aktywności Fizycznej</h1><p>jeden wiersz = jedna aktywność</p></div><div class="credit"><strong>Wzór uniwersalny Aktywnik+</strong><br>projekt cyfrowy: Łukasz St-cz</div></div>
+  <div class="meta"><div>Imię i nazwisko: <span></span></div><div>Klasa: <span></span></div><div>Miesiąc / rok: <span></span></div></div>
+  <table><thead><tr><th class="col-lp">Lp.</th><th class="col-date">Data</th><th class="col-act">Rodzaj aktywności</th><th class="col-time">Czas trwania</th><th class="col-effort">Poziom zmęczenia 1–5</th><th class="col-note">Podpis / uwagi opiekuna</th></tr></thead><tbody id="rows1"></tbody></table>
+  <div class="footer"><span>Strona 1/2 · wpisy 1–35</span><span>Aktywnik+</span></div>
+</section>
+<section class="sheet">
+  <div class="sheet-head"><div><h1>Dziennik Dodatkowej Aktywności Fizycznej</h1><p>kontynuacja — wpisy 36–70</p></div><div class="credit"><strong>Wzór uniwersalny Aktywnik+</strong><br>projekt cyfrowy: Łukasz St-cz</div></div>
+  <div class="meta"><div>Imię i nazwisko: <span></span></div><div>Klasa: <span></span></div><div>Miesiąc / rok: <span></span></div></div>
+  <table><thead><tr><th class="col-lp">Lp.</th><th class="col-date">Data</th><th class="col-act">Rodzaj aktywności</th><th class="col-time">Czas trwania</th><th class="col-effort">Poziom zmęczenia 1–5</th><th class="col-note">Podpis / uwagi opiekuna</th></tr></thead><tbody id="rows2"></tbody></table>
+  <div class="summary"><h3>Podsumowanie miesiąca / uwagi rodzica</h3><div class="line"></div><div class="line"></div><h3>Uwagi nauczyciela / wychowawcy</h3><div class="line"></div><div class="line"></div></div>
+  <div class="footer"><span>Strona 2/2 · wpisy 36–70</span><span>Aktywnik+ · wzór uniwersalny</span></div>
+</section>
+<script src="paper.js" defer></script>
+</body>
+</html>
