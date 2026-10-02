@@ -26,9 +26,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.1.0 — Pilot**
+**Aktywnik+ 0.1.1 — Pilot**
 
-- [Release notes](docs/RELEASE-0.1.0.md)
+- [Release notes 0.1.1](docs/RELEASE-0.1.1.md)
 - [Changelog](CHANGELOG.md)
 - [Pobierz / zainstaluj](pobierz.html)
 
@@ -118,10 +118,10 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Demo i pobieranie
 
-- demo PWA (Vercel): `https://temporary-rushing-gold-nge8tsd.vercel.app/`
+- demo PWA: publikowane przez Vercel; stały adres zostanie wpisany po przypisaniu deploymentu do konta
 - repozytorium: `https://github.com/lukaszst-cz/aktywnik-plus`
 - wydania: `https://github.com/lukaszst-cz/aktywnik-plus/releases`
 
 ## Status
 
-`0.1.0 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
+`0.1.1 Pilot` — wersja do testu rodzinnego i demonstracji nauczycielowi. Dane pozostają lokalnie na urządzeniu; prawdziwe konta, wspólne klasy i synchronizacja są planowane dopiero w Aktywnik+ School.
