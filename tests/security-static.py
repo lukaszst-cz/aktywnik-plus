@@ -6,6 +6,7 @@ import sys
 MIGRATIONS = Path("backend/migrations")
 ALLOWED = {
     "create_class_invite",
+    "create_guardian_child",
     "create_school_class",
     "decide_class_join",
     "request_class_join",
