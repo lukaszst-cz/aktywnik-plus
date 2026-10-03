@@ -9,7 +9,7 @@ Legenda:
 
 ## Status tej wersji
 
-Aktywnik+ kodowo działa jako **0.5.0-beta.4, local-first z opcjonalnym kontem oraz pełnym sync trybu osobistego i rodzinnego dla jawnie powiązanych profili**. Pełny GitHub CI dla beta.4 przechodzi. Ostatnia zweryfikowana produkcja pozostaje na 0.5.0-beta.3 do czasu udanego redeployu beta.4.
+Aktywnik+ działa jako **0.5.0-beta.4, local-first z opcjonalnym kontem oraz pełnym sync trybu osobistego i rodzinnego dla jawnie powiązanych profili**. Pełny GitHub CI i production smoke beta.4 przechodzą.
 
 Nie jest jeszcze:
 - szkolnym dziennikiem elektronicznym;
@@ -28,7 +28,7 @@ Publiczna wersja:
 - kod i dokumentacja w GitHub;
 - dane testowe są syntetyczne.
 
-Ostatnia zweryfikowana produkcja została potwierdzona 2026-10-03 dla 0.5.0-beta.3: Vercel `READY`, backend `full-family-sync-pilot`, aktywne Auth, RLS i pełny family sync oraz production smoke PASS. Kod 0.5.0-beta.4 jest już na `main` i przechodzi pełny GitHub CI, ale jego rollout produkcyjny jest obecnie blokowany przez Vercel `build-rate-limit`; dlatego produkcja nie jest jeszcze zgodna z bieżącym `main`.
+Produkcja 0.5.0-beta.4 została zweryfikowana 2026-10-03: Vercel dla commita `9ad34abc6dad0fb9545504126f163d0ff6a4aa20` zakończył deployment sukcesem, `/api/health` raportuje beta.4, backend to `full-family-sync-pilot`, a production smoke z `require_cloud=true` potwierdza aktywne Auth, RLS, family sync, delete/tombstones i historię decyzji. Bieżący `main` różni się od wdrożonego runtime wyłącznie workflow CI.
 
 ## 2. Local-first + opcjonalna synchronizacja — ✅ dla pilota rodzinnego
 
@@ -155,7 +155,7 @@ Pozostaje:
 | Warunek | Stan |
 | --- | --- |
 | backend API + personal sync | ✅ |
-| deployment production zgodny z bieżącym main | 🟡 kod 0.5.0-beta.4 + GitHub CI PASS; ostatnia zweryfikowana produkcja 0.5.0-beta.3; rollout beta.4 blokuje Vercel `build-rate-limit` |
+| deployment production zgodny z bieżącym runtime | ✅ 0.5.0-beta.4; Vercel deployment SUCCESS + production smoke PASS; bieżący `main` ma dodatkowo tylko zmianę workflow CI |
 | uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
 | role/uprawnienia w DB | ✅ RLS + migracja 018 live; `profile_type` nie jest samodzielnie edytowalne przez użytkownika |
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
@@ -208,13 +208,15 @@ Sprawdzenie 2026-10-03:
 
 ## 12. Warunek publikacji pilota — ✅
 
+Production smoke jest uruchamiany automatycznie po pushu do `main` i ma retry na czas propagacji deploymentu Vercel.
+
 Publiczna wersja powinna jasno komunikować:
 - local-first;
 - konto jest opcjonalne;
 - chmura jest funkcją beta;
 - pełny Aktywnik+ School nie jest jeszcze wdrożeniem produkcyjnym szkoły.
 
-## Backend — kod 0.5.0-beta.4 / ostatnia zweryfikowana produkcja 0.5.0-beta.3
+## Backend — produkcja 0.5.0-beta.4
 
 Dostępne:
 - `/api/health`;
