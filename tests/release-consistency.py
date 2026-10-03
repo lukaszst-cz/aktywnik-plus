@@ -14,6 +14,10 @@ assert "full-family-sync-pilot" in health, "health backend stage is stale"
 readme = (ROOT / "README.md").read_text(encoding="utf-8")
 landing = (ROOT / "index.html").read_text(encoding="utf-8")
 app_html = (ROOT / "app.html").read_text(encoding="utf-8")
+about = (ROOT / "o-projekcie.html").read_text(encoding="utf-8")
+faq = (ROOT / "faq.html").read_text(encoding="utf-8")
+download = (ROOT / "pobierz.html").read_text(encoding="utf-8")
+privacy = (ROOT / "prywatnosc.html").read_text(encoding="utf-8")
 i18n = (ROOT / "i18n.js").read_text(encoding="utf-8")
 release = ROOT / "docs" / f"RELEASE-{version}.md"
 app = (ROOT / "app.js").read_text(encoding="utf-8")
@@ -36,6 +40,8 @@ assert "0.5.0 beta.4" in i18n, "i18n does not expose beta.4"
 assert "0.5.0 beta.4" in app_html, "app version badge does not expose beta.4"
 assert "Zmęczenie 1–5" in app_html, "fatigue scale is not aligned with the paper journal"
 assert "activityEffortValue" in app_html, "fatigue scale selected value is not visible"
+assert "0.5.0 beta.4" in about, "about page is stale"
+assert "0.5.0 beta.4" in faq, "FAQ page is stale"
 assert release.exists(), f"missing release notes: {release.name}"
 
 stale = [
@@ -47,7 +53,13 @@ stale += [
     "Synchronizacja rodzic–nauczyciel między różnymi telefonami będzie dostępna dopiero po uruchomieniu backendu.",
     "Prawdziwe klasy między urządzeniami uruchomimy dopiero z backendem i kontami.",
 ]
+stale += [
+    "Tryb rodzinny nadal działa local-first na jednym urządzeniu",
+    "Tryb rodzinny nadal jest local-first, więc przed zmianą urządzenia wykonaj kopię JSON.",
+    "finalnego family sync",
+    "Obecna wersja Aktywnik+ nie ma centralnego konta ani bazy danych uczniów.",
+]
 for phrase in stale:
-    assert phrase not in landing + i18n + app_html, f"stale product copy remains: {phrase}"
+    assert phrase not in landing + i18n + app_html + about + faq + download + privacy, f"stale product copy remains: {phrase}"
 
 print(f"release consistency OK: {version}")
