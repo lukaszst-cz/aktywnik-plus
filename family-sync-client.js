@@ -42,7 +42,7 @@
   }
   function linkedChildren(state=readState()){
     return (Array.isArray(state?.children)?state.children:[])
-      .filter(child=>validUuid(child?.id)&&validUuid(child?.cloudChildId))
+      .filter(child=>String(child?.id||'').trim()&&validUuid(child?.cloudChildId))
       .map(child=>({
         localChildId:String(child.id),
         cloudChildId:String(child.cloudChildId).toLowerCase()
