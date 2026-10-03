@@ -9,7 +9,7 @@ Legenda:
 
 ## Status tej wersji
 
-Aktywnik+ kodowo działa jako **0.5.0-beta.3, local-first z opcjonalnym kontem oraz pełnym sync trybu osobistego i rodzinnego dla jawnie powiązanych profili**.
+Aktywnik+ kodowo działa jako **0.5.0-beta.4, local-first z opcjonalnym kontem oraz pełnym sync trybu osobistego i rodzinnego dla jawnie powiązanych profili**. Pełny GitHub CI dla beta.4 przechodzi. Ostatnia zweryfikowana produkcja pozostaje na 0.5.0-beta.3 do czasu udanego redeployu beta.4.
 
 Nie jest jeszcze:
 - szkolnym dziennikiem elektronicznym;
@@ -28,7 +28,7 @@ Publiczna wersja:
 - kod i dokumentacja w GitHub;
 - dane testowe są syntetyczne.
 
-Stan produkcji został potwierdzony 2026-10-03: Vercel `READY`, `/api/health` raportuje `0.5.0-beta.3`, backend `full-family-sync-pilot`, a `/api/capabilities` potwierdza aktywne Auth, RLS i pełny family sync. Production smoke przeszedł, a 28/28 głównych plików runtime jest bit-po-bicie zgodnych z aktualnym `main`.
+Ostatnia zweryfikowana produkcja została potwierdzona 2026-10-03 dla 0.5.0-beta.3: Vercel `READY`, backend `full-family-sync-pilot`, aktywne Auth, RLS i pełny family sync oraz production smoke PASS. Kod 0.5.0-beta.4 jest już na `main` i przechodzi pełny GitHub CI, ale jego rollout produkcyjny jest obecnie blokowany przez Vercel `build-rate-limit`; dlatego produkcja nie jest jeszcze zgodna z bieżącym `main`.
 
 ## 2. Local-first + opcjonalna synchronizacja — ✅ dla pilota rodzinnego
 
@@ -63,7 +63,7 @@ Projekt nie wymaga:
 - zdjęcia twarzy;
 - publicznej listy klasy.
 
-Podstawowy wpis to identyfikator/profil, aktywność, data i czas; wysiłek/uwaga są opcjonalne.
+Podstawowy wpis to identyfikator/profil, aktywność, data, czas oraz skala zmęczenia 1–5; uwaga jest opcjonalna.
 
 ## 4. Brak publicznych danych dzieci w repo — ✅
 
@@ -112,7 +112,7 @@ Dostępne:
 
 Aplikacja może przechowywać wynik przekazany przez nauczyciela, ale nie ustala sama zasad oceniania ani przeliczników.
 
-## 9. Prawdziwa wspólna klasa — 🟡 backend lifecycle gotowy, UI do domknięcia
+## 9. Prawdziwa wspólna klasa — 🟡 backend + UI lifecycle gotowe, kontrolowane E2E pozostaje
 
 To nie jest już brak backendu.
 
@@ -155,7 +155,7 @@ Pozostaje:
 | Warunek | Stan |
 | --- | --- |
 | backend API + personal sync | ✅ |
-| deployment production zgodny z bieżącym main | ✅ 0.5.0-beta.3, Vercel READY, production smoke PASS; 28/28 plików runtime zgodnych z main |
+| deployment production zgodny z bieżącym main | 🟡 kod 0.5.0-beta.4 + GitHub CI PASS; ostatnia zweryfikowana produkcja 0.5.0-beta.3; rollout beta.4 blokuje Vercel `build-rate-limit` |
 | uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
 | role/uprawnienia w DB | ✅ RLS + migracja 018 live; `profile_type` nie jest samodzielnie edytowalne przez użytkownika |
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
@@ -214,12 +214,13 @@ Publiczna wersja powinna jasno komunikować:
 - chmura jest funkcją beta;
 - pełny Aktywnik+ School nie jest jeszcze wdrożeniem produkcyjnym szkoły.
 
-## Backend — stan 0.5.0-beta.3
+## Backend — kod 0.5.0-beta.4 / ostatnia zweryfikowana produkcja 0.5.0-beta.3
 
 Dostępne:
 - `/api/health`;
 - `/api/capabilities`;
 - `GET/POST /api/v1/sync` — tryb osobisty;
+- `GET/POST /api/v1/family-sync` — tryb rodzinny dla jawnie powiązanego profilu dziecka;
 - `GET /api/v1/me` — profil i membership zalogowanego użytkownika;
 - `GET /api/v1/classes` — klasy widoczne przez RLS.
 
