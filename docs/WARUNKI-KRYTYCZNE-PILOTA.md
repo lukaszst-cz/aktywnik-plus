@@ -115,7 +115,7 @@ Gotowe:
 - działający projekt Supabase w regionie EU;
 - Supabase Auth dla dorosłych;
 - role i model tenant;
-- migracje 001–017;
+- migracje 001–018;
 - RLS;
 - endpoint `GET /api/v1/me`;
 - endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
@@ -151,7 +151,7 @@ Pozostaje:
 | --- | --- |
 | backend API + personal sync | ✅ |
 | uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
-| role/uprawnienia w DB | 🟡 RLS wdrożone; migracja 018 blokująca self-escalation jest gotowa, ale jeszcze niewdrożona live |
+| role/uprawnienia w DB | ✅ RLS + migracja 018 blokująca self-escalation `profile_type` wdrożona live |
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
 | HTTPS | ✅ |
 | kopie zapasowe lokalne | ✅ eksport/import |
@@ -178,7 +178,7 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`017`: zastosowane;
+- migracje `001`–`018`: zastosowane;
 - tabele `public`: 23;
 - RLS: 23/23;
 - granty dla `anon`: 0;
@@ -189,8 +189,8 @@ Sprawdzenie 2026-10-03:
 - security preflight ma dokładną allowlistę tych 5 funkcji i blokuje wzrost tej powierzchni;
 - `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–017;
 - wykryto self-escalation `child → adult` przez szeroki grant `UPDATE profiles`;
-- migracja 018 jest przygotowana i przetestowana z rollbackiem, ale **nie została jeszcze trwale zastosowana live**;
-- po wdrożeniu 018 security preflight ma wymagać wyłącznie `UPDATE(display_name)` dla `authenticated`.
+- migracja 018 jest trwale zastosowana live; test `child → adult` zwraca PASS (eskalacja zablokowana), a `display_name` pozostaje edytowalne;
+- security preflight wymaga wyłącznie `UPDATE(display_name)` dla `authenticated` i zwraca PASS.
 
 ## 12. Warunek publikacji pilota — ✅
 
@@ -214,7 +214,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 ## Rzeczy nadal realnie nierozwiązane
 
 1. family onboarding — ✅ rodzic może utworzyć profil dziecka w School Cloud bez e-maila/hasła dziecka;
-2. wdrożenie migracji 018 na live Supabase i ponowny security preflight;
+2. migracja 018 / profile role hardening — ✅ live + security preflight PASS;
 3. synchronizacja trybu rodzinnego;
 4. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
 5. zweryfikowany backend backup/restore drill;
