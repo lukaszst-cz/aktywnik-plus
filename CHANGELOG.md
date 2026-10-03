@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — family cloud link foundation
+
+- rodzic może jawnie połączyć lokalny profil dziecka z profilem `children.id` widocznym na jego koncie School Cloud;
+- lista profili pochodzi z `GET /api/v1/me` i pozostaje ograniczona przez RLS;
+- brak automatycznego dopasowania po nazwie;
+- ten sam profil chmurowy nie może być przypisany do dwóch lokalnych dzieci;
+- rodzic może utworzyć profil dziecka w chmurze i od razu powiązać go z wybranym profilem lokalnym;
+- opcjonalny `cloudChildId` jest zachowywany w backupie v6;
+- aktualne kopie v6 odrzucają wadliwy UUID oraz zduplikowane `cloudChildId`;
+- `familySync` pozostaje `false` — ten etap nie wysyła jeszcze aktywności rodzinnych do chmury.
+
 ## Unreleased — FK index performance hardening
 
 - Supabase Performance Advisor wskazał 4 klucze obce bez indeksów pokrywających;
