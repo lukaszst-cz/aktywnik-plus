@@ -8,6 +8,7 @@ const SYNC_LAST_KEY='aktywnik-plus-last-cloud-sync-v1';
 const SYNC_DELETES_KEY='aktywnik-plus-personal-deletes-v1';
 const FAMILY_SYNC_OUTBOX_KEY='aktywnik-plus-family-sync-outbox-v1';
 const FAMILY_SYNC_LAST_KEY='aktywnik-plus-last-family-cloud-sync-v1';
+const FAMILY_SYNC_DELETES_KEY='aktywnik-plus-family-deletes-v1';
 const CLOUD_SESSION_KEY='aktywnik-plus-cloud-session-v1';
 const ENTRY_DRAFT_MAX_AGE_MS=7*24*60*60*1000;
 const MAX_BACKUP_BYTES=2*1024*1024;
@@ -182,7 +183,31 @@ function mergeFamilyCloudEntries(localChildId,rows){
   if(localNewer)window.AktywnikFamilySync?.markDirty?.(state);
   return {added,updated,localNewer,ignored};
 }
-window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries,mergePersonalCloudState,mergeFamilyCloudEntries};
+function applyFamilyCloudDeletes(localChildId,rows){
+  if(isSelfMode()||!getChild(localChildId)||!Array.isArray(rows))return {deleted:0,ignored:0,localNewer:0};
+  let deleted=0,ignored=0,localNewer=0;
+  for(const row of rows.slice(0,MAX_ENTRIES)){
+    const id=String(row?.client_entry_id||''),deletedAt=new Date(row?.deleted_at||'').getTime();
+    if(!validUuid(id)||!Number.isFinite(deletedAt)){ignored++;continue}
+    const idx=state.entries.findIndex(e=>e.id===id&&e.childId===localChildId);
+    if(idx<0)continue;
+    const local=state.entries[idx],localTime=personalEntrySyncTime(local);
+    if(deletedAt>=localTime){
+      state.entries.splice(idx,1);deleted++;
+    }else{
+      localNewer++;
+    }
+  }
+  if(deleted)persist({skipSync:true});
+  if(localNewer)window.AktywnikFamilySync?.markDirty?.(state);
+  return {deleted,ignored,localNewer};
+}
+function mergeFamilyCloudState(localChildId,entries,deletes){
+  const merged=mergeFamilyCloudEntries(localChildId,entries);
+  const removed=applyFamilyCloudDeletes(localChildId,deletes);
+  return {...merged,deleted:removed.deleted,ignored:Number(merged.ignored||0)+Number(removed.ignored||0),localNewer:Number(merged.localNewer||0)+Number(removed.localNewer||0)};
+}
+window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries,mergePersonalCloudState,mergeFamilyCloudEntries,mergeFamilyCloudState};
 function parentChild(){return getChild(parentSelectedChildId)||activeChild()}
 function childEntries(childId){return state.entries.filter(e=>e.childId===childId)}
 function childRewards(childId){return state.rewards.filter(r=>r.childId===childId)}
@@ -475,9 +500,30 @@ function renderApprovals(){
   if(!pending.length)list.innerHTML='<small>Brak wpisów oczekujących na decyzję.</small>';
   $$('[data-approve]').forEach(b=>b.onclick=()=>approve(b.dataset.approve));$$('[data-correct]').forEach(b=>b.onclick=()=>openParentCorrection(b.dataset.correct));$$('[data-reject]').forEach(b=>b.onclick=()=>openReject(b.dataset.reject));
   const n=new Date(),after=n.getHours()>state.reminderHour||(n.getHours()===state.reminderHour&&n.getMinutes()>=state.reminderMinute);$('#approvalReminder').classList.toggle('hidden',!(after&&pending.length));
-  const labels={created:'Utworzono wpis',edited:'Dziecko poprawiło wpis',resubmitted:'Ponownie wysłano',approved:'Rodzic zatwierdził',approved_auto:'Zatwierdzono automatycznie',corrected:'Rodzic poprawił i zatwierdził',rejected:'Rodzic odrzucił'};history.innerHTML='';
+  const labels={created:'Utworzono wpis',edited:'Dziecko poprawiło wpis',resubmitted:'Ponownie wysłano',approved:'Rodzic zatwierdził',approved_auto:'Zatwierdzono automatycznie',corrected:'Rodzic poprawił i zatwierdził',rejected:'Rodzic odrzucił',deleted:'Rodzic usunął wpis'};history.innerHTML='';
   state.approvalEvents.filter(ev=>ev.childId===child.id).slice(0,30).forEach(ev=>{const entry=state.entries.find(e=>e.id===ev.entryId),el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+escapeHtml(labels[ev.action]||ev.action)+(entry?' · '+escapeHtml(entry.activity):'')+'</strong><small>'+new Date(ev.at).toLocaleString('pl-PL')+(ev.note?' · '+escapeHtml(ev.note):'')+'</small></div>';history.append(el)});
   if(!history.children.length)history.innerHTML='<small>Historia decyzji pojawi się po pierwszym wpisie.</small>';
+}
+function deleteFamilyEntryByParent(id){
+  if(!guardParent()||isSelfMode())return false;
+  const child=parentChild(),idx=state.entries.findIndex(e=>e.id===id&&e.childId===child?.id);
+  if(!child||idx<0)return false;
+  const entry=state.entries[idx];
+  if(!confirm((document.documentElement.lang==='en'?'Delete this activity entry?':'Usunąć ten wpis aktywności?')+' '+entry.activity+' · '+fmtMin(entry.minutes)))return false;
+  const deletedAt=nowIso();
+  window.AktywnikFamilySync?.markDeleted?.(child.id,entry.id,deletedAt);
+  addApprovalEvent('deleted',entry,'parent','Rodzic usunął wpis.',{status:entry.status},{deleted:true});
+  state.entries.splice(idx,1);
+  persist();
+  return true;
+}
+function renderParentEntries(){
+  const box=$('#parentEntryList');if(!box)return;
+  if(!parentUnlocked()||!parentChild()||isSelfMode()){box.innerHTML='';return}
+  const child=parentChild();
+  const rows=childEntries(child.id).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||personalEntrySyncTime(b)-personalEntrySyncTime(a)).slice(0,100);
+  box.innerHTML=rows.map(e=>'<div class="entry"><div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+' · '+escapeHtml(statusLabel(e))+(e.note?' · '+escapeHtml(e.note):'')+'</small></div><div class="entry-actions"><button class="danger" data-parent-delete-entry="'+escapeAttr(e.id)+'">'+escapeHtml(uiText('parent.deleteEntry','Usuń'))+'</button></div></div>').join('')||'<small>'+escapeHtml(uiText('parent.noEntries','Brak wpisów tego profilu.'))+'</small>';
+  $('[data-parent-delete-entry]').forEach(btn=>btn.onclick=()=>deleteFamilyEntryByParent(btn.dataset.parentDeleteEntry));
 }
 function startFor(type,d=new Date()){const y=d.getFullYear(),m=d.getMonth();if(type==='month')return new Date(y,m,1);if(type==='quarter')return new Date(y,Math.floor(m/3)*3,1);if(type==='half')return new Date(y,m<6?0:6,1);return new Date(y,0,1)}
 function endFor(type,d=new Date()){
@@ -700,6 +746,8 @@ function unlinkFamilyCloudChild(){
   if(!guardParent()||isSelfMode())return false;
   const child=parentChild();if(!child||!validUuid(child.cloudChildId))return false;
   if(!confirm(document.documentElement.lang==='en'?'Unlink this local profile from School Cloud? No cloud data will be deleted.':'Odłączyć ten lokalny profil od School Cloud? Dane w chmurze nie zostaną usunięte.'))return false;
+  const cloudChildId=child.cloudChildId;
+  window.AktywnikFamilySync?.dropChildQueue?.(cloudChildId);
   child.cloudChildId=null;persist({skipSync:true});window.AktywnikFamilySync?.markDirty?.(state);renderFamilyCloudLink();
   familyCloudStatus(uiText('parent.cloudLinkRemoved','Powiązanie profilu zostało usunięte.'),'ok');
   return true;
@@ -987,7 +1035,7 @@ function safeBackupState(raw){
   }).filter(Boolean);
   const approvalEvents=(Array.isArray(d.approvalEvents)?d.approvalEvents:[]).slice(0,10000).map(ev=>{
     if(!ev||typeof ev!=='object')return null;const childId=ids.has(ev.childId)?ev.childId:fallback;if(!childId)return null;
-    return {id:cleanText(ev.id,80)||uuid(),entryId:cleanText(ev.entryId,80),childId,action:['created','edited','resubmitted','approved','approved_auto','corrected','rejected'].includes(ev.action)?ev.action:'edited',actor:['child','parent','system'].includes(ev.actor)?ev.actor:'system',note:cleanText(ev.note,240),at:ev.at||nowIso(),before:ev.before&&typeof ev.before==='object'?ev.before:null,after:ev.after&&typeof ev.after==='object'?ev.after:null};
+    return {id:cleanText(ev.id,80)||uuid(),entryId:cleanText(ev.entryId,80),childId,action:['created','edited','resubmitted','approved','approved_auto','corrected','rejected','deleted'].includes(ev.action)?ev.action:'edited',actor:['child','parent','system'].includes(ev.actor)?ev.actor:'system',note:cleanText(ev.note,240),at:ev.at||nowIso(),before:ev.before&&typeof ev.before==='object'?ev.before:null,after:ev.after&&typeof ev.after==='object'?ev.after:null};
   }).filter(Boolean);
   const rewards=(Array.isArray(d.rewards)?d.rewards:[]).slice(0,2000).map(r=>{if(!r||typeof r!=='object')return null;const childId=ids.has(r.childId)?r.childId:fallback;if(!childId)return null;return {...r,id:cleanText(r.id,80)||uuid(),childId,type:['plus','grade','note'].includes(r.type)?r.type:'plus',value:cleanText(r.value,20),date:validDate(r.date)?r.date:today(),note:cleanText(r.note,160),createdAt:r.createdAt||nowIso()}}).filter(Boolean);
   const classes=(Array.isArray(d.classes)?d.classes:[]).slice(0,MAX_CLASSES);
@@ -1001,7 +1049,7 @@ function safeBackupState(raw){
   return {...base,schemaVersion:6,profileMode:d.profileMode==='self'?'self':'family',meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
 function clearSyncTransientState(){
-  [SYNC_OUTBOX_KEY,SYNC_LAST_KEY,SYNC_DELETES_KEY,FAMILY_SYNC_OUTBOX_KEY,FAMILY_SYNC_LAST_KEY].forEach(key=>localStorage.removeItem(key));
+  [SYNC_OUTBOX_KEY,SYNC_LAST_KEY,SYNC_DELETES_KEY,FAMILY_SYNC_OUTBOX_KEY,FAMILY_SYNC_LAST_KEY,FAMILY_SYNC_DELETES_KEY].forEach(key=>localStorage.removeItem(key));
 }
 function clearParentTransientState(){
   [PARENT_SESSION_KEY,PARENT_PIN_FAIL_KEY,PARENT_PIN_LOCK_KEY].forEach(key=>sessionStorage.removeItem(key));
@@ -1043,9 +1091,9 @@ function renderAll(){
   const child=activeChild();if(!child)return;
   renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();if(isSelfMode())renderStorageStatus();
   if(parentUnlocked()){
-    renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();
+    renderParentChildren();renderParentSnapshot();renderApprovals();renderParentEntries();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();
   }else{
-    $('#approvalList').innerHTML='';$('#approvalHistory').innerHTML='';$('#pendingCount').textContent='0';$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(currentMode!=='child')currentMode='child';
+    $('#approvalList').innerHTML='';$('#approvalHistory').innerHTML='';if($('#parentEntryList'))$('#parentEntryList').innerHTML='';$('#pendingCount').textContent='0';$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(currentMode!=='child')currentMode='child';
   }
   $('#childPanel').classList.toggle('hidden',currentMode!=='child');
   $('#parentPanel').classList.toggle('hidden',currentMode!=='parent');
