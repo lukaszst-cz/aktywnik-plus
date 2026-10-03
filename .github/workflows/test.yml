@@ -40,6 +40,10 @@ jobs:
           node --check api/v1/me.js
           node --check api/v1/school-years.js
           node --check api/v1/sync.js
+          grep -q "school-cloud.html" index.html
+          grep -q "school-cloud.html" dla-nauczyciela.html
+          grep -q "school-cloud.html" faq.html
+          ! grep -q "pełny lifecycle klasy jest nadal rozwijany" index.html
           python3 tests/security-static.py
           python3 - <<'PY'
           import json, os, re
