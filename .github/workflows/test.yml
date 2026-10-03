@@ -40,6 +40,7 @@ jobs:
           node --check api/v1/me.js
           node --check api/v1/school-years.js
           node --check api/v1/sync.js
+          python3 tests/security-static.py
           python3 - <<'PY'
           import json, os, re
           with open("manifest.webmanifest", encoding="utf-8") as f:
