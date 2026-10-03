@@ -399,6 +399,62 @@ jobs:
           },futureDeleteRes);
           if(futureDeleteRes.out.statusCode!==400||futureDeleteRes.out.body?.error!=='invalid_delete_tombstone') throw new Error('future delete timestamp was not rejected');
 
+          const duplicateEntryRes=mock();
+          const duplicateEntry={
+            id:'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',
+            date:'2026-10-03',
+            activity:'Spacer',
+            minutes:15,
+            effort:2,
+            source:'manual'
+          };
+          await syncEnabled({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{
+              protocolVersion:1,
+              state:{profileMode:'self',entries:[duplicateEntry,{...duplicateEntry,minutes:20}]},
+              deletes:[]
+            }
+          },duplicateEntryRes);
+          if(duplicateEntryRes.out.statusCode!==400||duplicateEntryRes.out.body?.error!=='duplicate_sync_entry') throw new Error('duplicate entry id was not rejected');
+
+          const duplicateDeleteRes=mock();
+          const duplicateDelete={id:'bbbbbbbb-1111-4111-8111-bbbbbbbbbbbb',deletedAt:'2026-10-03T08:00:00.000Z'};
+          await syncEnabled({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{
+              protocolVersion:1,
+              state:{profileMode:'self',entries:[]},
+              deletes:[duplicateDelete,{...duplicateDelete}]
+            }
+          },duplicateDeleteRes);
+          if(duplicateDeleteRes.out.statusCode!==400||duplicateDeleteRes.out.body?.error!=='duplicate_delete_tombstone') throw new Error('duplicate tombstone id was not rejected');
+
+          const overlapRes=mock();
+          const overlapId='cccccccc-1111-4111-8111-cccccccccccc';
+          await syncEnabled({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{
+              protocolVersion:1,
+              state:{
+                profileMode:'self',
+                entries:[{
+                  id:overlapId,
+                  date:'2026-10-03',
+                  activity:'Rower',
+                  minutes:30,
+                  effort:3,
+                  source:'manual'
+                }]
+              },
+              deletes:[{id:overlapId,deletedAt:'2026-10-03T08:00:00.000Z'}]
+            }
+          },overlapRes);
+          if(overlapRes.out.statusCode!==400||overlapRes.out.body?.error!=='sync_entry_delete_conflict') throw new Error('entry/delete identity conflict was not rejected');
+
           const meRes=mock();
           await me({method:'GET',headers:{authorization:'Bearer test-token'}},meRes);
           if(meRes.out.statusCode!==200||meRes.out.body?.profile?.display_name!=='Tester') throw new Error('authenticated profile endpoint failed');
