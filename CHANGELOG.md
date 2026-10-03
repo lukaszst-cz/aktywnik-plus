@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — application restore drill
+
+- syntetyczny backup/delete/restore round-trip dla profilu, rodziny, szkoły, raportu i wpisu osobistego;
+- test działa w jednej transakcji i kończy się `ROLLBACK`;
+- integralność FK i wartości po restore: PASS;
+- capability API raportuje `applicationRestoreDrillVerified: true`;
+- platformowy backup/restore Supabase pozostaje osobnym etapem operacyjnym.
+
 ## Unreleased — family onboarding UX hardening
 
 - API odrzuca nazwę profilu dziecka dłuższą niż 60 znaków zamiast cicho ją obcinać;
