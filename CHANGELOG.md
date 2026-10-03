@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — personal/family sync boundary
+
+- tryb rodzinny nie tworzy kolejki personal cloud sync;
+- klient sync blokuje push, pull i tombstones poza trybem osobistym;
+- stara błędna kolejka z migawką rodzinną jest bezpiecznie usuwana bez wysyłki;
+- status rodziny jasno wskazuje, że dane pozostają lokalne;
+- smoke test obejmuje brak outboxa, brak tombstones i czyszczenie starej kolejki.
+
+
 ## Unreleased — school class lifecycle backend
 
 - migracje 015–016: bezpieczny workflow klasy i tworzenie klasy;
