@@ -39,11 +39,12 @@ Zrobione:
 - opcjonalne konto dorosłego przez Magic Link;
 - tryb osobisty: push → pull do Supabase;
 - merge wpisów z różnych urządzeń na podstawie timestampów;
-- RLS ogranicza dane do właściciela.
+- usuwanie wpisów w trybie osobistym: tombstones + propagacja między urządzeniami;
+- RLS ogranicza dane do właściciela;
+- tryb rodzinny jest jawnie local-only po stronie klienta i nie trafia do personal sync.
 
 Pozostaje:
 - tryb rodzinny nie ma jeszcze pełnej synchronizacji chmurowej;
-- usuwanie wpisów nie ma jeszcze synchronizacji/tombstones;
 - synchronizacja nie zastępuje jeszcze zweryfikowanego backup/restore backendu.
 
 ## 3. Minimum danych o dziecku — ✅
@@ -114,7 +115,7 @@ Gotowe:
 - działający projekt Supabase w regionie EU;
 - Supabase Auth dla dorosłych;
 - role i model tenant;
-- migracje 001–012;
+- migracje 001–016;
 - RLS;
 - endpoint `GET /api/v1/me`;
 - endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
@@ -131,7 +132,6 @@ Gotowe dodatkowo:
 - pełny audit trail;
 - test SQL create → invite → request → accept: PASS.
 
-Pozostaje:
 Gotowe w UI:
 - osobny panel `school-cloud.html` dla kont dorosłych;
 - wybór tenant/szkoły i roku szkolnego;
@@ -209,7 +209,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 
 1. family onboarding/sync — School Cloud UI ✅, ale profil dziecka musi już istnieć w chmurze;
 2. synchronizacja trybu rodzinnego;
-3. bezpieczna synchronizacja usunięć / tombstones — ✅ tryb osobisty;
+3. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
 4. zweryfikowany backend backup/restore drill;
 5. pełna integracja `audit_events` i retencji — audyt trybu osobistego ✅, School nadal do rozszerzenia;
 6. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
