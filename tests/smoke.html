@@ -16,6 +16,7 @@ const DELETE_KEY='aktywnik-plus-personal-deletes-v1';
 const LAST_SYNC_KEY='aktywnik-plus-last-cloud-sync-v1';
 const FAMILY_SYNC_KEY='aktywnik-plus-family-sync-outbox-v1';
 const FAMILY_LAST_SYNC_KEY='aktywnik-plus-last-family-cloud-sync-v1';
+const FAMILY_DELETE_KEY='aktywnik-plus-family-deletes-v1';
 const CLOUD_SESSION_KEY='aktywnik-plus-cloud-session-v1';
 const SESSION_KEY='aktywnik-plus-parent-unlocked-until';
 const PIN_FAIL_KEY='aktywnik-plus-parent-pin-fails';
@@ -45,7 +46,7 @@ async function loadApp(label){
 }
 async function run(){
   try{
-    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);localStorage.removeItem(FAMILY_SYNC_KEY);localStorage.removeItem(FAMILY_LAST_SYNC_KEY);sessionStorage.clear();
+    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);localStorage.removeItem(FAMILY_SYNC_KEY);localStorage.removeItem(FAMILY_LAST_SYNC_KEY);localStorage.removeItem(FAMILY_DELETE_KEY);sessionStorage.clear();
     let ctx=await loadApp('initial'),w=ctx.w,d=ctx.d;
     if(d.getElementById('pilotSetupCard').classList.contains('hidden'))throw new Error('initial universal setup missing');
     if(d.getElementById('childModeBtn')||d.getElementById('parentModeBtn')||d.getElementById('schoolModeBtn'))throw new Error('legacy role switch still visible');
@@ -385,6 +386,58 @@ async function run(){
     const printPages=w.buildSchoolPrintPages('child-a',new w.Date('2026-10-15T12:00:00'));
     if(printPages.length!==2||printPages[0].rows[0].entry?.minutes!==35||printPages[0].rows.length!==35)throw new Error('A4 monthly report pagination failed');
 
+    const deleteEntryId='73737373-7373-4737-8737-737373737373';
+    const deleteMerge=w.AktywnikCloudBridge.mergeFamilyCloudEntries('child-a',[{
+      client_entry_id:deleteEntryId,
+      activity_date:'2026-10-03',
+      activity_type:'Test delete',
+      minutes:12,
+      effort:2,
+      note:'guardian delete',
+      status:'approved',
+      source:'manual',
+      rejection_reason:null,
+      approved_at:'2026-10-03T09:00:00.000Z',
+      client_updated_at:'2026-10-03T09:00:00.000Z',
+      updated_at:'2026-10-03T09:00:00.000Z'
+    }]);
+    if(deleteMerge.added!==1)throw new Error('family delete test entry was not merged');
+    await sleep(50);
+    if(!d.getElementById('parentEntryList')?.textContent.includes('Test delete'))throw new Error('guardian entry management list missing delete test entry');
+    const deleteButton=d.querySelector('[data-parent-delete-entry="'+deleteEntryId+'"]');
+    if(!deleteButton)throw new Error('guardian family delete button missing');
+    w.confirm=()=>true;
+    deleteButton.click();await sleep(60);
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.entries.some(x=>x.id===deleteEntryId))throw new Error('guardian family delete did not remove local entry');
+    const familyDeletes=JSON.parse(localStorage.getItem(FAMILY_DELETE_KEY)||'{}');
+    const tombstone=Object.values(familyDeletes).find(x=>x.id===deleteEntryId&&x.cloudChildId===cloudA);
+    if(!tombstone?.deletedAt)throw new Error('guardian family delete tombstone missing');
+
+    const remoteDeleteId='74747474-7474-4747-8747-747474747474';
+    w.AktywnikCloudBridge.mergeFamilyCloudEntries('child-a',[{
+      client_entry_id:remoteDeleteId,
+      activity_date:'2026-10-03',
+      activity_type:'Remote delete',
+      minutes:18,
+      effort:2,
+      note:'',
+      status:'approved',
+      source:'manual',
+      rejection_reason:null,
+      approved_at:'2026-10-03T09:10:00.000Z',
+      client_updated_at:'2026-10-03T09:10:00.000Z',
+      updated_at:'2026-10-03T09:10:00.000Z'
+    }]);
+    const remoteDeleteResult=w.AktywnikCloudBridge.mergeFamilyCloudState('child-a',[],[{
+      client_entry_id:remoteDeleteId,
+      deleted_at:'2026-10-03T09:11:00.000Z'
+    }]);
+    if(remoteDeleteResult.deleted!==1)throw new Error('family remote tombstone was not applied');
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.entries.some(x=>x.id===remoteDeleteId))throw new Error('remote family tombstone left local entry');
+    w.AktywnikFamilySync.clear();
+
     const childADraftKey=DRAFT_KEY+':child-a',childBDraftKey=DRAFT_KEY+':'+childB.id;
     localStorage.setItem(childADraftKey,JSON.stringify({version:1,savedAt:new Date().toISOString(),childId:'child-a',selected:'Rower',date:testToday,minutes:33,effort:2,customName:'',note:'draft A'}));
     localStorage.setItem(childBDraftKey,JSON.stringify({version:1,savedAt:new Date().toISOString(),childId:childB.id,selected:'Spacer',date:testToday,minutes:44,effort:3,customName:'',note:'draft B'}));
@@ -454,13 +507,14 @@ async function run(){
     localStorage.setItem(LAST_SYNC_KEY,new Date().toISOString());
     localStorage.setItem(FAMILY_SYNC_KEY,JSON.stringify({dirty:true,snapshot:{profileMode:'family',groups:[]}}));
     localStorage.setItem(FAMILY_LAST_SYNC_KEY,new Date().toISOString());
+    localStorage.setItem(FAMILY_DELETE_KEY,JSON.stringify({'x':{localChildId:'child-a',cloudChildId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',id:'75757575-7575-4757-8757-757575757575',deletedAt:new Date().toISOString()}}));
     localStorage.setItem(CLOUD_SESSION_KEY,JSON.stringify({access_token:'keep-local-session'}));
     localStorage.setItem(LANG_KEY,'pl');
     sessionStorage.setItem(SESSION_KEY,String(Date.now()+600000));
     sessionStorage.setItem(PIN_FAIL_KEY,'4');
     sessionStorage.setItem(PIN_LOCK_KEY,String(Date.now()+600000));
     w.applyBackupCandidate(restored);
-    if(localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_SYNC_KEY)!==null||localStorage.getItem(FAMILY_LAST_SYNC_KEY)!==null)throw new Error('restore left stale sync transient state');
+    if(localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_SYNC_KEY)!==null||localStorage.getItem(FAMILY_LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_DELETE_KEY)!==null)throw new Error('restore left stale sync transient state');
     if(!localStorage.getItem(CLOUD_SESSION_KEY))throw new Error('restore unexpectedly removed account session');
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('restore left parent transient state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('restore removed language preference');
@@ -483,6 +537,7 @@ async function run(){
     localStorage.setItem(LAST_SYNC_KEY,new Date().toISOString());
     localStorage.setItem(FAMILY_SYNC_KEY,JSON.stringify({dirty:true}));
     localStorage.setItem(FAMILY_LAST_SYNC_KEY,new Date().toISOString());
+    localStorage.setItem(FAMILY_DELETE_KEY,JSON.stringify({'x':{id:'remove-me'}}));
     localStorage.setItem(CLOUD_SESSION_KEY,JSON.stringify({access_token:'remove-me'}));
     localStorage.setItem(DRAFT_KEY+':wipe-test',JSON.stringify({note:'remove-me'}));
     localStorage.setItem(LANG_KEY,'pl');
@@ -490,12 +545,12 @@ async function run(){
     sessionStorage.setItem(PIN_FAIL_KEY,'3');
     sessionStorage.setItem(PIN_LOCK_KEY,String(Date.now()+600000));
     w.clearAllLocalUserData();
-    if(localStorage.getItem(KEY)!==null||localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_SYNC_KEY)!==null||localStorage.getItem(FAMILY_LAST_SYNC_KEY)!==null||localStorage.getItem(CLOUD_SESSION_KEY)!==null)throw new Error('full local wipe left user data');
+    if(localStorage.getItem(KEY)!==null||localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_SYNC_KEY)!==null||localStorage.getItem(FAMILY_LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_DELETE_KEY)!==null||localStorage.getItem(CLOUD_SESSION_KEY)!==null)throw new Error('full local wipe left user data');
     if(Object.keys(localStorage).some(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')))throw new Error('full local wipe left entry draft');
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('full local wipe left parent session state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('full local wipe removed language preference');
 
-    pass('beta2 personal + family beta sync foundations, explicit cloud child links, minimal sync payloads, per-profile drafts, smart duration, data controls, complete local wipe, family PIN roles, multi-child isolation, reports, audit, backup guards and PWA');
+    pass('beta2 personal + family sync, explicit cloud child links, guardian-only family tombstones, minimal sync payloads, per-profile drafts, smart duration, data controls, complete local wipe, family PIN roles, reports, audit, backup guards and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
