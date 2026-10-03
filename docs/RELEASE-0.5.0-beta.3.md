@@ -26,9 +26,17 @@ Ta wersja domyka fundament pilota rodzinnego: local-first pozostaje domyślnym t
 
 Funkcje chmurowe pozostają fail-closed. Family sync i School Cloud są aktywne tylko wtedy, gdy konfiguracja chmury, Auth i weryfikacja RLS są poprawnie ustawione.
 
-## Warunek przed szerszym pilotem
+## Stan wdrożenia
 
-Publiczny deployment musi odpowiadać tej wersji i raportować w `/api/health` wersję `0.5.0-beta.3`. Należy również zweryfikować `/api/capabilities` oraz wykonać smoke na urządzeniu mobilnym.
+Warunek produkcyjnego deploymentu został spełniony 2026-10-03:
+- Vercel production: `READY`;
+- `/api/health`: `0.5.0-beta.3`;
+- backend: `full-family-sync-pilot`;
+- produkcyjna chmura, Auth i RLS: aktywne;
+- production smoke z wymaganym cloud: PASS;
+- 28/28 głównych plików runtime zgodnych bit-po-bicie z aktualnym `main`.
+
+Przed szerszym pilotem pozostaje test akceptacyjny na rzeczywistych urządzeniach i kilka dni normalnego użytkowania jednej rodziny.
 
 ## Nadal poza zakresem produkcyjnego School
 
