@@ -153,6 +153,51 @@ async function run(){
     if(localStorage.getItem(DELETE_KEY)!==null)throw new Error('family delete entered personal delete queue');
     localStorage.setItem(SYNC_KEY,JSON.stringify({dirty:true,updatedAt:new Date().toISOString(),attempts:0,lastError:null,snapshot:seeded}));
     if(await w.AktywnikSync.flush()!==true||localStorage.getItem(SYNC_KEY)!==null)throw new Error('legacy family sync outbox was not cleared safely');
+
+    const personalEntry={
+      id:'12121212-1212-4121-8121-121212121212',
+      childId:'private-local-child',
+      date:testToday,
+      activity:'Spacer',
+      minutes:30,
+      effort:2,
+      note:'sync only this',
+      status:'approved',
+      source:'manual',
+      createdAt:new Date().toISOString(),
+      rejectionReason:'private-local-status'
+    };
+    const personalState={
+      ...seeded,
+      profileMode:'self',
+      parentAuth:{pinSalt:'private-salt',pinHash:'private-hash',iterations:120000,autoLockMinutes:5},
+      children:[{...childA,id:'private-local-child',displayName:'Private local profile'}],
+      activeChildId:'private-local-child',
+      entries:[personalEntry],
+      school:{...seeded.school,privateLocalSetting:'do-not-sync'}
+    };
+    localStorage.setItem(KEY,JSON.stringify(personalState));
+    w.AktywnikSync.markDirty(personalState);
+    let minimalQueue=JSON.parse(localStorage.getItem(SYNC_KEY)||'null');
+    if(!minimalQueue?.dirty||minimalQueue.snapshot?.profileMode!=='self'||minimalQueue.snapshot?.entries?.length!==1)throw new Error('minimal personal sync outbox missing');
+    const minimalSerialized=JSON.stringify(minimalQueue);
+    for(const forbidden of ['parentAuth','private-hash','children','activeChildId','school','childId','status','rejectionReason','privateLocalSetting']){
+      if(minimalSerialized.includes(forbidden))throw new Error('personal sync outbox leaked local-only field: '+forbidden);
+    }
+    localStorage.setItem(SYNC_KEY,JSON.stringify({
+      dirty:true,
+      updatedAt:new Date().toISOString(),
+      attempts:2,
+      lastError:'legacy',
+      secretTopLevel:'remove-me',
+      snapshot:personalState
+    }));
+    minimalQueue=w.AktywnikSync.scrubStoredOutbox();
+    const scrubbedSerialized=JSON.stringify(minimalQueue);
+    if(scrubbedSerialized.includes('secretTopLevel')||scrubbedSerialized.includes('private-hash')||scrubbedSerialized.includes('parentAuth')||scrubbedSerialized.includes('children'))throw new Error('legacy personal outbox was not scrubbed');
+    localStorage.removeItem(SYNC_KEY);
+    localStorage.setItem(KEY,JSON.stringify(seeded));
+
     await w.setParentPin('2468');
     w.persist();
     await sleep(80);
@@ -347,7 +392,7 @@ async function run(){
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('full local wipe left parent session state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('full local wipe removed language preference');
 
-    pass('beta2 cloud pull/merge/delete tombstones, per-profile drafts, legacy draft migration, smart duration, quick start, data controls, complete local wipe, family PIN roles, multi-child isolation, reports, audit, backup round-trip/version/identity guards and PWA');
+    pass('beta2 cloud pull/merge/delete tombstones, minimal personal sync payload, per-profile drafts, legacy draft migration, smart duration, quick start, data controls, complete local wipe, family PIN roles, multi-child isolation, reports, audit, backup round-trip/version/identity guards and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();

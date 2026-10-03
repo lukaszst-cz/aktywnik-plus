@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — personal sync data minimization
+
+- personal sync outbox nie zapisuje już całego lokalnego stanu aplikacji;
+- do kolejki trafiają tylko minimalne pola wpisów wymagane przez backend;
+- dane PIN/parentAuth, profile dzieci, klasy, ustawienia szkoły i inne local-only pola nie trafiają do payloadu personal sync;
+- stary pełny outbox jest automatycznie przepisywany do minimalnej postaci;
+- `markDirty` wymaga również rzeczywiście aktywnego trybu osobistego;
+- browser smoke sprawdza brak wycieku local-only pól i migrację starej kolejki.
+
+
 ## Unreleased — sync batch identity guard
 
 - personal sync odrzuca duplikat `entry_id` w jednym batchu;

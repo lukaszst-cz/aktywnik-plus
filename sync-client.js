@@ -55,15 +55,55 @@
     if(version>SYNC_PROTOCOL_VERSION)throw new Error('sync_protocol_too_new');
     return version;
   }
+  function minimalPersonalEntry(entry){
+    if(!entry||typeof entry!=='object')return entry;
+    return {
+      id:entry.id,
+      date:entry.date,
+      activity:entry.activity,
+      minutes:entry.minutes,
+      effort:entry.effort,
+      note:entry.note,
+      source:entry.source,
+      createdAt:entry.createdAt,
+      updatedAt:entry.updatedAt
+    };
+  }
+  function minimalPersonalSnapshot(state){
+    if(!state||typeof state!=='object'||state.profileMode!=='self')return null;
+    return {
+      schemaVersion:state.schemaVersion??null,
+      profileMode:'self',
+      entries:Array.isArray(state.entries)?state.entries.map(minimalPersonalEntry):[]
+    };
+  }
+  function scrubStoredOutbox(){
+    const current=read();
+    if(!current?.snapshot)return current;
+    const snapshot=minimalPersonalSnapshot(current.snapshot);
+    if(!snapshot){write(null);return null}
+    const next={
+      dirty:current.dirty===true,
+      updatedAt:typeof current.updatedAt==='string'?current.updatedAt:new Date().toISOString(),
+      attempts:Number(current.attempts||0),
+      lastError:current.lastError?String(current.lastError):null,
+      ...(current.lastAttemptAt?{lastAttemptAt:String(current.lastAttemptAt)}:{}),
+      snapshot
+    };
+    write(next);
+    return next;
+  }
   function markDirty(state){
-    if(!state||typeof state!=='object'||state.profileMode!=='self')return;
+    if(currentProfileMode()!=='self')return;
+    const snapshot=minimalPersonalSnapshot(state);
+    if(!snapshot)return;
     const current=read()||{};
     write({
       dirty:true,
       updatedAt:new Date().toISOString(),
       attempts:Number(current.attempts||0),
       lastError:current.lastError||null,
-      snapshot:state
+      snapshot
     });
     schedule();
   }
@@ -104,7 +144,7 @@
   }
   async function flush(prepared){
     if(pushing)return false;
-    const q=read();if(!q?.dirty)return true;
+    const q=scrubStoredOutbox();if(!q?.dirty)return true;
     if(q.snapshot?.profileMode!=='self'){write(null);renderStatus();return true}
     const ctx=prepared||await context();if(!ctx)return false;
 
@@ -190,7 +230,7 @@
   window.addEventListener('storage',event=>{
     if(event.key==='aktywnik-plus-cloud-session-v1'||event.key===KEY)renderStatus();
   });
-  document.addEventListener('DOMContentLoaded',()=>{renderStatus();schedule()});
+  document.addEventListener('DOMContentLoaded',()=>{scrubStoredOutbox();renderStatus();schedule()});
 
-  window.AktywnikSync={protocolVersion:SYNC_PROTOCOL_VERSION,markDirty,markDeleted,flush,pull,syncNow,read,readDeletes,renderStatus};
+  window.AktywnikSync={protocolVersion:SYNC_PROTOCOL_VERSION,minimalPersonalSnapshot,scrubStoredOutbox,markDirty,markDeleted,flush,pull,syncNow,read,readDeletes,renderStatus};
 })();
