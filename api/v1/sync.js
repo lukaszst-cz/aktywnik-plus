@@ -126,25 +126,57 @@ async function pushPersonal(auth,userId,body){
   }
 
   if(deleteRows.length){
-    const tombstoneResponse=await fetch(
-      url+'/rest/v1/personal_activity_tombstones?on_conflict=owner_id,client_entry_id',
-      {
-        method:'POST',
-        headers:supaHeaders(auth,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
-        body:JSON.stringify(deleteRows)
-      }
-    );
-    const tombstoneData=await readJson(tombstoneResponse);
-    if(!tombstoneResponse.ok)throw Object.assign(new Error(tombstoneData?.message||'Cloud tombstone write failed.'),{status:502,code:'cloud_delete_write_failed'});
-
     const ids=deleteRows.map(x=>x.client_entry_id);
-    const deleteQuery=new URLSearchParams({owner_id:'eq.'+userId,client_entry_id:'in.('+ids.join(',')+')'});
-    const deleteResponse=await fetch(url+'/rest/v1/personal_activities?'+deleteQuery.toString(),{
-      method:'DELETE',
-      headers:supaHeaders(auth,{'Prefer':'return=minimal'})
+    const existingTombQuery=new URLSearchParams({
+      select:'client_entry_id,deleted_at',
+      owner_id:'eq.'+userId,
+      client_entry_id:'in.('+ids.join(',')+')'
     });
-    const deleteData=await readJson(deleteResponse);
-    if(!deleteResponse.ok)throw Object.assign(new Error(deleteData?.message||'Cloud delete failed.'),{status:502,code:'cloud_delete_failed'});
+    const existingTombRes=await fetch(url+'/rest/v1/personal_activity_tombstones?'+existingTombQuery.toString(),{headers:supaHeaders(auth)});
+    const existingTombData=await readJson(existingTombRes);
+    if(!existingTombRes.ok)throw Object.assign(new Error(existingTombData?.message||'Cloud tombstone check failed.'),{status:502,code:'cloud_delete_check_failed'});
+    const existingTombs=new Map((Array.isArray(existingTombData)?existingTombData:[]).map(x=>[String(x.client_entry_id),new Date(x.deleted_at).getTime()]));
+    const newestDeletes=deleteRows.filter(row=>{
+      const previous=existingTombs.get(row.client_entry_id);
+      return !Number.isFinite(previous)||new Date(row.deleted_at).getTime()>previous;
+    });
+
+    if(newestDeletes.length){
+      const tombstoneResponse=await fetch(
+        url+'/rest/v1/personal_activity_tombstones?on_conflict=owner_id,client_entry_id',
+        {
+          method:'POST',
+          headers:supaHeaders(auth,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
+          body:JSON.stringify(newestDeletes)
+        }
+      );
+      const tombstoneData=await readJson(tombstoneResponse);
+      if(!tombstoneResponse.ok)throw Object.assign(new Error(tombstoneData?.message||'Cloud tombstone write failed.'),{status:502,code:'cloud_delete_write_failed'});
+    }
+
+    const activityQuery=new URLSearchParams({
+      select:'client_entry_id,client_updated_at',
+      owner_id:'eq.'+userId,
+      client_entry_id:'in.('+ids.join(',')+')'
+    });
+    const activityRes=await fetch(url+'/rest/v1/personal_activities?'+activityQuery.toString(),{headers:supaHeaders(auth)});
+    const activityData=await readJson(activityRes);
+    if(!activityRes.ok)throw Object.assign(new Error(activityData?.message||'Cloud activity delete check failed.'),{status:502,code:'cloud_delete_check_failed'});
+    const activityTimes=new Map((Array.isArray(activityData)?activityData:[]).map(x=>[String(x.client_entry_id),new Date(x.client_updated_at).getTime()]));
+    const deleteTimes=new Map(deleteRows.map(x=>[x.client_entry_id,new Date(x.deleted_at).getTime()]));
+    const safeDeleteIds=ids.filter(id=>{
+      const rowTime=activityTimes.get(id),deleteTime=deleteTimes.get(id);
+      return !Number.isFinite(rowTime)||deleteTime>=rowTime;
+    });
+    if(safeDeleteIds.length){
+      const deleteQuery=new URLSearchParams({owner_id:'eq.'+userId,client_entry_id:'in.('+safeDeleteIds.join(',')+')'});
+      const deleteResponse=await fetch(url+'/rest/v1/personal_activities?'+deleteQuery.toString(),{
+        method:'DELETE',
+        headers:supaHeaders(auth,{'Prefer':'return=minimal'})
+      });
+      const deleteData=await readJson(deleteResponse);
+      if(!deleteResponse.ok)throw Object.assign(new Error(deleteData?.message||'Cloud delete failed.'),{status:502,code:'cloud_delete_failed'});
+    }
   }
 
   const rows=entries.map(e=>toRow(e,userId,body?.updatedAt)).filter(Boolean);
