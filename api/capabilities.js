@@ -26,6 +26,8 @@ module.exports = function handler(req,res){
       crossDeviceSync:cloud.enabled,
       serverBackups:cloud.enabled,
       personalSyncBeta:true,
+      personalSyncPull:true,
+      personalSyncConflictRule:'newer_timestamp_wins',
       personalSyncDeletes:false
     }
   });
