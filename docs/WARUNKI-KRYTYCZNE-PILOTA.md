@@ -199,6 +199,7 @@ Sprawdzenie 2026-10-03:
 - migracja 020: publiczne RPC lifecycle → `SECURITY INVOKER`, uprzywilejowane helpery → `app_private`; class lifecycle PASS, family onboarding PASS, Security Advisor 0 lintów;
 - migracja 021: indeksy pokrywające 4 wcześniej nieindeksowane FK; live performance preflight PASS;
 - migracja 022: `client_entry_id`/`client_updated_at` dla family activities + RLS `tenant_id IS NULL`; pre-deploy rollback test PASS, live schema/policies/preflight PASS.
+- migracja 023: prywatny ledger idempotency + `SECURITY INVOKER` wrappers dla tworzenia dziecka/klasy/zaproszenia; rollback test + security preflight PASS, trwałe wdrożenie jeszcze nie wykonane.
 
 ## 12. Warunek publikacji pilota — ✅
 

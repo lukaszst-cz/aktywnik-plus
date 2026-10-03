@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — School Cloud retry idempotency
+
+- migracja 023 dodaje prywatny ledger `app_private.idempotency_keys`;
+- tworzenie profilu dziecka, klasy i zaproszenia może używać trwałego `operationId` i bezpiecznie ponawiać request po timeout;
+- ten sam klucz + ten sam payload zwraca ten sam zasób zamiast tworzyć duplikat;
+- ten sam klucz + inny payload jest odrzucany;
+- publiczne wrappery pozostają `SECURITY INVOKER`, a uprzywilejowana logika i ledger pozostają w `app_private`;
+- API ma zgodny wstecz fallback do starych RPC wyłącznie przy `PGRST202`, więc merge kodu nie wymusza natychmiastowego wdrożenia migracji 023;
+- UI przechowuje w `sessionStorage` tylko hash payloadu + UUID operacji, nie nazwę dziecka/klasy;
+- migration 023 + retry test + security preflight: PASS w transakcji z rollbackiem; migracja nie jest jeszcze live.
+
+
 ## Unreleased — family activity sync beta
 
 - osobny endpoint `GET/POST /api/v1/family-sync` oparty o publishable key + JWT + RLS;
