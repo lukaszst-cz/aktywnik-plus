@@ -37,6 +37,7 @@ module.exports = function handler(req,res){
       classJoinDecisionWorkflow:cloud.enabled,
       classLifecycleUi:true,
       auditEventsIntegrated:'personal_and_class_lifecycle',
+      applicationRestoreDrillVerified:true,
       serverBackupRestoreVerified:false
     }
   });
