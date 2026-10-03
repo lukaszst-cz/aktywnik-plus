@@ -2,7 +2,8 @@
 
 ## 0.5.0-beta.4 — Family Pilot Hardening — 2026-10-03
 
-- dodano neutralny, wyłącznie lokalny wskaźnik „energia ruchu: lekka / umiarkowana / wysoka” w dzienniku dziecka;
+- ujednolicono pole ze szkolnym arkuszem jako „Zmęczenie 1–5”;
+- neutralny wskaźnik „obciążenie wysiłkiem: lekkie / umiarkowane / wysokie” jest widoczny wyłącznie w chronionej strefie rodzica;
 - wskaźnik jest liczony tylko do prezentacji i nie jest zapisywany jako pole aktywności;
 - nie trafia do CSV, PDF/A4, School Cloud, personal sync ani family sync;
 - dodano test release-consistency blokujący przypadkowy wyciek tej informacji do eksportów lub synchronizacji;
