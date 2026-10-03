@@ -41,6 +41,9 @@ jobs:
           node --check api/v1/me.js
           node --check api/v1/school-years.js
           node --check api/v1/sync.js
+          test -f backend/tests/application_restore_drill.sql
+          grep -q "^rollback;" backend/tests/application_restore_drill.sql
+          grep -q "applicationRestoreDrillVerified:true" api/capabilities.js
           grep -q "school-cloud.html" index.html
           grep -q "school-cloud.html" dla-nauczyciela.html
           grep -q "school-cloud.html" faq.html
@@ -194,6 +197,7 @@ jobs:
             if(res.out.statusCode!==200) throw new Error(file+' status');
             if(!res.out.body) throw new Error(file+' no body');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.personalSyncProtocolVersion!==1) throw new Error('sync protocol capability missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.applicationRestoreDrillVerified!==true) throw new Error('application restore capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudOnboarding!==false) throw new Error('family onboarding capability must fail closed when cloud is off');
           }
           const health=require('./api/health.js');
