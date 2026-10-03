@@ -3,6 +3,10 @@ const ACTIVITIES=[
 ];
 const KEY='aktywnik-plus-data-v1';
 const ENTRY_DRAFT_KEY='aktywnik-plus-entry-draft-v1';
+const SYNC_OUTBOX_KEY='aktywnik-plus-sync-outbox-v1';
+const SYNC_LAST_KEY='aktywnik-plus-last-cloud-sync-v1';
+const SYNC_DELETES_KEY='aktywnik-plus-personal-deletes-v1';
+const CLOUD_SESSION_KEY='aktywnik-plus-cloud-session-v1';
 const ENTRY_DRAFT_MAX_AGE_MS=7*24*60*60*1000;
 const MAX_BACKUP_BYTES=2*1024*1024;
 const BACKUP_VERSION=6;
@@ -770,6 +774,26 @@ function safeBackupState(raw){
   const rawMeta=d.meta&&typeof d.meta==='object'?d.meta:{},meta={lastBackupAt:safeIso(rawMeta.lastBackupAt),lastWriteAt:safeIso(rawMeta.lastWriteAt)};
   return {...base,schemaVersion:6,profileMode:d.profileMode==='self'?'self':'family',meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
+function clearSyncTransientState(){
+  [SYNC_OUTBOX_KEY,SYNC_LAST_KEY,SYNC_DELETES_KEY].forEach(key=>localStorage.removeItem(key));
+}
+function clearParentTransientState(){
+  [PARENT_SESSION_KEY,PARENT_PIN_FAIL_KEY,PARENT_PIN_LOCK_KEY].forEach(key=>sessionStorage.removeItem(key));
+}
+function applyBackupCandidate(candidate){
+  clearAllEntryDrafts();
+  clearSyncTransientState();
+  clearParentTransientState();
+  state=candidate;
+  localStorage.setItem(KEY,JSON.stringify(state));
+}
+function clearAllLocalUserData(){
+  clearAllEntryDrafts();
+  clearSyncTransientState();
+  localStorage.removeItem(KEY);
+  localStorage.removeItem(CLOUD_SESSION_KEY);
+  clearParentTransientState();
+}
 function canManageLocalData(){return isSelfMode()||guardParent()}
 function setStorageMessage(message){const parentEl=$('#storageStatus'),selfEl=$('#selfStorageStatus');if(parentEl)parentEl.textContent=message;if(selfEl)selfEl.textContent=message}
 function exportBackup(){
@@ -780,11 +804,11 @@ function exportBackup(){
 }
 async function importBackup(file){
   if(!canManageLocalData()||!file)return;
-  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());const candidate=backupStateFromPayload(parsed),summary='Kopia zawiera '+candidate.children.length+' profili i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne?';if(!confirm(summary))return;clearAllEntryDrafts();state=candidate;localStorage.setItem(KEY,JSON.stringify(state));sessionStorage.removeItem(PARENT_SESSION_KEY);alert(isSelfMode()?'Kopia została przywrócona.':'Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{const a=$('#importBackupInput'),b=$('#selfImportBackupInput');if(a)a.value='';if(b)b.value=''}
+  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());const candidate=backupStateFromPayload(parsed),summary='Kopia zawiera '+candidate.children.length+' profili i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne?';if(!confirm(summary))return;applyBackupCandidate(candidate);alert(isSelfMode()?'Kopia została przywrócona.':'Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{const a=$('#importBackupInput'),b=$('#selfImportBackupInput');if(a)a.value='';if(b)b.value=''}
 }
 async function requestPersistentStorage(){if(!canManageLocalData())return;try{const ok=await navigator.storage?.persist?.();setStorageMessage(ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.')}catch{setStorageMessage('Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.')}}
 async function renderStorageStatus(){if(!isSelfMode()&&!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();setStorageMessage(persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.')}catch{setStorageMessage('Dane są zapisane lokalnie w tej przeglądarce.')}}
-function deleteLocalData(){if(!canManageLocalData())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;clearAllEntryDrafts();localStorage.removeItem(KEY);sessionStorage.removeItem(PARENT_SESSION_KEY);location.reload()}
+function deleteLocalData(){if(!canManageLocalData())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;clearAllLocalUserData();location.reload()}
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
 function renderAll(){
