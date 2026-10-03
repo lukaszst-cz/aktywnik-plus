@@ -267,6 +267,13 @@ async function run(){
     sessionStorage.setItem(SESSION_KEY,String(Date.now()+600000));w.switchMode('parent',true);await sleep(80);
     if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('authorized parent session not shown');
     if(!d.getElementById('paperImportCard'))throw new Error('paper OCR import UI missing');
+    if(!d.getElementById('pilotDiagnosticsCard')||!w.AktywnikPilotDiagnostics?.report)throw new Error('pilot diagnostics missing');
+    await w.AktywnikPilotDiagnostics.render();
+    const diagnosticReport=JSON.stringify(w.AktywnikPilotDiagnostics.report());
+    for(const forbidden of ['Dziecko A','child-a','test-hash','test-salt','cloudChildId','access_token','refresh_token','2468']){
+      if(diagnosticReport.includes(forbidden))throw new Error('pilot diagnostics leaked sensitive value: '+forbidden);
+    }
+    if(!d.getElementById('pilotDiagnosticsGrid').textContent.includes('0.5.0 beta.4'))throw new Error('pilot diagnostics version missing');
     const parsedImport=w.parseDelimitedImport('Data;Aktywność;Czas;Zmęczenie;Uwagi\n2026-10-01;Judo;1,5 h;3;trening');
     if(parsedImport.length!==1||parsedImport[0].minutes!==90||parsedImport[0].activity!=='Judo'||parsedImport[0].effort!==3)throw new Error('paper OCR fatigue parser failed');
     d.getElementById('parentAutoLockMinutes').value='10';
