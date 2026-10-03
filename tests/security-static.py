@@ -185,7 +185,62 @@ if "grant update(display_name) on table public.profiles to authenticated" not in
 if "grant update on table public.profiles to authenticated" in role_hardening:
     raise SystemExit("SECURITY STATIC FAIL: broad profiles UPDATE grant reintroduced")
 
+app_js = Path("app.js").read_text(encoding="utf-8")
+app_html = Path("app.html").read_text(encoding="utf-8")
+school_cloud_js = Path("school-cloud.js").read_text(encoding="utf-8")
+family_sync_js = Path("family-sync-client.js").read_text(encoding="utf-8")
+
+for required in (
+    "pendingPaperOcrImageFile=file",
+    "new window.TextDetector()",
+    "window.createImageBitmap(file)",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+):
+    if required not in app_js:
+        raise SystemExit(f"SECURITY STATIC FAIL: local OCR safeguard missing: {required}")
+
+privacy_copy = (
+    "Zdjęcie nie jest wysyłane do School Cloud ani family sync "
+    "i nie jest zapisywane po odświeżeniu strony."
+)
+if privacy_copy not in app_html:
+    raise SystemExit("SECURITY STATIC FAIL: local OCR privacy notice missing")
+
+for sync_path, sync_content in (
+    ("school-cloud.js", school_cloud_js),
+    ("family-sync-client.js", family_sync_js),
+):
+    for forbidden in ("paperOcrImageFile", "pendingPaperOcrImageFile"):
+        if forbidden in sync_content:
+            raise SystemExit(
+                f"SECURITY STATIC FAIL: OCR image reference leaked into {sync_path}: {forbidden}"
+            )
+
+ocr_surface = (app_js + "\n" + app_html).lower()
+for forbidden_runtime in ("tesseract.js", "cdn.jsdelivr.net/tesseract", "unpkg.com/tesseract"):
+    if forbidden_runtime in ocr_surface:
+        raise SystemExit(
+            f"SECURITY STATIC FAIL: external OCR runtime/CDN detected: {forbidden_runtime}"
+        )
+
+paper_import_match = re.search(
+    r"state\.paperImports\.unshift\(\{(?P<body>.*?)\}\);",
+    app_js,
+    re.DOTALL,
+)
+if not paper_import_match:
+    raise SystemExit("SECURITY STATIC FAIL: paper import persistence block missing")
+paper_import_body = paper_import_match.group("body")
+for forbidden in ("pendingPaperOcrImageFile", "paperOcrImageFile", "file:", "image:"):
+    if forbidden in paper_import_body:
+        raise SystemExit(
+            f"SECURITY STATIC FAIL: OCR image may be persisted in paperImports: {forbidden}"
+        )
+
 print(
     "security static PASS: latest public RPC definitions are SECURITY INVOKER; "
-    "privileged lifecycle logic is private, auth-bound and explicitly granted"
+    "privileged lifecycle logic is private, auth-bound and explicitly granted; "
+    "paper OCR image stays local-only and no external OCR runtime is loaded"
 )
