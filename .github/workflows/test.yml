@@ -25,6 +25,8 @@ jobs:
           node --check auth.js
           node --check sync-client.js
           node --check school-cloud.js
+          grep -q "AbortController" school-cloud.js
+          grep -q "request_timeout" school-cloud.js
           node --check install.js
           node --check share.js
           node --check paper.js
