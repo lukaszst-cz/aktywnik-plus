@@ -116,7 +116,7 @@ Gotowe:
 - działający projekt Supabase w regionie EU;
 - Supabase Auth dla dorosłych;
 - role i model tenant;
-- migracje 001–019;
+- migracje 001–020;
 - RLS;
 - endpoint `GET /api/v1/me`;
 - endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
@@ -169,7 +169,7 @@ Pozostaje:
 | formalne uzgodnienie szkoła/IOD | 🔴 decyzja zewnętrzna |
 | DPIA screening — materiał | ✅ przygotowany |
 | DPIA — decyzja administratora | 🔴 decyzja zewnętrzna |
-| test techniczny bezpieczeństwa | 🟡 CI + database preflight PASS; Security Advisor: 5 kontrolowanych WARN `SECURITY DEFINER` do refaktoru przed School production |
+| test techniczny bezpieczeństwa | ✅ CI + database preflight PASS; Security Advisor: 0 aktywnych lintów po migracji 020 |
 | E2E izolacji wielu kont/tenantów | ✅ test RLS PASS na danych syntetycznych |
 | niezależny pentest / formalny review | 🟡 przed produkcyjnym School |
 | procedura incydentów | ✅ przygotowana |
@@ -180,20 +180,21 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`019`: zastosowane;
+- migracje `001`–`020`: zastosowane;
 - tabele `public`: 23;
 - RLS: 23/23;
 - granty dla `anon`: 0;
 - tabele bez polityk: 0;
 - `personal_activities`: polityki SELECT/INSERT/UPDATE/DELETE ograniczone do właściciela;
-- Supabase Security Advisor: 1 typ ostrzeżenia / 5 findings dla publicznych RPC `SECURITY DEFINER`;
-- `anon` i `PUBLIC` nie mają `EXECUTE` do tych RPC, `authenticated` ma dostęp; RPC mają pusty `search_path` i własne sprawdzanie tożsamości/uprawnień;
-- security preflight ma dokładną allowlistę tych 5 funkcji, blokuje wzrost tej powierzchni oraz wymaga 8 triggerów School audit i poprawnych uprawnień prywatnej funkcji retencji;
-- `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–018;
+- Supabase Security Advisor po migracji 020: **0 aktywnych lintów**;
+- publiczne RPC lifecycle są `SECURITY INVOKER`, a uprzywilejowana logika znajduje się w nieeksponowanym `app_private`;
+- security preflight wymaga zera publicznych `SECURITY DEFINER` wykonywalnych przez `authenticated`, dokładnie 5 wrapperów invoker + 5 prywatnych helperów oraz 8 triggerów School audit;
+- `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–020;
 - application restore drill: PASS dla profilu, rodziny, szkoły/klasy, raportu, aktywności rodzinnej i personal activity; test kończy się `ROLLBACK`;
 - migracja 018 jest trwale zastosowana live; test `child → adult` = BLOCKED/PASS, a `display_name` pozostaje edytowalne;
 - security preflight wymaga wyłącznie `UPDATE(display_name)` dla `authenticated` i zwraca PASS;
-- migracja 019: 8 triggerów School audit + prywatna funkcja retencji z `dry_run=true`, bez automatycznego harmonogramu.
+- migracja 019: 8 triggerów School audit + prywatna funkcja retencji z `dry_run=true`, bez automatycznego harmonogramu;
+- migracja 020: publiczne RPC lifecycle → `SECURITY INVOKER`, uprzywilejowane helpery → `app_private`; class lifecycle PASS, family onboarding PASS, Security Advisor 0 lintów.
 
 ## 12. Warunek publikacji pilota — ✅
 
@@ -224,7 +225,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 6. School audit + mechanizm retencji — ✅ technicznie; okres/częstotliwość retencji nadal do zatwierdzenia przez szkołę/IOD;
 7. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
 8. formalna decyzja szkoły/IOD oraz DPIA;
-9. usunięcie/refaktor 5 publicznych RPC `SECURITY DEFINER` przed produkcyjnym School;
+9. publiczne RPC `SECURITY DEFINER` — ✅ usunięte/refaktoryzowane w migracji 020;
 10. niezależny security review/pentest przed produkcyjnym School.
 
 ## Źródła i dokumenty
