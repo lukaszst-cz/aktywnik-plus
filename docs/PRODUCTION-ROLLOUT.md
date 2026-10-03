@@ -7,13 +7,13 @@ Po każdym wydaniu produkcyjnym należy potwierdzić, że publiczny Vercel rzecz
 ## Aktualny target
 
 - URL: `https://aktywnik-plus.vercel.app`
-- oczekiwana wersja: `0.5.0-beta.3`
+- oczekiwana wersja: `0.5.0-beta.4`
 - backend stage: `full-family-sync-pilot`
 
 ## Minimalna weryfikacja po deployu
 
 1. `/` → HTTP 200, CSP i HSTS;
-2. `/api/health` → `version=0.5.0-beta.3`, `backend=full-family-sync-pilot`;
+2. `/api/health` → `version=0.5.0-beta.4`, `backend=full-family-sync-pilot`;
 3. `/api/capabilities` → RLS/security capabilities obecne;
 4. dla pilota chmurowego:
    - `cloud.enabled=true`;
@@ -32,7 +32,7 @@ Ręcznie uruchom workflow **Production smoke** w GitHub Actions po udanym deploy
 Lokalnie:
 
 ```bash
-AKTYWNIK_EXPECTED_VERSION=0.5.0-beta.3 \
+AKTYWNIK_EXPECTED_VERSION=0.5.0-beta.4 \
 AKTYWNIK_REQUIRE_CLOUD=true \
 node tests/production-smoke.mjs
 ```
