@@ -9,7 +9,7 @@ Legenda:
 
 ## Status tej wersji
 
-Aktywnik+ działa jako **0.5.0-beta.2, local-first z opcjonalnym kontem, pełnym sync trybu osobistego i family activity sync beta dla jawnie powiązanych profili**.
+Aktywnik+ działa jako **0.5.0-beta.2, local-first z opcjonalnym kontem oraz pełnym sync trybu osobistego i rodzinnego dla jawnie powiązanych profili**.
 
 Nie jest jeszcze:
 - szkolnym dziennikiem elektronicznym;
@@ -41,13 +41,13 @@ Zrobione:
 - merge wpisów z różnych urządzeń na podstawie timestampów;
 - usuwanie wpisów w trybie osobistym: tombstones + propagacja między urządzeniami;
 - RLS ogranicza dane do właściciela;
-- tryb rodzinny nie trafia do personal sync; ma osobny family sync beta tylko dla profili z jawnym `cloudChildId`;
+- tryb rodzinny nie trafia do personal sync; ma osobny family sync tylko dla profili z jawnym `cloudChildId`;
+- family activity push/pull + statusy `pending/approved/rejected`: ✅ live;
+- rodzinne delete/tombstones: ✅ live;
+- historia decyzji rodzica `approved/rejected/corrected/deleted`: ✅ live;
 
 Pozostaje:
-- family activity push/pull + statusy `pending/approved/rejected`: ✅ beta;
-- rodzinne delete/tombstones: kod + migracja 024 przygotowane i przetestowane w rollbacku, ale migracja nie jest jeszcze live;
-- historia decyzji rodzica: kod + migracja 025 przygotowane i przetestowane w rollbacku, ale migracja nie jest jeszcze live;
-- synchronizacja nie zastępuje jeszcze zweryfikowanego backup/restore backendu.
+- synchronizacja nie zastępuje jeszcze zweryfikowanego platformowego backup/restore Supabase.
 
 ## 3. Minimum danych o dziecku — ✅
 
@@ -146,7 +146,7 @@ Gotowe w UI:
 - wysłanie zgłoszenia oraz akceptacja/odrzucenie przez staff.
 
 Pozostaje:
-- family activity sync beta działa; delete/tombstones są przygotowane w 024, a historia decyzji rodzica w 025; obie migracje wymagają jeszcze wdrożenia live;
+- family sync działa live dla jawnie powiązanych profili: aktywności, statusy, tombstones/usunięcia i historia decyzji;
 - E2E przez publiczne API z realnymi kontami testowymi przed School production.
 
 ## 10. Warunki produkcyjne — stan bieżący
@@ -163,7 +163,7 @@ Pozostaje:
 | audyt administracyjny | ✅ personal activity + School audit: aktywności, raporty, nagrody/oceny, klasy, nauczyciele, membership i dostęp serwisowy |
 | retencja/usuwanie lokalne | ✅ |
 | retencja logów School | 🟡 mechanizm techniczny ✅ (`dry_run` domyślnie, tylko `service_role`); okres retencji wymaga decyzji szkoły/IOD |
-| usuwanie/synchronizacja w chmurze | ✅ tombstones + propagacja delete w trybie osobistym |
+| usuwanie/synchronizacja w chmurze | ✅ tombstones + propagacja delete w trybie osobistym i rodzinnym |
 | eksport danych | ✅ JSON / CSV / PDF |
 | informacja o prywatności | ✅ |
 | pakiet szkoła/IOD | ✅ przygotowany |
@@ -183,16 +183,16 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`022`: zastosowane;
-- tabele `public`: 23;
-- RLS: 23/23;
+- migracje `001`–`025`: zastosowane;
+- tabele `public`: 24;
+- RLS: 24/24;
 - granty dla `anon`: 0;
 - tabele bez polityk: 0;
 - `personal_activities`: polityki SELECT/INSERT/UPDATE/DELETE ograniczone do właściciela;
-- Supabase Security Advisor po migracji 020: **0 aktywnych lintów**;
+- Supabase Security Advisor po migracji 025: **0 aktywnych lintów**;
 - publiczne RPC lifecycle są `SECURITY INVOKER`, a uprzywilejowana logika znajduje się w nieeksponowanym `app_private`;
 - security preflight wymaga zera publicznych `SECURITY DEFINER` wykonywalnych przez `authenticated`, dokładnie 5 wrapperów invoker + 5 prywatnych helperów oraz 8 triggerów School audit;
-- `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–022;
+- `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–025;
 - application restore drill: PASS dla profilu, rodziny, szkoły/klasy, raportu, aktywności rodzinnej i personal activity; test kończy się `ROLLBACK`;
 - migracja 018 jest trwale zastosowana live; test `child → adult` = BLOCKED/PASS, a `display_name` pozostaje edytowalne;
 - security preflight wymaga wyłącznie `UPDATE(display_name)` dla `authenticated` i zwraca PASS;
@@ -200,9 +200,9 @@ Sprawdzenie 2026-10-03:
 - migracja 020: publiczne RPC lifecycle → `SECURITY INVOKER`, uprzywilejowane helpery → `app_private`; class lifecycle PASS, family onboarding PASS, Security Advisor 0 lintów;
 - migracja 021: indeksy pokrywające 4 wcześniej nieindeksowane FK; live performance preflight PASS;
 - migracja 022: `client_entry_id`/`client_updated_at` dla family activities + RLS `tenant_id IS NULL`; pre-deploy rollback test PASS, live schema/policies/preflight PASS.
-- migracja 023: prywatny ledger idempotency + `SECURITY INVOKER` wrappers dla tworzenia dziecka/klasy/zaproszenia; rollback test + security preflight PASS, trwałe wdrożenie jeszcze nie wykonane.
-- migracja 024: `family_activity_tombstones` + guardian-only DELETE dla tenant-neutral family rows; 023+024 + delete regression + security preflight PASS w rollbacku, trwałe wdrożenie jeszcze nie wykonane.
-- migracja 025: `client_event_id`/`client_entry_id` dla `activity_approval_events`, `ON DELETE SET NULL`, decyzja `deleted`; 023+024+025 + decision history regression + security preflight PASS w rollbacku, trwałe wdrożenie jeszcze nie wykonane.
+- migracja 023: prywatny ledger idempotency + `SECURITY INVOKER` wrappers dla tworzenia dziecka/klasy/zaproszenia; live retry/idempotency test PASS.
+- migracja 024: `family_activity_tombstones` + guardian-only DELETE dla tenant-neutral family rows; live delete regression PASS.
+- migracja 025: `client_event_id`/`client_entry_id` dla `activity_approval_events`, `ON DELETE SET NULL`, decyzja `deleted`; live decision-history regression PASS.
 
 ## 12. Warunek publikacji pilota — ✅
 
@@ -227,9 +227,9 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 
 1. family onboarding — ✅ rodzic może utworzyć profil dziecka w School Cloud bez e-maila/hasła dziecka;
 2. migracja 018 / profile role hardening — ✅ live + security preflight PASS;
-3. synchronizacja trybu rodzinnego — jawne powiązanie ✅ + activity push/pull/status beta ✅; delete/tombstones przygotowane w 024; historia decyzji rodzica przygotowana w 025; rollout live obu elementów nadal otwarty;
-4. synchronizacja usunięć w trybie rodzinnym — kod/RLS/tombstones/testy gotowe w 024; pozostało trwałe wdrożenie migracji i finalny live smoke;
-5. synchronizacja historii decyzji rodzica — kod/API/merge/testy gotowe w 025; pozostało trwałe wdrożenie migracji, live smoke i włączenie capability;
+3. synchronizacja trybu rodzinnego — ✅ jawne powiązanie + activity push/pull/status + tombstones/delete + historia decyzji;
+4. synchronizacja usunięć w trybie rodzinnym — ✅ live, guardian-only, z ochroną school rows;
+5. synchronizacja historii decyzji rodzica — ✅ live, append-only i zachowana po usunięciu aktywności;
 5. backend restore drill — ✅ dane aplikacji; platformowy backup/restore Supabase nadal otwarty;
 6. School audit + mechanizm retencji — ✅ technicznie; okres/częstotliwość retencji nadal do zatwierdzenia przez szkołę/IOD;
 7. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;

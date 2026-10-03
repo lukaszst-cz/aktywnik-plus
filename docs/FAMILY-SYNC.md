@@ -73,6 +73,23 @@ Backend dodatkowo waliduje rzeczywistą datę kalendarzową wpisu oraz timestamp
 Pojedynczy batch nie może też zawierać zduplikowanego ID wpisu, zduplikowanego tombstone'a ani jednocześnie aktualizacji i usunięcia tego samego ID.
 Outbox trybu osobistego jest minimalny: nie przechowuje pełnego lokalnego stanu aplikacji, tylko dane wpisów potrzebne do synchronizacji. To ogranicza ilość danych lokalnych i sieciowych związanych z chmurą.
 
+### Protokół family sync
+
+Tryb rodzinny w 0.5 beta używa również `protocolVersion=1`, ale ma osobną kolejkę i endpoint `GET/POST /api/v1/family-sync`. Synchronizacja działa wyłącznie dla lokalnego profilu jawnie powiązanego z profilem chmurowym przez `cloudChildId` — aplikacja nie dopasowuje dzieci automatycznie po imieniu.
+
+Synchronizowane są:
+- aktywności i statusy `pending/approved/rejected`;
+- usunięcia przez trwałe tombstones z regułą `deletedAt >= client_updated_at`;
+- decyzje rodzica `approved/rejected/corrected/deleted` jako append-only historia.
+
+Granice bezpieczeństwa:
+- guardian widzi i synchronizuje wyłącznie dzieci z relacji `guardians`;
+- konto dziecka nie dostaje rodzinnego DELETE;
+- rodzinny wpis musi mieć `tenant_id IS NULL`, więc ścieżka rodzinna nie może usuwać ani modyfikować wpisów szkolnych;
+- obcy dorosły nie widzi tombstones ani historii decyzji;
+- klient wysyła minimalny payload, bez PIN-u, klas, ustawień szkoły i innych danych local-only;
+- chmura pozostaje fail-closed, jeśli `AKTYWNIK_CLOUD_SYNC` lub weryfikacja RLS nie są aktywne.
+
 Przepływ wpisu:
 
 ```
@@ -108,20 +125,19 @@ Relacja rodzic–dziecko jest wiele-do-wielu:
 
 Raporty, aktywności, nagrody, klasy i historia akceptacji zawsze mają `child_id`.
 
-## Pilot 0.2.0 vs produkcja
+## Obecny 0.5 beta vs dalszy School production
 
-Pilot 0.2.0:
-- działa lokalnie;
-- rozdziela interfejs PIN-em;
+Obecny 0.5 beta:
+- działa local-first również bez konta;
+- ma opcjonalne konto dorosłego;
 - obsługuje wiele profili dzieci;
-- nie synchronizuje urządzeń.
+- synchronizuje jawnie powiązane profile między urządzeniami;
+- ma RLS, guardian-only family delete, tombstones i historię decyzji;
+- zachowuje osobny model danych rodzinnych i szkolnych.
 
-Produkcja:
-- konta;
-- backend;
-- synchronizacja;
+Dalszy School production:
 - Web Push;
-- jednorazowe kody/QR;
-- RLS;
-- audyt;
-- możliwość cofnięcia sesji urządzenia.
+- produkcyjne parowanie urządzeń dziecka jednorazowym kodem/QR;
+- możliwość cofnięcia sesji urządzenia;
+- formalne uzgodnienia szkoła/IOD, retencja i ewentualne DPIA;
+- niezależny pentest i produkcyjny test backup/restore platformy.

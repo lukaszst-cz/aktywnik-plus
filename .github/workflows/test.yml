@@ -65,6 +65,10 @@ jobs:
           grep -q "client_event_id" backend/migrations/025_family_decision_history.sql
           grep -q "on delete set null" backend/migrations/025_family_decision_history.sql
           grep -q "familySyncBeta:cloud.enabled" api/capabilities.js
+          grep -q "familySync:cloud.enabled" api/capabilities.js
+          grep -q "familySyncProtocolVersion:1" api/capabilities.js
+          grep -q "familySyncDeletes:cloud.enabled" api/capabilities.js
+          grep -q "familySyncDecisionHistory:cloud.enabled" api/capabilities.js
           grep -q "family-sync-client.js" app.html
           grep -q "./family-sync-client.js" sw.js
           test -f backend/tests/application_restore_drill.sql
@@ -248,9 +252,10 @@ jobs:
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.profileRoleEscalationBlocked!==true) throw new Error('profile role hardening capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudLinkReady!==true) throw new Error('family cloud link readiness missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncBeta!==false) throw new Error('family sync beta must fail closed when cloud is off');
-            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySync!==false) throw new Error('full family sync must remain false until decision history ships');
-            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncDeletes!==false) throw new Error('family delete sync must remain disabled until migration 024 is live');
-            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncDecisionHistory!==false) throw new Error('family decision history must remain disabled until migration 025 is live');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySync!==false) throw new Error('full family sync must fail closed when cloud is off');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncDeletes!==false) throw new Error('family delete sync must fail closed when cloud is off');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncDecisionHistory!==false) throw new Error('family decision history must fail closed when cloud is off');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncProtocolVersion!==1) throw new Error('family sync protocol capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolAuditCoverageVerified!==true) throw new Error('school audit capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionMechanismReady!==true) throw new Error('school retention mechanism capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionPolicyConfigured!==false) throw new Error('school retention policy must remain externally configurable');
@@ -296,6 +301,14 @@ jobs:
           delete process.env.SUPABASE_SECRET_KEY;
           delete process.env.SUPABASE_SERVICE_ROLE_KEY;
           process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+
+          const enabledCaps=mock();
+          require('./api/capabilities.js')({method:'GET'},enabledCaps);
+          if(enabledCaps.out.statusCode!==200) throw new Error('enabled capabilities status');
+          if(enabledCaps.out.body?.cloud?.familySync!==true) throw new Error('full family sync capability did not enable');
+          if(enabledCaps.out.body?.cloud?.familySyncDeletes!==true) throw new Error('family delete sync capability did not enable');
+          if(enabledCaps.out.body?.cloud?.familySyncDecisionHistory!==true) throw new Error('family decision history capability did not enable');
+          if(enabledCaps.out.body?.cloud?.familySyncProtocolVersion!==1) throw new Error('family sync protocol capability mismatch');
 
           const originalFetch=global.fetch;
           let calls=[];
