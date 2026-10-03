@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — profile role hardening live
+
+- migracja 018 odebrała `authenticated` szeroki `UPDATE profiles`;
+- użytkownik może aktualizować wyłącznie `profiles.display_name`;
+- `profile_type` nie może być samodzielnie eskalowany `child → adult`;
+- live regression test: PASS;
+- database security preflight po wdrożeniu: PASS;
+- Security Advisor nadal raportuje wyłącznie 5 wcześniej kontrolowanych RPC `SECURITY DEFINER`.
+
 ## Unreleased — family onboarding UX hardening
 
 - API odrzuca nazwę profilu dziecka dłuższą niż 60 znaków zamiast cicho ją obcinać;
