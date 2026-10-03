@@ -278,6 +278,12 @@
       </section>
 
       <section class="card">
+        <div class="section-head"><h2 data-i18n="parent.profileEntries">Wpisy profilu</h2><span class="badge" data-i18n="parent.guardianOnly">tylko rodzic</span></div>
+        <p data-i18n="parent.profileEntriesHelp">Tutaj rodzic może usunąć błędny wpis. Dla połączonego profilu usunięcie zostanie zsynchronizowane między urządzeniami.</p>
+        <div id="parentEntryList" class="list"></div>
+      </section>
+
+      <section class="card">
         <div class="section-head"><h2 data-i18n="parent.reports">Raporty</h2><div class="entry-actions report-actions"><label class="report-month-picker"><span data-i18n="parent.referenceMonth">Miesiąc odniesienia</span> <input id="parentReportMonth" type="month" /></label><button id="exportCsvBtn" class="ghost">Eksport CSV</button><button id="printReportBtn" class="ghost" data-i18n="parent.printSummary">Drukuj podsumowanie</button><button id="printSchoolReportBtn" class="primary" data-i18n="parent.schoolJournal">Dziennik A4 1–70+</button></div></div>
         <div class="report-buttons">
           <button data-report="month">Miesięczny</button><button data-report="quarter">Kwartalny</button><button data-report="half">Półroczny</button><button data-report="year">Roczny</button>
