@@ -19,10 +19,10 @@ module.exports = async function handler(req,res){
 
   try{
     const query=new URLSearchParams({
-      select:'id,tenant_id,label,starts_on,ends_on,archived_at',
+      select:'id,tenant_id,label,archived_at',
       tenant_id:'eq.'+tenantId,
       archived_at:'is.null',
-      order:'starts_on.desc'
+      order:'label.desc'
     });
     const response=await supabaseUserFetch(token,'/rest/v1/school_years?'+query.toString());
     const data=await jsonOrNull(response);
