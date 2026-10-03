@@ -6,11 +6,11 @@ Techniczny przegląd bieżącego środowiska Aktywnik+ przed rozszerzaniem funkc
 
 ## Wynik
 
-**PASS warunkowy dla obecnego personal sync; BLOKER rozszerzania family cloud do czasu wdrożenia migracji 018.**
+**PASS warunkowy dla obecnego zakresu beta; migracja 018 blokująca self-escalation jest wdrożona live.**
 
 Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - projekt aktywny w regionie EU (`eu-central-1`);
-- migracje `001`–`017` są zastosowane;
+- migracje `001`–`018` są zastosowane;
 - 23/23 tabel w schemacie `public` ma włączone RLS;
 - brak tabel publicznych bez polityki RLS;
 - brak grantów tabel dla roli `anon`;
@@ -19,7 +19,8 @@ Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - te 5 RPC są obecnie kontrolowanym wyjątkiem: `anon` i `PUBLIC` nie mają `EXECUTE`, `authenticated` ma dostęp, każda funkcja ma `search_path=''` i wewnętrzne sprawdzanie `auth.uid()` + roli/relacji;
 - `backend/tests/security_preflight.sql` ma dokładną allowlistę tych 5 RPC i ma kończyć się FAIL, jeśli pojawi się kolejny publiczny `SECURITY DEFINER` dostępny dla `authenticated` albo osłabnie hardening istniejących;
 - audit triggers dla personal activity create/update/delete: PASS;
-- class lifecycle test create/invite/request/accept: PASS.
+- class lifecycle test create/invite/request/accept: PASS;
+- profile_type self-escalation child → adult: BLOCKED; display_name update preserved; security preflight po 018: PASS.
 
 Repo zawiera `backend/tests/security_preflight.sql`, który ma być uruchamiany po zmianach schematu/RLS i kontroluje również powierzchnię `SECURITY DEFINER`.
 
@@ -31,7 +32,6 @@ Ten wynik nie zastępuje niezależnego pentestu ani formalnego audytu wdrożenia
 
 - synchronizacja usunięć / tombstones w trybie osobistym: wdrożona;
 - test izolacji wielu kont/tenantów: PASS na danych syntetycznych;
-- trwałe wdrożenie migracji 018 i ponowny security preflight;
 - refaktor 5 publicznych RPC `SECURITY DEFINER` do modelu bez ostrzeżenia Security Advisor;
 - zweryfikowany restore z kopii backendu;
 - dalsze domknięcie audytu i retencji School;
