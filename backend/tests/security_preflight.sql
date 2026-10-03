@@ -66,6 +66,7 @@ begin
   with allowed(name,args) as (
     values
       ('create_class_invite','target_class uuid, valid_days integer'),
+      ('create_guardian_child','child_name text'),
       ('create_school_class','target_tenant uuid, target_school_year uuid, class_name text'),
       ('decide_class_join','target_request uuid, decision text'),
       ('request_class_join','invite_token uuid, target_child uuid')
@@ -79,13 +80,14 @@ begin
    and a.args=pg_get_function_identity_arguments(p.oid)
   where n.nspname='public';
 
-  if allowed_definer_count <> 4 then
+  if allowed_definer_count <> 5 then
     raise exception 'SECURITY PREFLIGHT FAIL: reviewed SECURITY DEFINER RPC allowlist mismatch (%)', allowed_definer_count;
   end if;
 
   with allowed(name,args) as (
     values
       ('create_class_invite','target_class uuid, valid_days integer'),
+      ('create_guardian_child','child_name text'),
       ('create_school_class','target_tenant uuid, target_school_year uuid, class_name text'),
       ('decide_class_join','target_request uuid, decision text'),
       ('request_class_join','invite_token uuid, target_child uuid')
@@ -115,6 +117,7 @@ begin
   with allowed(name,args) as (
     values
       ('create_class_invite','target_class uuid, valid_days integer'),
+      ('create_guardian_child','child_name text'),
       ('create_school_class','target_tenant uuid, target_school_year uuid, class_name text'),
       ('decide_class_join','target_request uuid, decision text'),
       ('request_class_join','invite_token uuid, target_child uuid')
