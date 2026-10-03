@@ -10,7 +10,7 @@ Techniczny przegląd bieżącego środowiska Aktywnik+ przed rozszerzaniem funkc
 
 Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - projekt aktywny w regionie EU (`eu-central-1`);
-- migracje `001`–`012` są zastosowane;
+- migracje `001`–`013` są zastosowane;
 - 20/20 tabel w schemacie `public` ma włączone RLS;
 - brak tabel publicznych bez polityki RLS;
 - brak grantów tabel dla roli `anon`;
@@ -25,7 +25,7 @@ Ten wynik nie zastępuje niezależnego pentestu ani formalnego audytu wdrożenia
 
 ## Nadal otwarte
 
-- synchronizacja usunięć / tombstones;
+- synchronizacja usunięć / tombstones w trybie osobistym: wdrożona;
 - test izolacji wielu kont/tenantów: PASS na danych syntetycznych;
 - pełny workflow szkoła–klasa–rodzic;
 - zweryfikowany restore z kopii backendu;
