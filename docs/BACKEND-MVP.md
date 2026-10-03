@@ -4,7 +4,7 @@
 
 - Vercel Functions;
 - Supabase project w EU;
-- migracje 001–012;
+- migracje 001–016;
 - Supabase Auth / Magic Link;
 - RLS na wszystkich tabelach publicznych;
 - brak grantów `anon`;
@@ -18,12 +18,19 @@
 
 ## Następny etap techniczny
 
-### 1. Lifecycle klasy
-- tworzenie klasy przez uprawnioną rolę;
-- bezpieczny kod/link dołączenia;
-- zgłoszenie rodzica;
-- akceptacja;
-- powiązanie family child ↔ school child.
+### 1. Lifecycle klasy — backend ✅
+Gotowe:
+- `create_school_class`;
+- `create_class_invite`;
+- `request_class_join`;
+- `decide_class_join`;
+- API dla klas, zaproszeń i join request;
+- audit events;
+- test transakcyjny PASS.
+
+Pozostaje:
+- finalny UI nauczyciela/rodzica;
+- test przez publiczne API na kilku kontach testowych.
 
 ### 2. Synchronizacja rodzinna
 - osobne ownership/guardian rules;
