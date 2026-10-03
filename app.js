@@ -41,13 +41,13 @@ function persist({skipSync=false}={}){
 }
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
 function fmtMin(m){const h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
-function childMovementEnergy(entry){
-  const minutes=clampInt(entry?.minutes,1,600,1),effort=clampInt(entry?.effort,1,5,2),score=minutes*(0.65+effort*0.22);
-  if(score<28)return uiText('app.energyLight','lekka');
-  if(score<75)return uiText('app.energyModerate','umiarkowana');
-  return uiText('app.energyHigh','wysoka');
+function parentMovementLoad(entry){
+  const minutes=clampInt(entry?.minutes,1,600,1),fatigue=clampInt(entry?.effort,1,5,2),score=minutes*(0.65+fatigue*0.22);
+  if(score<28)return uiText('parent.loadLight','lekkie');
+  if(score<75)return uiText('parent.loadModerate','umiarkowane');
+  return uiText('parent.loadHigh','wysokie');
 }
-function childMovementEnergyText(entry){return uiText('app.energyLabel','energia ruchu')+': '+childMovementEnergy(entry)}
+function parentMovementLoadText(entry){return uiText('parent.loadLabel','obciążenie wysiłkiem')+': '+parentMovementLoad(entry)}
 function today(){const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
 function cleanText(v,max=160){return String(v??'').trim().slice(0,max)}
 function validUuid(v){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v??''))}
@@ -525,7 +525,7 @@ function renderChildEntries(){
     const actions=[];
     if(canEdit)actions.push('<button class="ghost" data-child-edit="'+escapeAttr(e.id)+'">'+(e.status==='rejected'?'Popraw i wyślij':'Edytuj')+'</button>');
     if(isSelfMode())actions.push('<button class="danger" data-self-delete="'+escapeAttr(e.id)+'">Usuń</button>');
-    el.innerHTML='<div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+' · wysiłek '+e.effort+'/5 · '+(e.source==='timer'?'⏱ Start/Stop':'✍️ wpis ręczny')+(e.note?' · '+escapeHtml(e.note):'')+'<br>'+escapeHtml(childMovementEnergyText(e))+' · '+escapeHtml(uiText('app.energyPrivate','tylko podgląd — nie trafia do raportu nauczyciela'))+'<br>'+escapeHtml(statusLabel(e))+'</small></div>'+(actions.length?'<div class="entry-actions">'+actions.join('')+'</div>':'');
+    el.innerHTML='<div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+' · zmęczenie '+e.effort+'/5 · '+(e.source==='timer'?'⏱ Start/Stop':'✍️ wpis ręczny')+(e.note?' · '+escapeHtml(e.note):'')+'<br>'+escapeHtml(statusLabel(e))+'</small></div>'+(actions.length?'<div class="entry-actions">'+actions.join('')+'</div>':'');
     box.append(el)
   });
   if(!entries.length)box.innerHTML='<small>Jeszcze nie ma wpisów.</small>';
@@ -610,13 +610,13 @@ function reportTitle(t){return ({month:'Raport miesięczny',quarter:'Raport kwar
 function csvCell(v){const s=String(v??'');return '"'+s.replace(/"/g,'""')+'"'}
 function exportReportCsv(){
   if(!guardParent())return;const child=parentChild();if(!child)return;const reference=parentReportReferenceDate(),es=filtered(reportType,child.id,reference);
-  const rows=[['Dziecko','Data','Aktywność','Minuty','Wysiłek','Źródło','Notatka'],...es.map(e=>[child.displayName,e.date,e.activity,e.minutes,e.effort,e.source==='timer'?'Start/Stop':'Ręczny',e.note||''])];
+  const rows=[['Dziecko','Data','Aktywność','Minuty','Zmęczenie (1–5)','Źródło','Notatka'],...es.map(e=>[child.displayName,e.date,e.activity,e.minutes,e.effort,e.source==='timer'?'Start/Stop':'Ręczny',e.note||''])];
   const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='aktywnik-'+child.displayName.replace(/[^A-Za-z0-9_-]+/g,'-')+'-'+reportType+'-'+parentReportMonth+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function exportSelfCsv(){
   if(!isSelfMode())return;const child=activeChild();if(!child)return;const type=$('#reportPeriod')?.value||'month',es=filtered(type,child.id,new Date());
-  const rows=[['Profil','Data','Aktywność','Minuty','Wysiłek','Źródło','Notatka'],...es.map(e=>[child.displayName,e.date,e.activity,e.minutes,e.effort,e.source==='timer'?'Start/Stop':'Ręczny',e.note||''])];
+  const rows=[['Profil','Data','Aktywność','Minuty','Zmęczenie (1–5)','Źródło','Notatka'],...es.map(e=>[child.displayName,e.date,e.activity,e.minutes,e.effort,e.source==='timer'?'Start/Stop':'Ręczny',e.note||''])];
   const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='aktywnik-'+child.displayName.replace(/[^A-Za-z0-9_-]+/g,'-')+'-'+type+'-'+today().slice(0,7)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
@@ -641,7 +641,7 @@ function buildSchoolPrintPages(childId,referenceDate){
 }
 function renderSchoolPrintReport(){
   if(!guardParent())return false;const child=parentChild();if(!child)return false;const reference=parentReportReferenceDate(),pages=buildSchoolPrintPages(child.id,reference),st=stats('month',child.id,reference),monthLabel=reference.toLocaleDateString('pl-PL',{month:'long',year:'numeric'}),box=$('#schoolPrintReport');
-  box.innerHTML=pages.map(p=>'<section class="school-print-page"><div class="school-print-head"><div><h1>Dziennik Dodatkowej Aktywności Fizycznej</h1><p>jeden wiersz = jedna aktywność</p></div><div><strong>Aktywnik+</strong><br><small>raport z zatwierdzonych wpisów</small></div></div><div class="school-print-meta"><div>Imię / profil: <strong>'+escapeHtml(child.displayName)+'</strong></div><div>Klasa: <span></span></div><div>Miesiąc: <strong>'+escapeHtml(monthLabel)+'</strong></div></div><table class="school-print-table"><thead><tr><th>LP.</th><th>Data</th><th>Rodzaj aktywności</th><th>Czas</th><th>Wysiłek 1–5</th><th>Podpis / uwagi opiekuna</th></tr></thead><tbody>'+p.rows.map(r=>{const e=r.entry;return '<tr><td>'+r.lp+'</td><td>'+(e?escapeHtml(e.date):'')+'</td><td>'+(e?escapeHtml(e.activity):'')+'</td><td>'+(e?escapeHtml(fmtMin(e.minutes)):'')+'</td><td>'+(e?escapeHtml(e.effort):'')+'</td><td>'+(e?escapeHtml(e.note||''):'')+'</td></tr>'}).join('')+'</tbody></table>'+(p.page===p.totalPages?'<div class="school-print-summary"><strong>Podsumowanie miesiąca:</strong> '+st.es.length+' wpisów · '+st.days+' aktywnych dni · '+escapeHtml(fmtMin(st.minutes))+'<div><strong>Uwagi rodzica:</strong><span></span></div><div><strong>Uwagi nauczyciela / wychowawcy:</strong><span></span></div><div><strong>Plus / ocena:</strong><span></span></div></div>':'')+'<div class="school-print-footer"><span>Strona '+p.page+'/'+p.totalPages+' · wpisy '+((p.page-1)*35+1)+'–'+(p.page*35)+'</span><span>Aktywnik+ · raport lokalny</span></div></section>').join('');
+  box.innerHTML=pages.map(p=>'<section class="school-print-page"><div class="school-print-head"><div><h1>Dziennik Dodatkowej Aktywności Fizycznej</h1><p>jeden wiersz = jedna aktywność</p></div><div><strong>Aktywnik+</strong><br><small>raport z zatwierdzonych wpisów</small></div></div><div class="school-print-meta"><div>Imię / profil: <strong>'+escapeHtml(child.displayName)+'</strong></div><div>Klasa: <span></span></div><div>Miesiąc: <strong>'+escapeHtml(monthLabel)+'</strong></div></div><table class="school-print-table"><thead><tr><th>LP.</th><th>Data</th><th>Rodzaj aktywności</th><th>Czas</th><th>Zmęczenie 1–5</th><th>Podpis / uwagi opiekuna</th></tr></thead><tbody>'+p.rows.map(r=>{const e=r.entry;return '<tr><td>'+r.lp+'</td><td>'+(e?escapeHtml(e.date):'')+'</td><td>'+(e?escapeHtml(e.activity):'')+'</td><td>'+(e?escapeHtml(fmtMin(e.minutes)):'')+'</td><td>'+(e?escapeHtml(e.effort):'')+'</td><td>'+(e?escapeHtml(e.note||''):'')+'</td></tr>'}).join('')+'</tbody></table>'+(p.page===p.totalPages?'<div class="school-print-summary"><strong>Podsumowanie miesiąca:</strong> '+st.es.length+' wpisów · '+st.days+' aktywnych dni · '+escapeHtml(fmtMin(st.minutes))+'<div><strong>Uwagi rodzica:</strong><span></span></div><div><strong>Uwagi nauczyciela / wychowawcy:</strong><span></span></div><div><strong>Plus / ocena:</strong><span></span></div></div>':'')+'<div class="school-print-footer"><span>Strona '+p.page+'/'+p.totalPages+' · wpisy '+((p.page-1)*35+1)+'–'+(p.page*35)+'</span><span>Aktywnik+ · raport lokalny</span></div></section>').join('');
   return true;
 }
 function printSchoolMonthlyReport(){
