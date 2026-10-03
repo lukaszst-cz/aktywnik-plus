@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — school class lifecycle backend
+
+- migracje 015–016: bezpieczny workflow klasy i tworzenie klasy;
+- nowe tabele: `class_invites`, `class_join_requests`;
+- RPC: `create_school_class`, `create_class_invite`, `request_class_join`, `decide_class_join`;
+- API: tworzenie klas, zaproszenia, join requests i decyzje;
+- wszystkie operacje autoryzowane w DB i audytowane;
+- security preflight po migracji: PASS (23 tabele publiczne z RLS);
+- test SQL create → invite → request → accept: PASS.
+
 ## Unreleased — personal activity audit
 
 - migracja 014 dodaje automatyczne `audit_events` dla utworzenia i edycji wpisu osobistego oraz tombstone delete;
