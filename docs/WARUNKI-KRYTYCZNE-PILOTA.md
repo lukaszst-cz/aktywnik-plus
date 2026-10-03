@@ -19,7 +19,7 @@ Nie jest jeszcze:
 Publiczna wersja:
 **https://aktywnik-plus.vercel.app**
 
-## 1. Hosting publicznego pilota — 🟡
+## 1. Hosting publicznego pilota — ✅
 
 - Vercel + HTTPS;
 - stały publiczny adres;
@@ -28,9 +28,9 @@ Publiczna wersja:
 - kod i dokumentacja w GitHub;
 - dane testowe są syntetyczne.
 
-Aktualny blocker operacyjny: najnowszy `main` nie został jeszcze potwierdzony na production Vercel. Status deploymentu dla commita `06768123` wskazuje `build-rate-limit`; publiczny URL podczas weryfikacji nadal raportował starszy backend `0.5.0-beta.1` z wyłączoną chmurą. Pilot z chmurą wymaga redeployu i ponownej weryfikacji `/api/health` oraz `/api/capabilities`.
+Stan produkcji został potwierdzony 2026-10-03: Vercel `READY`, `/api/health` raportuje `0.5.0-beta.3`, backend `full-family-sync-pilot`, a `/api/capabilities` potwierdza aktywne Auth, RLS i pełny family sync. Production smoke przeszedł, a 28/28 głównych plików runtime jest bit-po-bicie zgodnych z aktualnym `main`.
 
-## 2. Local-first + opcjonalna synchronizacja — 🟡
+## 2. Local-first + opcjonalna synchronizacja — ✅ dla pilota rodzinnego
 
 Zrobione:
 - pełna praca bez konta;
@@ -48,8 +48,8 @@ Zrobione:
 - rodzinne delete/tombstones: ✅ live;
 - historia decyzji rodzica `approved/rejected/corrected/deleted`: ✅ live;
 
-Pozostaje:
-- synchronizacja nie zastępuje jeszcze zweryfikowanego platformowego backup/restore Supabase.
+Uwagi:
+- synchronizacja nie zastępuje platformowego backup/restore Supabase; ten punkt pozostaje wymaganiem przed produkcyjnym Aktywnik+ School, nie blockerem pilota rodzinnego.
 
 ## 3. Minimum danych o dziecku — ✅
 
@@ -148,7 +148,6 @@ Gotowe w UI:
 - wysłanie zgłoszenia oraz akceptacja/odrzucenie przez staff.
 
 Pozostaje:
-- redeploy production do bieżącego `main` i potwierdzenie aktywnej konfiguracji chmury;
 - E2E przez publiczne API z kontrolowanymi kontami testowymi przed School production.
 
 ## 10. Warunki produkcyjne — stan bieżący
@@ -156,7 +155,7 @@ Pozostaje:
 | Warunek | Stan |
 | --- | --- |
 | backend API + personal sync | ✅ |
-| deployment production zgodny z bieżącym main | 🟡 aktualnie blokowany przez Vercel build-rate-limit; wymaga redeploy + smoke |
+| deployment production zgodny z bieżącym main | ✅ 0.5.0-beta.3, Vercel READY, production smoke PASS; 28/28 plików runtime zgodnych z main |
 | uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
 | role/uprawnienia w DB | ✅ RLS + migracja 018 live; `profile_type` nie jest samodzielnie edytowalne przez użytkownika |
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
