@@ -48,6 +48,12 @@ jobs:
           test -f backend/tests/profile_role_escalation.sql
           grep -q "grant update(display_name)" backend/migrations/018_profile_type_role_hardening.sql
           grep -q "profile_update_columns" backend/tests/security_preflight.sql
+          test -f backend/migrations/019_school_lifecycle_fk_indexes.sql
+          test -f backend/tests/performance_indexes.sql
+          grep -q "idx_class_invites_created_by" backend/migrations/019_school_lifecycle_fk_indexes.sql
+          grep -q "idx_class_join_requests_child" backend/migrations/019_school_lifecycle_fk_indexes.sql
+          grep -q "idx_class_join_requests_requested_by" backend/migrations/019_school_lifecycle_fk_indexes.sql
+          grep -q "idx_class_join_requests_decided_by" backend/migrations/019_school_lifecycle_fk_indexes.sql
           grep -q "school-cloud.html" index.html
           grep -q "school-cloud.html" dla-nauczyciela.html
           grep -q "school-cloud.html" faq.html
