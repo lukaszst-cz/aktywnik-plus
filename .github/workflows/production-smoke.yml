@@ -1,0 +1,32 @@
+name: Production smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_version:
+        description: Expected production version
+        required: true
+        default: 0.5.0-beta.3
+      require_cloud:
+        description: Require production cloud gate to be enabled
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Verify production deployment
+        env:
+          AKTYWNIK_BASE_URL: https://aktywnik-plus.vercel.app
+          AKTYWNIK_EXPECTED_VERSION: ${{ inputs.expected_version }}
+          AKTYWNIK_REQUIRE_CLOUD: ${{ inputs.require_cloud }}
+        run: node tests/production-smoke.mjs
