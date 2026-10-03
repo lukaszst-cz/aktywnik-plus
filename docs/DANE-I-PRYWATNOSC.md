@@ -32,7 +32,7 @@ Nie wymagamy:
 - dokładnej lokalizacji GPS;
 - daty urodzenia, jeśli nie jest potrzebna;
 - masy ciała;
-- kalorii;
+- kalorii ani szacowanego spalania kalorii jako danych profilu lub wpisu;
 - zdjęcia twarzy;
 - danych zdrowotnych.
 
@@ -87,6 +87,8 @@ Administrator szkoły powinien móc:
 W trybie rodzinnym analogiczne uprawnienia ma rodzic.
 
 W PWA polecenie usunięcia wszystkich danych lokalnych czyści stan aplikacji, szkice, lokalne kolejki synchronizacji i tombstones, znacznik ostatniego sync, lokalną sesję konta oraz stan sesji/PIN-u rodzica. Preferencja języka nie jest traktowana jako dane użytkownika i pozostaje na urządzeniu. Przy przywracaniu kopii czyszczony jest wyłącznie stan przejściowy sync/PIN, natomiast zalogowanie konta może pozostać aktywne.
+
+Informacja „energia ruchu: lekka / umiarkowana / wysoka” jest wyliczana wyłącznie w interfejsie dziecka na podstawie czasu i poziomu wysiłku. Nie jest zapisywana w rekordzie aktywności, nie trafia do Supabase, School Cloud, CSV ani raportów nauczyciela.
 
 Personal sync stosuje minimalizację danych: kolejka synchronizacji nie przechowuje całego lokalnego `state`. Do outboxa trafiają wyłącznie `schemaVersion`, `profileMode='self'` oraz pola wpisów wymagane przez backend (`id`, data, aktywność, minuty, wysiłek, uwaga, źródło i timestampy). Dane rodzica/PIN, profile dzieci, klasy, ustawienia szkoły, nagrody i inne lokalne pola nie są częścią payloadu personal sync. Starszy pełny outbox jest automatycznie przepisywany do minimalnej postaci.
 
