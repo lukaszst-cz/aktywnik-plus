@@ -2,7 +2,56 @@
 
 (function(){
   const $=s=>document.querySelector(s);
+  const OP_STORAGE_KEY='aktywnik-school-operation-ids-v1';
+  const memoryOperations=new Map();
   let context=null,classes=[],years=[];
+
+  function readOperationIds(){
+    try{
+      const value=JSON.parse(sessionStorage.getItem(OP_STORAGE_KEY)||'{}');
+      return value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+    }catch{return {}}
+  }
+  function writeOperationIds(value){
+    try{sessionStorage.setItem(OP_STORAGE_KEY,JSON.stringify(value))}catch{}
+  }
+  function randomOperationId(){
+    if(window.crypto?.randomUUID)return window.crypto.randomUUID();
+    const bytes=new Uint8Array(16);
+    window.crypto?.getRandomValues?.(bytes);
+    bytes[6]=(bytes[6]&15)|64;
+    bytes[8]=(bytes[8]&63)|128;
+    const hex=[...bytes].map(v=>v.toString(16).padStart(2,'0')).join('');
+    return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
+  }
+  async function operationFingerprint(scope,payload){
+    const source=scope+'|'+JSON.stringify(payload);
+    if(!window.crypto?.subtle)return null;
+    const digest=await window.crypto.subtle.digest('SHA-256',new TextEncoder().encode(source));
+    return [...new Uint8Array(digest)].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+  async function getOperationId(scope,payload){
+    const fingerprint=await operationFingerprint(scope,payload);
+    const memoryKey=fingerprint?scope+':'+fingerprint:scope+'|'+JSON.stringify(payload);
+    if(memoryOperations.has(memoryKey))return memoryOperations.get(memoryKey);
+    if(fingerprint){
+      const stored=readOperationIds(),storedId=stored[memoryKey];
+      if(storedId){memoryOperations.set(memoryKey,storedId);return storedId}
+      const id=randomOperationId();
+      stored[memoryKey]=id;writeOperationIds(stored);memoryOperations.set(memoryKey,id);return id;
+    }
+    const id=randomOperationId();memoryOperations.set(memoryKey,id);return id;
+  }
+  async function clearOperationId(scope,payload){
+    const fingerprint=await operationFingerprint(scope,payload);
+    const memoryKey=fingerprint?scope+':'+fingerprint:scope+'|'+JSON.stringify(payload);
+    memoryOperations.delete(memoryKey);
+    if(fingerprint){
+      const stored=readOperationIds();
+      delete stored[memoryKey];
+      writeOperationIds(stored);
+    }
+  }
 
   function status(message,kind=''){
     const el=$('#schoolCloudStatus');if(!el)return;
@@ -111,8 +160,11 @@
     if(name.length>80){status('Nazwa klasy może mieć maksymalnie 80 znaków.','error');return}
     if(button?.disabled)return;
     if(button)button.disabled=true;
+    const payload={tenantId:tenant,schoolYearId,name};
+    const operationId=await getOperationId('create-class',payload);
     try{
-      await api('/api/v1/classes',{method:'POST',body:JSON.stringify({tenantId:tenant,schoolYearId,name})});
+      await api('/api/v1/classes',{method:'POST',body:JSON.stringify({...payload,operationId})});
+      await clearOperationId('create-class',payload);
       $('#schoolCloudClassName').value='';
       status('Klasa została utworzona.','ok');
       await loadClasses();
@@ -124,8 +176,11 @@
     const button=document.querySelector('[data-create-invite="'+CSS.escape(classId)+'"]');
     if(button?.disabled)return;
     if(button)button.disabled=true;
+    const payload={classId,validDays:14};
+    const operationId=await getOperationId('create-invite',payload);
     try{
-      const data=await api('/api/v1/class-invites',{method:'POST',body:JSON.stringify({classId,validDays:14})});
+      const data=await api('/api/v1/class-invites',{method:'POST',body:JSON.stringify({...payload,operationId})});
+      await clearOperationId('create-invite',payload);
       const out=document.querySelector('[data-invite-result="'+CSS.escape(classId)+'"]');
       if(out)out.textContent=data.token?'Token (14 dni): '+data.token:'Zaproszenie utworzone.';
     }finally{
@@ -138,8 +193,11 @@
     if(displayName.length>60){status('Nazwa profilu dziecka może mieć maksymalnie 60 znaków.','error');return}
     if(button?.disabled)return;
     if(button)button.disabled=true;
+    const payload={displayName};
+    const operationId=await getOperationId('create-child',payload);
     try{
-      await api('/api/v1/family-children',{method:'POST',body:JSON.stringify({displayName})});
+      await api('/api/v1/family-children',{method:'POST',body:JSON.stringify({...payload,operationId})});
+      await clearOperationId('create-child',payload);
       if(input)input.value='';
       status('Profil dziecka został utworzony w School Cloud.','ok');
       await loadContext();
