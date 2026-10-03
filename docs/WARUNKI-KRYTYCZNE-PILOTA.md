@@ -28,7 +28,7 @@ Publiczna wersja:
 - kod i dokumentacja w GitHub;
 - dane testowe są syntetyczne.
 
-Produkcja 0.5.0-beta.4 została zweryfikowana 2026-10-03: Vercel dla commita `9ad34abc6dad0fb9545504126f163d0ff6a4aa20` zakończył deployment sukcesem, `/api/health` raportuje beta.4, backend to `full-family-sync-pilot`, a production smoke z `require_cloud=true` potwierdza aktywne Auth, RLS, family sync, delete/tombstones i historię decyzji. Bieżący `main` różni się od wdrożonego runtime wyłącznie workflow CI.
+Produkcja 0.5.0-beta.4 została zweryfikowana 2026-10-03: Vercel dla commita `9ad34abc6dad0fb9545504126f163d0ff6a4aa20` zakończył deployment sukcesem, `/api/health` raportuje beta.4, backend to `full-family-sync-pilot`, a production smoke z `require_cloud=true` potwierdza aktywne Auth, RLS, family sync, delete/tombstones i historię decyzji. Bieżący `main` różni się od wdrożonego runtime wyłącznie zmianami CI i dokumentacji.
 
 ## 2. Local-first + opcjonalna synchronizacja — ✅ dla pilota rodzinnego
 
@@ -155,7 +155,7 @@ Pozostaje:
 | Warunek | Stan |
 | --- | --- |
 | backend API + personal sync | ✅ |
-| deployment production zgodny z bieżącym runtime | ✅ 0.5.0-beta.4; Vercel deployment SUCCESS + production smoke PASS; bieżący `main` ma dodatkowo tylko zmianę workflow CI |
+| deployment production zgodny z bieżącym runtime | ✅ 0.5.0-beta.4; Vercel deployment SUCCESS + production smoke PASS; bieżący `main` ma dodatkowo wyłącznie zmiany CI/dokumentacji |
 | uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
 | role/uprawnienia w DB | ✅ RLS + migracja 018 live; `profile_type` nie jest samodzielnie edytowalne przez użytkownika |
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
