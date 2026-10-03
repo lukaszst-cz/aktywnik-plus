@@ -17,8 +17,12 @@ module.exports = async function handler(req,res){
   if(!token)return;
 
   const classId=String(req.body?.classId||'');
-  const validDays=Math.max(1,Math.min(30,Math.round(Number(req.body?.validDays||14))));
+  const rawValidDays=req.body?.validDays;
+  const validDays=rawValidDays==null||rawValidDays===''?14:Number(rawValidDays);
   if(!UUID_RE.test(classId))return res.status(400).json({ok:false,error:'invalid_class_id'});
+  if(!Number.isInteger(validDays)||validDays<1||validDays>30){
+    return res.status(400).json({ok:false,error:'invalid_invite_validity'});
+  }
 
   try{
     const response=await supabaseUserFetch(token,'/rest/v1/rpc/create_class_invite',{
