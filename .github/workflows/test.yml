@@ -338,6 +338,67 @@ jobs:
           },tooNewRes);
           if(tooNewRes.out.statusCode!==409||tooNewRes.out.body?.error!=='sync_protocol_too_new') throw new Error('newer sync protocol was not rejected');
 
+          const invalidDateRes=mock();
+          await syncEnabled({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{
+              protocolVersion:1,
+              state:{
+                profileMode:'self',
+                entries:[{
+                  id:'77777777-7777-4777-8777-777777777777',
+                  date:'2026-02-31',
+                  activity:'Spacer',
+                  minutes:20,
+                  effort:2,
+                  source:'manual'
+                }]
+              },
+              deletes:[]
+            }
+          },invalidDateRes);
+          if(invalidDateRes.out.statusCode!==400||invalidDateRes.out.body?.error!=='invalid_sync_entry') throw new Error('impossible calendar date was not rejected');
+
+          const futureEntryRes=mock();
+          await syncEnabled({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{
+              protocolVersion:1,
+              updatedAt:'2099-01-01T00:00:00.000Z',
+              state:{
+                profileMode:'self',
+                entries:[{
+                  id:'88888888-8888-4888-8888-888888888888',
+                  date:'2026-10-03',
+                  activity:'Rower',
+                  minutes:25,
+                  effort:3,
+                  source:'manual',
+                  updatedAt:'2099-01-01T00:00:00.000Z'
+                }]
+              },
+              deletes:[]
+            }
+          },futureEntryRes);
+          if(futureEntryRes.out.statusCode!==400||futureEntryRes.out.body?.error!=='invalid_sync_entry') throw new Error('future entry timestamp was not rejected');
+
+          const futureDeleteRes=mock();
+          await syncEnabled({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{
+              protocolVersion:1,
+              state:{profileMode:'self',entries:[]},
+              deletes:[{
+                id:'99999999-9999-4999-8999-999999999999',
+                deletedAt:'2099-01-01T00:00:00.000Z'
+              }]
+            }
+          },futureDeleteRes);
+          if(futureDeleteRes.out.statusCode!==400||futureDeleteRes.out.body?.error!=='invalid_delete_tombstone') throw new Error('future delete timestamp was not rejected');
+
           const meRes=mock();
           await me({method:'GET',headers:{authorization:'Bearer test-token'}},meRes);
           if(meRes.out.statusCode!==200||meRes.out.body?.profile?.display_name!=='Tester') throw new Error('authenticated profile endpoint failed');
