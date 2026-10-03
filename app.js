@@ -18,12 +18,12 @@ const PIN_ITERATIONS=120000;
 const defaultState={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
 let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let parentReportMonth=today().slice(0,7); let lastPersistOk=true;
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
-function persist(){
+function persist({skipSync=false}={}){
   state.meta={...(state.meta||{}),lastWriteAt:nowIso()};
   try{
     localStorage.setItem(KEY,JSON.stringify(state));
     lastPersistOk=true;
-    window.AktywnikSync?.markDirty?.(state);
+    if(!skipSync)window.AktywnikSync?.markDirty?.(state);
   }catch(err){
     lastPersistOk=false;
     console.error('Aktywnik+: local save failed',err);
@@ -41,6 +41,63 @@ function uuid(){return crypto.randomUUID()}
 function nowIso(){return new Date().toISOString()}
 function getChild(id){return state.children.find(c=>c.id===id)||null}
 function activeChild(){return getChild(state.activeChildId)||state.children[0]||null}
+function personalEntrySyncTime(entry){
+  const raw=entry?.updatedAt||entry?.stoppedAt||entry?.createdAt||'';
+  const time=new Date(raw).getTime();
+  return Number.isFinite(time)?time:0;
+}
+function normalizePersonalCloudEntry(row,childId){
+  if(!row||typeof row!=='object'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(row.client_entry_id||'')))return null;
+  if(!validDate(row.activity_date))return null;
+  const activity=cleanText(row.activity_type,80),minutes=clampInt(row.minutes,1,600,0);
+  if(!activity||!minutes)return null;
+  const remoteStamp=safeIso(row.client_updated_at)||safeIso(row.updated_at)||nowIso();
+  return {
+    id:String(row.client_entry_id),
+    childId,
+    date:row.activity_date,
+    activity,
+    minutes,
+    effort:clampInt(row.effort,1,5,2),
+    note:cleanText(row.note,120),
+    status:'approved',
+    source:row.source==='timer'?'timer':'manual',
+    createdAt:remoteStamp,
+    updatedAt:remoteStamp,
+    rejectionReason:''
+  };
+}
+function mergePersonalCloudEntries(rows){
+  if(!isSelfMode())return {added:0,updated:0,localNewer:0,ignored:0};
+  const child=activeChild();if(!child||!Array.isArray(rows))return {added:0,updated:0,localNewer:0,ignored:0};
+  const byId=new Map(state.entries.filter(e=>e.childId===child.id).map(e=>[e.id,e]));
+  let added=0,updated=0,localNewer=0,ignored=0;
+  for(const row of rows.slice(0,MAX_ENTRIES)){
+    const incoming=normalizePersonalCloudEntry(row,child.id);if(!incoming){ignored++;continue}
+    const existing=byId.get(incoming.id);
+    if(!existing){
+      state.entries.unshift(incoming);byId.set(incoming.id,incoming);added++;continue;
+    }
+    const remoteTime=personalEntrySyncTime(incoming),localTime=personalEntrySyncTime(existing);
+    if(remoteTime>localTime){
+      Object.assign(existing,{
+        date:incoming.date,activity:incoming.activity,minutes:incoming.minutes,effort:incoming.effort,
+        note:incoming.note,status:'approved',source:incoming.source,updatedAt:incoming.updatedAt,rejectionReason:''
+      });
+      updated++;
+    }else if(localTime>remoteTime){
+      localNewer++;
+    }
+  }
+  if(added||updated){
+    state.entries.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||personalEntrySyncTime(b)-personalEntrySyncTime(a));
+    state.entries=state.entries.slice(0,MAX_ENTRIES);
+    persist({skipSync:true});
+  }
+  if(localNewer)window.AktywnikSync?.markDirty?.(state);
+  return {added,updated,localNewer,ignored};
+}
+window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries};
 function parentChild(){return getChild(parentSelectedChildId)||activeChild()}
 function childEntries(childId){return state.entries.filter(e=>e.childId===childId)}
 function childRewards(childId){return state.rewards.filter(r=>r.childId===childId)}
@@ -142,7 +199,6 @@ function restoreEntryDraft(){
   $('#selectedActivityTitle').textContent=selected;$('#activityDate').value=allowedActivityDate(draft.date)?draft.date:today();$('#activityDuration').value=String(clampInt(draft.minutes,1,600,30));$('#activityEffort').value=String(clampInt(draft.effort,1,5,2));if($('#customActivityName'))$('#customActivityName').value=cleanText(draft.customName,80);$('#activityNote').value=cleanText(draft.note,120);
   $('#saveEntryBtn').textContent='Zapisz ręcznie';showDurationSuggestion(selected);$('#startTimerBtn').classList.remove('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').dataset.restoredDraft='true';setQuickDuration($('#activityDuration').value);return true;
 }
-
 function pickActivity(name){
   const child=activeChild();if(!child)return;selected=name;editingEntryId=null;
   const previous=latestMatchingActivityEntry(child.id,name),suggestedMinutes=previous?clampInt(previous.minutes,1,600,30):30,suggestedEffort=previous?clampInt(previous.effort,1,5,2):2;
