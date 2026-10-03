@@ -233,6 +233,8 @@ jobs:
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.applicationRestoreDrillVerified!==true) throw new Error('application restore capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.profileRoleEscalationBlocked!==true) throw new Error('profile role hardening capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudLinkReady!==true) throw new Error('family cloud link readiness missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncBeta!==false) throw new Error('family sync beta must fail closed when cloud is off');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySync!==false) throw new Error('full family sync must remain false until deletes/history ship');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolAuditCoverageVerified!==true) throw new Error('school audit capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionMechanismReady!==true) throw new Error('school retention mechanism capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionPolicyConfigured!==false) throw new Error('school retention policy must remain externally configurable');
