@@ -43,6 +43,13 @@ function duplicateIds(items){
   return dupes;
 }
 
+function normalizeDelete(item){
+  if(!item||typeof item!=='object'||!UUID_RE.test(String(item.id||'')))return null;
+  const stamp=safeClientTime(item.deletedAt);
+  if(!stamp)return null;
+  return {id:String(item.id),deletedAt:stamp.toISOString()};
+}
+
 function normalizeEntry(entry,childId,fallbackUpdatedAt){
   if(!entry||typeof entry!=='object'||!UUID_RE.test(String(entry.id||'')))return null;
   if(!validDate(entry.date))return null;
@@ -88,7 +95,7 @@ async function requireGuardian(token,childId){
 }
 
 async function pullFamily(token,childId){
-  const params=new URLSearchParams({
+  const activityParams=new URLSearchParams({
     select:'client_entry_id,activity_date,activity_type,minutes,effort,note,status,source,rejection_reason,approved_at,client_updated_at,updated_at',
     child_id:'eq.'+childId,
     tenant_id:'is.null',
@@ -96,62 +103,154 @@ async function pullFamily(token,childId){
     order:'client_updated_at.asc',
     limit:String(MAX_SYNC_ENTRIES)
   });
-  const response=await supabaseUserFetch(token,'/rest/v1/activities?'+params.toString());
-  const data=await jsonOrNull(response);
-  if(!response.ok)throw Object.assign(new Error(data?.message||'Family cloud read failed.'),{status:502,code:'family_cloud_read_failed'});
-  return Array.isArray(data)?data:[];
+  const deleteParams=new URLSearchParams({
+    select:'client_entry_id,deleted_at',
+    child_id:'eq.'+childId,
+    order:'deleted_at.asc',
+    limit:String(MAX_SYNC_ENTRIES)
+  });
+  const [activityResponse,deleteResponse]=await Promise.all([
+    supabaseUserFetch(token,'/rest/v1/activities?'+activityParams.toString()),
+    supabaseUserFetch(token,'/rest/v1/family_activity_tombstones?'+deleteParams.toString())
+  ]);
+  const [activities,deletes]=await Promise.all([jsonOrNull(activityResponse),jsonOrNull(deleteResponse)]);
+  if(!activityResponse.ok||!deleteResponse.ok){
+    throw Object.assign(new Error(activities?.message||deletes?.message||'Family cloud read failed.'),{status:502,code:'family_cloud_read_failed'});
+  }
+  return {
+    entries:Array.isArray(activities)?activities:[],
+    deletes:Array.isArray(deletes)?deletes:[]
+  };
 }
 
 async function pushFamily(token,childId,body){
   const entries=Array.isArray(body?.entries)?body.entries:[];
-  if(entries.length>MAX_SYNC_ENTRIES){
-    throw Object.assign(new Error('Too many family entries in one sync batch.'),{status:413,code:'family_sync_batch_too_large'});
+  const deletes=Array.isArray(body?.deletes)?body.deletes:[];
+  if(entries.length>MAX_SYNC_ENTRIES||deletes.length>MAX_SYNC_ENTRIES){
+    throw Object.assign(new Error('Too many family changes in one sync batch.'),{status:413,code:'family_sync_batch_too_large'});
   }
   if(duplicateIds(entries).size){
     throw Object.assign(new Error('Duplicate family activity ID in sync batch.'),{status:400,code:'duplicate_family_sync_entry'});
   }
+  if(duplicateIds(deletes).size){
+    throw Object.assign(new Error('Duplicate family delete ID in sync batch.'),{status:400,code:'duplicate_family_delete'});
+  }
 
   const rows=entries.map(entry=>normalizeEntry(entry,childId,body?.updatedAt)).filter(Boolean);
+  const tombstones=deletes.map(normalizeDelete).filter(Boolean);
   if(rows.length!==entries.length){
     throw Object.assign(new Error('One or more family entries are invalid for cloud sync.'),{status:400,code:'invalid_family_sync_entry'});
   }
-  if(!rows.length)return {synced:0,suppressed:0};
+  if(tombstones.length!==deletes.length){
+    throw Object.assign(new Error('One or more family deletes are invalid for cloud sync.'),{status:400,code:'invalid_family_delete'});
+  }
 
-  const ids=rows.map(row=>row.client_entry_id);
-  const lookup=new URLSearchParams({
-    select:'client_entry_id,client_updated_at',
-    child_id:'eq.'+childId,
-    tenant_id:'is.null',
-    client_entry_id:'in.('+ids.join(',')+')'
-  });
-  const currentResponse=await supabaseUserFetch(token,'/rest/v1/activities?'+lookup.toString());
-  const currentData=await jsonOrNull(currentResponse);
-  if(!currentResponse.ok)throw Object.assign(new Error(currentData?.message||'Family conflict check failed.'),{status:502,code:'family_conflict_check_failed'});
+  const entryIds=new Set(rows.map(row=>row.client_entry_id));
+  if(tombstones.some(item=>entryIds.has(item.id))){
+    throw Object.assign(new Error('The same family activity cannot be updated and deleted in one batch.'),{status:400,code:'family_entry_delete_conflict'});
+  }
 
-  const currentTimes=new Map((Array.isArray(currentData)?currentData:[]).map(row=>[
-    String(row.client_entry_id),
-    new Date(row.client_updated_at).getTime()
+  const allIds=[...new Set([...rows.map(row=>row.client_entry_id),...tombstones.map(item=>item.id)])];
+  let currentActivities=[],currentDeletes=[];
+  if(allIds.length){
+    const activityLookup=new URLSearchParams({
+      select:'client_entry_id,client_updated_at',
+      child_id:'eq.'+childId,
+      tenant_id:'is.null',
+      client_entry_id:'in.('+allIds.join(',')+')'
+    });
+    const deleteLookup=new URLSearchParams({
+      select:'client_entry_id,deleted_at',
+      child_id:'eq.'+childId,
+      client_entry_id:'in.('+allIds.join(',')+')'
+    });
+    const [activityResponse,deleteResponse]=await Promise.all([
+      supabaseUserFetch(token,'/rest/v1/activities?'+activityLookup.toString()),
+      supabaseUserFetch(token,'/rest/v1/family_activity_tombstones?'+deleteLookup.toString())
+    ]);
+    [currentActivities,currentDeletes]=await Promise.all([jsonOrNull(activityResponse),jsonOrNull(deleteResponse)]);
+    if(!activityResponse.ok||!deleteResponse.ok){
+      throw Object.assign(new Error(currentActivities?.message||currentDeletes?.message||'Family conflict check failed.'),{status:502,code:'family_conflict_check_failed'});
+    }
+  }
+
+  const activityTimes=new Map((Array.isArray(currentActivities)?currentActivities:[]).map(row=>[
+    String(row.client_entry_id),new Date(row.client_updated_at).getTime()
   ]));
-  const allowed=rows.filter(row=>{
-    const current=currentTimes.get(row.client_entry_id);
-    return !Number.isFinite(current)||new Date(row.client_updated_at).getTime()>current;
+  const deleteTimes=new Map((Array.isArray(currentDeletes)?currentDeletes:[]).map(row=>[
+    String(row.client_entry_id),new Date(row.deleted_at).getTime()
+  ]));
+
+  const allowedEntries=rows.filter(row=>{
+    const incoming=new Date(row.client_updated_at).getTime();
+    const current=activityTimes.get(row.client_entry_id);
+    const deleted=deleteTimes.get(row.client_entry_id);
+    return (!Number.isFinite(current)||incoming>current)&&(!Number.isFinite(deleted)||incoming>deleted);
   });
 
-  if(allowed.length){
+  if(allowedEntries.length){
     const response=await supabaseUserFetch(
       token,
       '/rest/v1/activities?on_conflict=child_id,client_entry_id',
       {
         method:'POST',
         headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
-        body:JSON.stringify(allowed)
+        body:JSON.stringify(allowedEntries)
       }
     );
     const data=await jsonOrNull(response);
     if(!response.ok)throw Object.assign(new Error(data?.message||'Family cloud write failed.'),{status:502,code:'family_cloud_write_failed'});
   }
 
-  return {synced:allowed.length,suppressed:rows.length-allowed.length};
+  const allowedDeletes=tombstones.filter(item=>{
+    const incoming=new Date(item.deletedAt).getTime();
+    const current=deleteTimes.get(item.id);
+    return !Number.isFinite(current)||incoming>current;
+  });
+  if(allowedDeletes.length){
+    const response=await supabaseUserFetch(
+      token,
+      '/rest/v1/family_activity_tombstones?on_conflict=child_id,client_entry_id',
+      {
+        method:'POST',
+        headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify(allowedDeletes.map(item=>({
+          child_id:childId,
+          client_entry_id:item.id,
+          deleted_at:item.deletedAt
+        })))
+      }
+    );
+    const data=await jsonOrNull(response);
+    if(!response.ok)throw Object.assign(new Error(data?.message||'Family delete tombstone write failed.'),{status:502,code:'family_delete_write_failed'});
+  }
+
+  const deletableIds=allowedDeletes
+    .filter(item=>{
+      const activityTime=activityTimes.get(item.id);
+      return Number.isFinite(activityTime)&&new Date(item.deletedAt).getTime()>=activityTime;
+    })
+    .map(item=>item.id);
+  if(deletableIds.length){
+    const params=new URLSearchParams({
+      child_id:'eq.'+childId,
+      tenant_id:'is.null',
+      client_entry_id:'in.('+deletableIds.join(',')+')'
+    });
+    const response=await supabaseUserFetch(token,'/rest/v1/activities?'+params.toString(),{
+      method:'DELETE',
+      headers:{Prefer:'return=minimal'}
+    });
+    const data=await jsonOrNull(response);
+    if(!response.ok)throw Object.assign(new Error(data?.message||'Family activity delete failed.'),{status:502,code:'family_activity_delete_failed'});
+  }
+
+  return {
+    synced:allowedEntries.length,
+    suppressed:rows.length-allowedEntries.length,
+    deleted:deletableIds.length,
+    deleteTombstones:allowedDeletes.length
+  };
 }
 
 module.exports=async function handler(req,res){
@@ -177,14 +276,15 @@ module.exports=async function handler(req,res){
     await requireGuardian(token,childId);
 
     if(req.method==='GET'){
-      const entries=await pullFamily(token,childId);
+      const pulled=await pullFamily(token,childId);
       return res.status(200).json({
         ok:true,
         mode:'family',
         protocolVersion,
         childId,
-        entries,
-        deletesSupported:false
+        entries:pulled.entries,
+        deletes:pulled.deletes,
+        deletesSupported:true
       });
     }
 
@@ -196,7 +296,9 @@ module.exports=async function handler(req,res){
       childId,
       synced:result.synced,
       suppressed:result.suppressed,
-      deletesSupported:false
+      deleted:result.deleted,
+      deleteTombstones:result.deleteTombstones,
+      deletesSupported:true
     });
   }catch(err){
     const status=Number(err?.status)||500;
