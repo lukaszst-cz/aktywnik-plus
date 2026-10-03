@@ -1,58 +1,80 @@
 # Checklista pilota Aktywnik+
 
-## Gotowe do testu rodzinnego
+Stan roboczy: **2026-10-03 — 0.5.0-beta.3**.
 
-- [x] publiczna strona projektu przygotowana
-- [x] PWA z manifestem i ikonami 192/512
-- [x] przycisk instalacji PWA
-- [x] tryb bez konta
-- [x] wpisy aktywności dziecka
-- [x] zatwierdzanie przez rodzica
+## Pilot rodzinny — gotowe technicznie
+
+- [x] publiczna PWA + HTTPS
+- [x] tryb local-first bez konta
+- [x] wiele profili dzieci u jednego rodzica
+- [x] strefa rodzica chroniona PIN-em i auto-lock
+- [x] dziecko nie może samodzielnie przełączyć aktywnego profilu ani wejść do strefy rodzica
+- [x] wpis ręczny + Start/Stop
+- [x] zatwierdzenie / poprawa / odrzucenie przez rodzica
+- [x] historia decyzji
 - [x] raporty miesięczne / kwartalne / półroczne / roczne
-- [x] druk / zapis raportu jako PDF
-- [x] nazwa dziecka / identyfikator w raporcie
-- [x] eksport kopii danych do JSON
-- [x] import kopii danych
-- [x] możliwość poproszenia przeglądarki o trwałą pamięć
-- [x] wersja papierowa
-- [x] informacja, że pilot jest bezpłatnym projektem rodzicielskim
-- [x] instrukcja instalacji PWA
-- [x] instrukcja dla rodzica i nauczyciela
-- [x] warunki krytyczne pilota
-- [x] funkcje klas wyraźnie oznaczone jako demo lokalne
+- [x] JSON backup/restore, CSV i druk/PDF
+- [x] wersja papierowa + arkusz 70 wpisów + import OCR/CSV/JSON
+- [x] Magic Link dla dorosłego
+- [x] personal sync push/pull
+- [x] personal delete tombstones
+- [x] jawne powiązanie lokalnego dziecka z `cloudChildId`
+- [x] family activity push/pull
+- [x] family status sync
+- [x] family delete/tombstones
+- [x] family guardian decision history
+- [x] obsługa retry/idempotency
+- [x] RLS i izolacja danych
+- [x] blokada self-escalation `child → adult`
+- [x] Security Advisor: 0 aktywnych lintów
+- [x] migracje Supabase 001–025 live
+- [x] GitHub CI po family sync: PASS
 
-## Do wykonania przed udostępnieniem publicznego linku klasie
+## BLOCKER przed szerszym publicznym pilotem
 
-- [x] stały deployment Vercel: https://aktywnik-plus.vercel.app
-- [x] potwierdzony poprawny deployment produkcyjny
-- [ ] otworzyć publiczny URL na Androidzie
-- [ ] zainstalować PWA i sprawdzić ponowne uruchomienie
-- [x] sprawdzony zapis aktywności i Start/Stop po ponownym otwarciu
-- [x] eksport/import kopii objęty testem
-- [ ] wydrukować / zapisać przykładowy raport PDF
-- [x] formularz papierowy + arkusz 70 wpisów sprawdzony
-- [ ] przeprowadzić 3–7 dni testu na jednej rodzinie przed szerszym pilotem
+- [ ] **Vercel production musi zostać zaktualizowany do bieżącego `main` / 0.5.0-beta.3**
+- [ ] `/api/health` na produkcji ma raportować `0.5.0-beta.3`
+- [ ] `/api/capabilities` ma potwierdzić poprawną konfigurację produkcyjnej chmury i RLS
+- [ ] smoke produkcyjny: rodzic + co najmniej 2 profile dzieci
+- [ ] smoke cross-device: urządzenie A → sync → urządzenie B
+- [ ] smoke offline → reconnect → sync
+- [ ] smoke delete → tombstone → drugie urządzenie
+- [ ] smoke decyzji rodzica → drugie urządzenie
+- [ ] instalacja PWA na Androidzie i ponowne uruchomienie
+- [ ] przykładowy raport zapisany/drukowany jako PDF
+- [ ] 3–7 dni testu jednej rodziny przed szerszym pilotem
 
-## Nie uruchamiać jeszcze w pilocie jako funkcji produkcyjnych
+### Aktualnie wykryty blocker Vercel
 
-- [ ] prawdziwe konta użytkowników
-- [ ] wspólne klasy między urządzeniami
-- [ ] automatyczna synchronizacja rodzic–nauczyciel
-- [ ] centralna baza danych dzieci
-- [ ] prawdziwa lista klasy w publicznym demo
-- [ ] automatyczne wysyłanie ocen/plusów do szkoły
-- [ ] dane zdrowotne, GPS, masa ciała, kalorie
+Dla commita `06768123` GitHub raportuje status Vercel **failure: build-rate-limit**. Publiczny URL nadal odpowiada HTTP 200, ale 2026-10-03 podczas weryfikacji zwracał starszy backend (`/api/health`: `0.5.0-beta.1`, chmura wyłączona). Nie należy traktować tego deploymentu jako potwierdzenia bieżącego `main`.
 
-## Etap Aktywnik+ School
+## School Cloud — technicznie gotowe do kontrolowanego E2E
 
-Po pozytywnym pilocie:
-1. backend;
-2. uwierzytelnianie;
-3. role i uprawnienia;
-4. tenant szkoły;
-5. synchronizacja klas;
-6. audyt;
-7. backupy serwerowe;
-8. retencja i usuwanie;
-9. uzgodnienie wdrożenia z dyrektorem/IOD;
-10. testy bezpieczeństwa i DPIA/screening.
+- [x] tenant/role model
+- [x] tworzenie klasy
+- [x] czasowe zaproszenia
+- [x] zgłoszenie dziecka przez opiekuna
+- [x] akceptacja/odrzucenie przez staff
+- [x] audit trail
+- [x] retry-safe create operations
+- [x] School Cloud UI
+- [x] testy syntetyczne izolacji tenantów
+
+## Przed produkcyjnym Aktywnik+ School
+
+- [ ] E2E przez publiczne API z kontrolowanymi kontami testowymi
+- [ ] platformowy backup/restore Supabase — rzeczywista próba
+- [ ] niezależny security review / pentest
+- [ ] decyzja szkoły/IOD o retencji
+- [ ] decyzja administratora o DPIA
+- [ ] formalny model administrator / podmiot przetwarzający
+- [ ] formalna zgoda na wdrożenie
+
+## Funkcje świadomie poza zakresem
+
+- dane zdrowotne
+- GPS
+- masa ciała / kalorie
+- ranking dzieci
+- publiczna lista klasy
+- automatyczne ocenianie dziecka
