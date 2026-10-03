@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — family activity sync beta
+
+- osobny endpoint `GET/POST /api/v1/family-sync` oparty o publishable key + JWT + RLS;
+- synchronizacja działa wyłącznie dla jawnie powiązanego `cloudChildId`;
+- migracja 022 dodaje stabilne `client_entry_id` i `client_updated_at` dla rodzinnych aktywności;
+- family write pozostaje poza tenantem School (`tenant_id IS NULL`) i RLS blokuje wstrzyknięcie rodzinnego wpisu do szkoły;
+- klient zapisuje minimalny outbox per powiązane dziecko, bez PIN-u, klas, ustawień szkoły i innych danych local-only;
+- push/pull obejmuje treść wpisu i status `pending/approved/rejected`;
+- konflikt rozstrzyga nowszy timestamp; decyzje rodzica dostają jawny `updatedAt`;
+- restore i pełny local wipe czyszczą również rodzinny outbox;
+- usuwanie rodzinnych wpisów oraz synchronizacja pełnej historii decyzji pozostają jeszcze wyłączone;
+- capability API utrzymuje `familySync:false`, a beta raportowana jest osobno jako `familySyncBeta`.
+
 ## Unreleased — explicit family cloud profile links
 
 - lokalny profil dziecka może być jawnie powiązany z konkretnym profilem School Cloud przez `cloudChildId`;
