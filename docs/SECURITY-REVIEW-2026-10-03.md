@@ -10,7 +10,7 @@ Techniczny przegląd bieżącego środowiska Aktywnik+ przed rozszerzaniem funkc
 
 Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - projekt aktywny w regionie EU (`eu-central-1`);
-- migracje `001`–`020` są zastosowane;
+- migracje `001`–`022` są zastosowane;
 - 23/23 tabel w schemacie `public` ma włączone RLS;
 - brak tabel publicznych bez polityki RLS;
 - brak grantów tabel dla roli `anon`;
@@ -24,6 +24,7 @@ Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - class lifecycle test create/invite/request/accept: PASS;
 - class lifecycle po migracji 020 (`SECURITY INVOKER` wrappers): PASS;
 - family onboarding po migracji 020: PASS;
+- family activity sync / migracja 022: pre-deploy RLS regression PASS; po wdrożeniu potwierdzono kolumny, indeksy, `tenant_id IS NULL` w family policies oraz pełny security preflight PASS;
 - Security Advisor po migracji 020: 0 aktywnych lintów.
 
 Repo zawiera `backend/tests/security_preflight.sql`, który ma być uruchamiany po zmianach schematu/RLS i kontroluje również powierzchnię `SECURITY DEFINER`.
