@@ -1,15 +1,27 @@
 # Changelog
 
-## Unreleased — Draft hardening
+## 0.5.0-beta.2 — Pull & Merge
 
-### Niezawodność wpisów
-- szkice niedokończonych wpisów są rozdzielone między profile dzieci;
-- zmiana profilu nie przenosi formularza ani szkicu do innego dziecka;
-- edycja wpisu oczekującego nie usuwa wcześniej rozpoczętego szkicu;
-- Start/Stop i szybki start ostatniej aktywności czyszczą tylko szkic aktywnego profilu;
-- import kopii, usunięcie profilu i wyczyszczenie danych usuwają nieaktualne szkice;
-- zachowana jest migracja wcześniejszego pojedynczego klucza szkicu.
+### Synchronizacja osobista
+- dodano pobieranie wpisów przez `GET /api/v1/sync`;
+- po zalogowaniu działa cykl **push → pull**;
+- brakujące wpisy z innego urządzenia są dodawane lokalnie;
+- dla tego samego wpisu nowszy timestamp wygrywa;
+- nowsza wersja lokalna pozostaje lokalnie i wraca do kolejki push;
+- import z chmury nie wywołuje pętli synchronizacji;
+- status ostatniej synchronizacji jest zapamiętywany lokalnie;
+- statusy sync są dostępne po polsku i angielsku.
 
+### Niezawodność szkiców
+- szkice niedokończonych wpisów są rozdzielone między profile;
+- zmiana aktywnego profilu nie przenosi szkicu do innego dziecka;
+- zachowana jest migracja starszego pojedynczego szkicu;
+- import kopii, usuwanie profilu i czyszczenie danych sprzątają nieaktualne szkice.
+
+### Bezpieczniki
+- usuwanie wpisów nie jest jeszcze synchronizowane między urządzeniami;
+- tryb rodzinny nie jest jeszcze objęty cloud sync;
+- chmura pozostaje fail-closed do zakończenia testów wielu kont.
 
 ## 0.5.0-beta.1 — Sync Foundation
 
