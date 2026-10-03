@@ -46,7 +46,7 @@ Zrobione:
 Pozostaje:
 - family activity push/pull + statusy `pending/approved/rejected`: ✅ beta;
 - rodzinne delete/tombstones: kod + migracja 024 przygotowane i przetestowane w rollbacku, ale migracja nie jest jeszcze live;
-- pełna historia decyzji: nadal otwarta;
+- historia decyzji rodzica: kod + migracja 025 przygotowane i przetestowane w rollbacku, ale migracja nie jest jeszcze live;
 - synchronizacja nie zastępuje jeszcze zweryfikowanego backup/restore backendu.
 
 ## 3. Minimum danych o dziecku — ✅
@@ -146,7 +146,7 @@ Gotowe w UI:
 - wysłanie zgłoszenia oraz akceptacja/odrzucenie przez staff.
 
 Pozostaje:
-- family activity sync beta działa; delete/tombstones są przygotowane w 024, ale wymagają wdrożenia live; do pełnego family sync pozostaje też historia decyzji;
+- family activity sync beta działa; delete/tombstones są przygotowane w 024, a historia decyzji rodzica w 025; obie migracje wymagają jeszcze wdrożenia live;
 - E2E przez publiczne API z realnymi kontami testowymi przed School production.
 
 ## 10. Warunki produkcyjne — stan bieżący
@@ -202,6 +202,7 @@ Sprawdzenie 2026-10-03:
 - migracja 022: `client_entry_id`/`client_updated_at` dla family activities + RLS `tenant_id IS NULL`; pre-deploy rollback test PASS, live schema/policies/preflight PASS.
 - migracja 023: prywatny ledger idempotency + `SECURITY INVOKER` wrappers dla tworzenia dziecka/klasy/zaproszenia; rollback test + security preflight PASS, trwałe wdrożenie jeszcze nie wykonane.
 - migracja 024: `family_activity_tombstones` + guardian-only DELETE dla tenant-neutral family rows; 023+024 + delete regression + security preflight PASS w rollbacku, trwałe wdrożenie jeszcze nie wykonane.
+- migracja 025: `client_event_id`/`client_entry_id` dla `activity_approval_events`, `ON DELETE SET NULL`, decyzja `deleted`; 023+024+025 + decision history regression + security preflight PASS w rollbacku, trwałe wdrożenie jeszcze nie wykonane.
 
 ## 12. Warunek publikacji pilota — ✅
 
@@ -226,8 +227,9 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 
 1. family onboarding — ✅ rodzic może utworzyć profil dziecka w School Cloud bez e-maila/hasła dziecka;
 2. migracja 018 / profile role hardening — ✅ live + security preflight PASS;
-3. synchronizacja trybu rodzinnego — jawne powiązanie ✅ + activity push/pull/status beta ✅; delete/tombstones przygotowane w 024, live wdrożenie otwarte; historia decyzji nadal otwarta;
+3. synchronizacja trybu rodzinnego — jawne powiązanie ✅ + activity push/pull/status beta ✅; delete/tombstones przygotowane w 024; historia decyzji rodzica przygotowana w 025; rollout live obu elementów nadal otwarty;
 4. synchronizacja usunięć w trybie rodzinnym — kod/RLS/tombstones/testy gotowe w 024; pozostało trwałe wdrożenie migracji i finalny live smoke;
+5. synchronizacja historii decyzji rodzica — kod/API/merge/testy gotowe w 025; pozostało trwałe wdrożenie migracji, live smoke i włączenie capability;
 5. backend restore drill — ✅ dane aplikacji; platformowy backup/restore Supabase nadal otwarty;
 6. School audit + mechanizm retencji — ✅ technicznie; okres/częstotliwość retencji nadal do zatwierdzenia przez szkołę/IOD;
 7. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
