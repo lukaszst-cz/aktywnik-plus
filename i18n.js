@@ -120,7 +120,7 @@
       "account.syncTitle": "☁️ Synchronizacja etapami",
       "account.syncText": "Tryb osobisty ma już bezpieczny fundament synchronizacji RLS. Chmura pozostaje betą do zakończenia testów wielu kont i konfliktów offline.",
       "account.familyTitle": "👨‍👩‍👧 Rodzina",
-      "account.familyText": "Rodzic będzie mógł powiązać kilka profili dzieci bez udostępniania im swojego konta.",
+      "account.familyText": "Opiekun może już utworzyć profil dziecka w School Cloud bez e-maila dziecka. Pełny sync rodzinnych aktywności między urządzeniami jest kolejnym etapem.",
       "account.keyNote": "Aktywnik+ używa publicznego klucza Supabase po stronie przeglądarki. Klucze administracyjne i serwerowe nie są wysyłane do użytkownika.",
       "account.status.configMissing": "Logowanie online nie jest jeszcze skonfigurowane.",
       "account.status.loginConfirmed": "Logowanie potwierdzone.",
