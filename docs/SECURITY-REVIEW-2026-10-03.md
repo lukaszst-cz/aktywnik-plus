@@ -26,6 +26,7 @@ Ten wynik nie zastępuje niezależnego pentestu ani formalnego audytu wdrożenia
 ## Nadal otwarte
 
 - synchronizacja usunięć / tombstones;
+- test izolacji wielu kont/tenantów: PASS na danych syntetycznych;
 - pełny workflow szkoła–klasa–rodzic;
 - zweryfikowany restore z kopii backendu;
 - pełna obsługa zdarzeń audytowych po stronie aplikacji;
