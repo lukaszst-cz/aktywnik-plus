@@ -82,6 +82,23 @@
       rejectedAt:entry.rejectedAt||null
     };
   }
+  const FAMILY_DECISIONS=new Set(['approved','rejected','corrected','deleted']);
+  function minimalDecision(event){
+    if(!event||event.actor!=='parent'||!FAMILY_DECISIONS.has(event.action))return null;
+    if(!validUuid(event.id)||!validUuid(event.entryId))return null;
+    const stamp=new Date(event.at||'');
+    if(Number.isNaN(stamp.getTime()))return null;
+    return {
+      id:String(event.id),
+      entryId:String(event.entryId),
+      action:event.action,
+      actor:'parent',
+      note:String(event.note||'').trim().slice(0,240),
+      before:event.before&&typeof event.before==='object'&&!Array.isArray(event.before)?event.before:null,
+      after:event.after&&typeof event.after==='object'&&!Array.isArray(event.after)?event.after:null,
+      at:stamp.toISOString()
+    };
+  }
   function minimalFamilySnapshot(state){
     if(!state||state.profileMode!=='family')return null;
     const links=linkedChildren(state);
@@ -90,13 +107,20 @@
     const groups=links.map(link=>({
       localChildId:link.localChildId,
       cloudChildId:link.cloudChildId,
-      entries:[]
+      entries:[],
+      decisions:[]
     }));
     const groupByCloud=new Map(groups.map(group=>[group.cloudChildId,group]));
     for(const entry of (Array.isArray(state.entries)?state.entries:[])){
       const link=byLocal.get(String(entry?.childId||''));
       if(!link)continue;
       groupByCloud.get(link.cloudChildId)?.entries.push(minimalEntry(entry,link.cloudChildId));
+    }
+    for(const event of (Array.isArray(state.approvalEvents)?state.approvalEvents:[])){
+      const link=byLocal.get(String(event?.childId||''));
+      if(!link)continue;
+      const decision=minimalDecision(event);
+      if(decision)groupByCloud.get(link.cloudChildId)?.decisions.push(decision);
     }
     return {
       schemaVersion:state.schemaVersion??null,
@@ -213,13 +237,14 @@
       groups.set(group.cloudChildId,{
         cloudChildId:group.cloudChildId,
         entries:Array.isArray(group.entries)?group.entries:[],
+        decisions:Array.isArray(group.decisions)?group.decisions:[],
         deletes:[]
       });
     }
     for(const item of pendingDeletes){
       if(!validUuid(item?.cloudChildId)||!validUuid(item?.id))continue;
       if(!groups.has(item.cloudChildId)){
-        groups.set(item.cloudChildId,{cloudChildId:item.cloudChildId,entries:[],deletes:[]});
+        groups.set(item.cloudChildId,{cloudChildId:item.cloudChildId,entries:[],decisions:[],deletes:[]});
       }
       groups.get(item.cloudChildId).deletes.push({id:item.id,deletedAt:item.deletedAt});
     }
@@ -239,7 +264,8 @@
             childId:group.cloudChildId,
             updatedAt:q.updatedAt,
             entries:Array.isArray(group.entries)?group.entries:[],
-            deletes:Array.isArray(group.deletes)?group.deletes:[]
+            deletes:Array.isArray(group.deletes)?group.deletes:[],
+            decisions:Array.isArray(group.decisions)?group.decisions:[]
           })
         });
         const data=await res.json().catch(()=>null);
@@ -247,6 +273,9 @@
         assertProtocol(data);
         if(group.deletes?.length&&data?.deletesSupported!==true){
           throw new Error('family_delete_sync_not_ready');
+        }
+        if(group.decisions?.length&&data?.decisionHistorySupported!==true){
+          throw new Error('family_decision_history_not_ready');
         }
       }
       write(null);writeDeletes([]);recordSync();renderStatus();return true;
@@ -265,7 +294,7 @@
     if(!links.length)return false;
     pulling=true;
     try{
-      const totals={added:0,updated:0,deleted:0,localNewer:0,ignored:0};
+      const totals={added:0,updated:0,deleted:0,decisionsAdded:0,localNewer:0,ignored:0};
       for(const link of links){
         const url='/api/v1/family-sync?protocolVersion='+SYNC_PROTOCOL_VERSION+'&childId='+encodeURIComponent(link.cloudChildId);
         const res=await fetch(url,{
@@ -275,7 +304,12 @@
         const data=await res.json().catch(()=>null);
         if(!res.ok)throw new Error(data?.message||data?.error||('HTTP '+res.status));
         assertProtocol(data);
-        const result=bridge.mergeFamilyCloudState(link.localChildId,Array.isArray(data?.entries)?data.entries:[],Array.isArray(data?.deletes)?data.deletes:[]);
+        const result=bridge.mergeFamilyCloudState(
+          link.localChildId,
+          Array.isArray(data?.entries)?data.entries:[],
+          Array.isArray(data?.deletes)?data.deletes:[],
+          Array.isArray(data?.decisions)?data.decisions:[]
+        );
         for(const key of Object.keys(totals))totals[key]+=Number(result?.[key]||0);
       }
       recordSync();renderStatus();return totals;
@@ -288,9 +322,9 @@
     cycleRunning=true;
     try{
       const ctx=await context();if(!ctx)return false;
-      if(read()?.dirty){
+      if(read()?.dirty||readDeletes().length){
         const pushed=await flush(ctx);
-        if(!pushed&&read()?.dirty)return false;
+        if(!pushed&&(read()?.dirty||readDeletes().length))return false;
       }
       return await pull(ctx);
     }finally{cycleRunning=false}
