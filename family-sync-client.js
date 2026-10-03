@@ -245,6 +245,9 @@
         const data=await res.json().catch(()=>null);
         if(!res.ok)throw new Error(data?.message||data?.error||('HTTP '+res.status));
         assertProtocol(data);
+        if(group.deletes?.length&&data?.deletesSupported!==true){
+          throw new Error('family_delete_sync_not_ready');
+        }
       }
       write(null);writeDeletes([]);recordSync();renderStatus();return true;
     }catch(err){
