@@ -82,11 +82,19 @@
     if(!current?.snapshot)return current;
     const snapshot=minimalPersonalSnapshot(current.snapshot);
     if(!snapshot){write(null);return null}
-    const next={...current,snapshot};
+    const next={
+      dirty:current.dirty===true,
+      updatedAt:typeof current.updatedAt==='string'?current.updatedAt:new Date().toISOString(),
+      attempts:Number(current.attempts||0),
+      lastError:current.lastError?String(current.lastError):null,
+      ...(current.lastAttemptAt?{lastAttemptAt:String(current.lastAttemptAt)}:{}),
+      snapshot
+    };
     write(next);
     return next;
   }
   function markDirty(state){
+    if(currentProfileMode()!=='self')return;
     const snapshot=minimalPersonalSnapshot(state);
     if(!snapshot)return;
     const current=read()||{};
