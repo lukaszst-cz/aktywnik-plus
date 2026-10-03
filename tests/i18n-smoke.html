@@ -7,6 +7,7 @@
 <input id="sampleInput" data-i18n-placeholder="app.search" placeholder="Szukaj aktywności">
 <h2 id="parentSample" data-i18n="parent.children">Moje dzieci</h2>
 <h2 id="accountSample" data-i18n="account.title">Konto Aktywnik+</h2>
+<p id="draftSample" data-i18n="app.draftLocal">Niedokończony wpis zapisuje się automatycznie tylko na tym urządzeniu.</p>
 <input id="parentPlaceholder" data-i18n-placeholder="parent.childPlaceholder" placeholder="np. Ola S.">
 <div id="result">RUNNING</div>
 <script>localStorage.setItem('aktywnik_plus_lang','pl');</script>
@@ -28,8 +29,9 @@ setTimeout(()=>{
     if(document.getElementById('parentSample').textContent!=='My children')throw new Error('parent EN text missing');
     if(document.getElementById('parentPlaceholder').placeholder!=='e.g. Olivia S.')throw new Error('parent EN placeholder missing');
     if(document.getElementById('accountSample').textContent!=='Aktywnik+ account')throw new Error('account EN text missing');
+    if(document.getElementById('draftSample').textContent!=='Your unfinished entry is saved automatically on this device only.')throw new Error('draft EN text missing');
     if(localStorage.getItem('aktywnik_plus_lang')!=='en')throw new Error('language preference not saved');
-    pass('PL/EN switch, core + parent + account text, placeholders and persistence');
+    pass('PL/EN switch, core + parent + account + draft text, placeholders and persistence');
   }catch(e){fail(e.message||String(e))}
 },100);
 </script>

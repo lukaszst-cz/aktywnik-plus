@@ -42,7 +42,7 @@ async function run(){
     if(d.getElementById('childModeBtn')||d.getElementById('parentModeBtn')||d.getElementById('schoolModeBtn'))throw new Error('legacy role switch still visible');
     if(!d.getElementById('parentPinSetup')||!d.getElementById('parentPinConfirm'))throw new Error('PIN setup controls missing');
     if(!d.getElementById('setupMode')||!d.getElementById('customActivityName')||!d.getElementById('selfDataCard'))throw new Error('0.4.0 universal UI missing');
-    if(!d.getElementById('saveStatusBadge')||!d.getElementById('childWeekSnapshot')||!d.getElementById('repeatLastActivityBtn'))throw new Error('daily overview UI missing');
+    if(!d.getElementById('saveStatusBadge')||!d.getElementById('childWeekSnapshot')||!d.getElementById('repeatLastActivityBtn')||!d.getElementById('entryDraftStatus'))throw new Error('daily overview UI missing');
 
     d.getElementById('setupMode').value='self';
     d.getElementById('setupMode').dispatchEvent(new w.Event('change',{bubbles:true}));
