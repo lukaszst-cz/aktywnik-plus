@@ -6,6 +6,8 @@ const ENTRY_DRAFT_KEY='aktywnik-plus-entry-draft-v1';
 const SYNC_OUTBOX_KEY='aktywnik-plus-sync-outbox-v1';
 const SYNC_LAST_KEY='aktywnik-plus-last-cloud-sync-v1';
 const SYNC_DELETES_KEY='aktywnik-plus-personal-deletes-v1';
+const FAMILY_SYNC_OUTBOX_KEY='aktywnik-plus-family-sync-outbox-v1';
+const FAMILY_SYNC_LAST_KEY='aktywnik-plus-last-family-cloud-sync-v1';
 const CLOUD_SESSION_KEY='aktywnik-plus-cloud-session-v1';
 const ENTRY_DRAFT_MAX_AGE_MS=7*24*60*60*1000;
 const MAX_BACKUP_BYTES=2*1024*1024;
@@ -1011,7 +1013,7 @@ function safeBackupState(raw){
   return {...base,schemaVersion:6,profileMode:d.profileMode==='self'?'self':'family',meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
 function clearSyncTransientState(){
-  [SYNC_OUTBOX_KEY,SYNC_LAST_KEY,SYNC_DELETES_KEY].forEach(key=>localStorage.removeItem(key));
+  [SYNC_OUTBOX_KEY,SYNC_LAST_KEY,SYNC_DELETES_KEY,FAMILY_SYNC_OUTBOX_KEY,FAMILY_SYNC_LAST_KEY].forEach(key=>localStorage.removeItem(key));
 }
 function clearParentTransientState(){
   [PARENT_SESSION_KEY,PARENT_PIN_FAIL_KEY,PARENT_PIN_LOCK_KEY].forEach(key=>sessionStorage.removeItem(key));
