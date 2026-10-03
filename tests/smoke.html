@@ -294,6 +294,9 @@ async function run(){
       return originalFamilyFetch(url,options);
     };
     if(!await w.AktywnikFamilyCloudLink.refresh())throw new Error('family cloud children refresh failed');
+    d.getElementById('parentChildSelect').value='child-a';
+    d.getElementById('parentChildSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+    await sleep(40);
     d.getElementById('familyCloudChildSelect').value=cloudA;
     if(!w.AktywnikFamilyCloudLink.link())throw new Error('family cloud child A link failed');
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');
