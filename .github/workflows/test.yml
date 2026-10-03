@@ -208,7 +208,18 @@ jobs:
               return {ok:true,status:200,text:async()=>JSON.stringify({id:'11111111-1111-4111-8111-111111111111',email:'test@example.com'})};
             }
             if(String(url).includes('/rest/v1/personal_activities')){
-              return {ok:true,status:201,text:async()=>''};
+              if((options.method||'GET').toUpperCase()==='POST')return {ok:true,status:201,text:async()=>''};
+              return {ok:true,status:200,text:async()=>JSON.stringify([{
+                client_entry_id:'33333333-3333-4333-8333-333333333333',
+                activity_date:'2026-10-02',
+                activity_type:'Rower',
+                minutes:44,
+                effort:3,
+                note:'cloud',
+                source:'manual',
+                client_updated_at:'2026-10-02T20:05:00.000Z',
+                updated_at:'2026-10-02T20:05:00.000Z'
+              }])};
             }
             throw new Error('unexpected fetch '+url);
           };
@@ -237,8 +248,16 @@ jobs:
           if(syncRes.out.statusCode!==200) throw new Error('personal sync status');
           if(syncRes.out.body?.synced!==1) throw new Error('personal sync count');
           if(!calls.some(x=>x.url.includes('/auth/v1/user'))) throw new Error('auth verification missing');
-          if(!calls.some(x=>x.url.includes('/rest/v1/personal_activities'))) throw new Error('personal sync write missing');
+          if(!calls.some(x=>x.url.includes('/rest/v1/personal_activities')&&String(x.options?.method||'GET').toUpperCase()==='POST')) throw new Error('personal sync write missing');
+
+          const pullRes=mock();
+          await syncEnabled({method:'GET',headers:{authorization:'Bearer test-token'}},pullRes);
+          if(pullRes.out.statusCode!==200) throw new Error('personal pull status');
+          if(pullRes.out.body?.entries?.length!==1) throw new Error('personal pull entries');
+          if(pullRes.out.body.entries[0]?.activity_type!=='Rower') throw new Error('personal pull payload');
+          if(!calls.some(x=>x.url.includes('/rest/v1/personal_activities')&&String(x.options?.method||'GET').toUpperCase()==='GET')) throw new Error('personal sync read missing');
+
           global.fetch=originalFetch;
-          console.log('personal sync beta smoke OK');
+          console.log('personal push + pull sync beta smoke OK');
           })().catch(err=>{console.error(err);process.exit(1)});
           NODE
