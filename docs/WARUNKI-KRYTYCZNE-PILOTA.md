@@ -166,7 +166,7 @@ Pozostaje:
 | formalne uzgodnienie szkoła/IOD | 🔴 decyzja zewnętrzna |
 | DPIA screening — materiał | ✅ przygotowany |
 | DPIA — decyzja administratora | 🔴 decyzja zewnętrzna |
-| test techniczny bezpieczeństwa | ✅ CI + database preflight + Security Advisor |
+| test techniczny bezpieczeństwa | 🟡 CI + database preflight PASS; Security Advisor: 4 kontrolowane WARN `SECURITY DEFINER` do refaktoru przed School production |
 | E2E izolacji wielu kont/tenantów | ✅ test RLS PASS na danych syntetycznych |
 | niezależny pentest / formalny review | 🟡 przed produkcyjnym School |
 | procedura incydentów | ✅ przygotowana |
@@ -178,12 +178,14 @@ Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
 - migracje `001`–`016`: zastosowane;
-- tabele `public`: 20;
-- RLS: 20/20;
+- tabele `public`: 23;
+- RLS: 23/23;
 - granty dla `anon`: 0;
 - tabele bez polityk: 0;
 - `personal_activities`: polityki SELECT/INSERT/UPDATE/DELETE ograniczone do właściciela;
-- Supabase Security Advisor: 0 aktywnych problemów;
+- Supabase Security Advisor: 1 typ ostrzeżenia / 4 findings dla publicznych RPC `SECURITY DEFINER`;
+- `anon` i `PUBLIC` nie mają `EXECUTE` do tych RPC, `authenticated` ma dostęp; RPC mają pusty `search_path` i własne sprawdzanie tożsamości/uprawnień;
+- security preflight ma dokładną allowlistę tych 4 funkcji i blokuje wzrost tej powierzchni;
 - `backend/tests/security_preflight.sql`: PASS.
 
 ## 12. Warunek publikacji pilota — ✅
@@ -214,7 +216,8 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 5. pełna integracja `audit_events` i retencji — audyt trybu osobistego ✅, School nadal do rozszerzenia;
 6. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
 7. formalna decyzja szkoły/IOD oraz DPIA;
-8. niezależny security review/pentest przed produkcyjnym School.
+8. usunięcie/refaktor 4 publicznych RPC `SECURITY DEFINER` przed produkcyjnym School;
+9. niezależny security review/pentest przed produkcyjnym School.
 
 ## Źródła i dokumenty
 
