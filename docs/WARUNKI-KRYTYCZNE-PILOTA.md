@@ -150,6 +150,7 @@ Pozostaje:
 | DPIA screening — materiał | ✅ przygotowany |
 | DPIA — decyzja administratora | 🔴 decyzja zewnętrzna |
 | test techniczny bezpieczeństwa | ✅ CI + database preflight + Security Advisor |
+| E2E izolacji wielu kont/tenantów | ✅ test RLS PASS na danych syntetycznych |
 | niezależny pentest / formalny review | 🟡 przed produkcyjnym School |
 | procedura incydentów | ✅ przygotowana |
 | środowisko testowe bez prawdziwych danych | ✅ |
@@ -194,7 +195,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 3. bezpieczna synchronizacja usunięć / tombstones;
 4. zweryfikowany backend backup/restore drill;
 5. pełna integracja `audit_events` i retencji;
-6. E2E wielu kont/tenantów;
+6. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
 7. formalna decyzja szkoły/IOD oraz DPIA;
 8. niezależny security review/pentest przed produkcyjnym School.
 
