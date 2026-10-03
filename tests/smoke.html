@@ -15,6 +15,7 @@ const SYNC_KEY='aktywnik-plus-sync-outbox-v1';
 const DELETE_KEY='aktywnik-plus-personal-deletes-v1';
 const LAST_SYNC_KEY='aktywnik-plus-last-cloud-sync-v1';
 const FAMILY_SYNC_KEY='aktywnik-plus-family-sync-outbox-v1';
+const FAMILY_DELETE_KEY='aktywnik-plus-family-sync-deletes-v1';
 const FAMILY_LAST_SYNC_KEY='aktywnik-plus-last-family-cloud-sync-v1';
 const CLOUD_SESSION_KEY='aktywnik-plus-cloud-session-v1';
 const SESSION_KEY='aktywnik-plus-parent-unlocked-until';
@@ -45,7 +46,7 @@ async function loadApp(label){
 }
 async function run(){
   try{
-    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);localStorage.removeItem(FAMILY_SYNC_KEY);localStorage.removeItem(FAMILY_LAST_SYNC_KEY);sessionStorage.clear();
+    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);localStorage.removeItem(FAMILY_SYNC_KEY);localStorage.removeItem(FAMILY_DELETE_KEY);localStorage.removeItem(FAMILY_LAST_SYNC_KEY);sessionStorage.clear();
     let ctx=await loadApp('initial'),w=ctx.w,d=ctx.d;
     if(d.getElementById('pilotSetupCard').classList.contains('hidden'))throw new Error('initial universal setup missing');
     if(d.getElementById('childModeBtn')||d.getElementById('parentModeBtn')||d.getElementById('schoolModeBtn'))throw new Error('legacy role switch still visible');
@@ -330,6 +331,40 @@ async function run(){
 
     const localFamilyEntry=saved.entries.find(x=>x.childId==='child-a');
     if(!localFamilyEntry)throw new Error('family sync local entry missing');
+
+    const deleteStamp=new w.Date().toISOString();
+    if(!w.AktywnikFamilySync.markDeleted('child-a',localFamilyEntry.id,deleteStamp))throw new Error('family delete tombstone was not queued');
+    const familyDeletes=JSON.parse(localStorage.getItem(FAMILY_DELETE_KEY)||'[]');
+    if(familyDeletes.length!==1||familyDeletes[0]?.cloudChildId!==cloudA||familyDeletes[0]?.id!==localFamilyEntry.id)throw new Error('family delete queue child mapping mismatch');
+
+    const olderDelete=w.AktywnikCloudBridge.mergeFamilyCloudState('child-a',[],[{
+      client_entry_id:localFamilyEntry.id,
+      deleted_at:'2000-01-01T00:00:00.000Z'
+    }]);
+    if(olderDelete.localNewer!==1||!JSON.parse(localStorage.getItem(KEY)||'{}').entries.some(x=>x.id===localFamilyEntry.id&&x.childId==='child-a'))throw new Error('older family tombstone removed newer local entry');
+
+    const remoteDeleteId='78787878-7878-4787-8787-787878787878';
+    const remoteAdd=w.AktywnikCloudBridge.mergeFamilyCloudEntries(childB.id,[{
+      client_entry_id:remoteDeleteId,
+      activity_date:'2026-10-03',
+      activity_type:'Rower',
+      minutes:15,
+      effort:2,
+      note:'delete test',
+      status:'approved',
+      source:'manual',
+      rejection_reason:null,
+      approved_at:'2026-10-03T09:00:00.000Z',
+      client_updated_at:'2026-10-03T09:00:00.000Z',
+      updated_at:'2026-10-03T09:00:00.000Z'
+    }]);
+    if(remoteAdd.added!==1)throw new Error('family delete fixture was not added');
+    const remoteDelete=w.AktywnikCloudBridge.mergeFamilyCloudState(childB.id,[],[{
+      client_entry_id:remoteDeleteId,
+      deleted_at:'2026-10-03T09:01:00.000Z'
+    }]);
+    if(remoteDelete.deleted!==1||JSON.parse(localStorage.getItem(KEY)||'{}').entries.some(x=>x.id===remoteDeleteId&&x.childId===childB.id))throw new Error('newer family tombstone did not remove matching child entry');
+
     const olderFamilyMerge=w.AktywnikCloudBridge.mergeFamilyCloudEntries('child-a',[{
       client_entry_id:localFamilyEntry.id,
       activity_date:localFamilyEntry.date,
@@ -346,6 +381,7 @@ async function run(){
     }]);
     if(olderFamilyMerge.localNewer!==1)throw new Error('older family cloud entry did not preserve local version');
     w.AktywnikFamilySync.clear();
+    if(localStorage.getItem(FAMILY_DELETE_KEY)!==null)throw new Error('family delete queue was not cleared');
 
     const linkBackup=w.makeBackupPayload(saved);
     const linkRestored=w.backupStateFromPayload(linkBackup);
