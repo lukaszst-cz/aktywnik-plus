@@ -15,6 +15,17 @@ readme = (ROOT / "README.md").read_text(encoding="utf-8")
 landing = (ROOT / "index.html").read_text(encoding="utf-8")
 i18n = (ROOT / "i18n.js").read_text(encoding="utf-8")
 release = ROOT / "docs" / f"RELEASE-{version}.md"
+app = (ROOT / "app.js").read_text(encoding="utf-8")
+personal_sync = (ROOT / "sync-client.js").read_text(encoding="utf-8")
+family_sync = (ROOT / "family-sync-client.js").read_text(encoding="utf-8")
+
+# Child-only movement-energy hint must remain presentation-only.
+assert "childMovementEnergyText" in app, "child movement energy hint missing"
+assert "kcal" not in app.lower(), "calorie counting must not be introduced into the child UI"
+assert "childMovementEnergy" not in personal_sync, "child movement energy leaked into personal sync"
+assert "childMovementEnergy" not in family_sync, "child movement energy leaked into family sync"
+export_section = app.split("function exportReportCsv()",1)[1].split("function renderFavoritesEditor()",1)[0]
+assert "childMovementEnergy" not in export_section, "child movement energy leaked into teacher/self exports or reports"
 
 assert version in readme, "README does not expose current version"
 assert "0.5.0 beta.4" in landing, "landing does not expose beta.4"
