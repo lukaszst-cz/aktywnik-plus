@@ -43,6 +43,10 @@ function duplicateIds(items){
   return dupes;
 }
 
+function missingTombstoneTable(response,data){
+  return response?.status===404&&(data?.code==='PGRST205'||data?.code==='42P01');
+}
+
 function normalizeEntry(entry,childId,fallbackUpdatedAt){
   if(!entry||typeof entry!=='object'||!UUID_RE.test(String(entry.id||'')))return null;
   if(!validDate(entry.date))return null;
@@ -111,8 +115,9 @@ async function pullFamilyDeletes(token,childId){
   });
   const response=await supabaseUserFetch(token,'/rest/v1/family_activity_tombstones?'+params.toString());
   const data=await jsonOrNull(response);
+  if(missingTombstoneTable(response,data))return {rows:[],supported:false};
   if(!response.ok)throw Object.assign(new Error(data?.message||'Family tombstone read failed.'),{status:502,code:'family_delete_read_failed'});
-  return Array.isArray(data)?data:[];
+  return {rows:Array.isArray(data)?data:[],supported:true};
 }
 
 async function pushFamily(token,childId,body){
@@ -150,6 +155,7 @@ async function pushFamily(token,childId,body){
 
   let deletedCount=0;
   let deleteSuppressed=0;
+  let deletesSupported=true;
 
   if(deleteRows.length){
     const ids=deleteRows.map(row=>row.client_entry_id);
@@ -160,16 +166,21 @@ async function pushFamily(token,childId,body){
     });
     const currentTombResponse=await supabaseUserFetch(token,'/rest/v1/family_activity_tombstones?'+tombLookup.toString());
     const currentTombData=await jsonOrNull(currentTombResponse);
-    if(!currentTombResponse.ok)throw Object.assign(new Error(currentTombData?.message||'Family tombstone check failed.'),{status:502,code:'family_delete_check_failed'});
+    if(missingTombstoneTable(currentTombResponse,currentTombData)){
+      deletesSupported=false;
+      deleteSuppressed=deleteRows.length;
+    }else if(!currentTombResponse.ok){
+      throw Object.assign(new Error(currentTombData?.message||'Family tombstone check failed.'),{status:502,code:'family_delete_check_failed'});
+    }
 
-    const currentTombs=new Map((Array.isArray(currentTombData)?currentTombData:[]).map(row=>[
+    const currentTombs=new Map((deletesSupported&&Array.isArray(currentTombData)?currentTombData:[]).map(row=>[
       String(row.client_entry_id),
       new Date(row.deleted_at).getTime()
     ]));
-    const newestDeletes=deleteRows.filter(row=>{
+    const newestDeletes=deletesSupported?deleteRows.filter(row=>{
       const previous=currentTombs.get(row.client_entry_id);
       return !Number.isFinite(previous)||new Date(row.deleted_at).getTime()>previous;
-    });
+    }):[];
 
     if(newestDeletes.length){
       const tombstoneResponse=await supabaseUserFetch(
@@ -185,12 +196,13 @@ async function pushFamily(token,childId,body){
       if(!tombstoneResponse.ok)throw Object.assign(new Error(tombstoneData?.message||'Family tombstone write failed.'),{status:502,code:'family_delete_write_failed'});
     }
 
-    const activityLookup=new URLSearchParams({
-      select:'client_entry_id,client_updated_at',
-      child_id:'eq.'+childId,
-      tenant_id:'is.null',
-      client_entry_id:'in.('+ids.join(',')+')'
-    });
+    if(deletesSupported){
+      const activityLookup=new URLSearchParams({
+        select:'client_entry_id,client_updated_at',
+        child_id:'eq.'+childId,
+        tenant_id:'is.null',
+        client_entry_id:'in.('+ids.join(',')+')'
+      });
     const activityResponse=await supabaseUserFetch(token,'/rest/v1/activities?'+activityLookup.toString());
     const activityData=await jsonOrNull(activityResponse);
     if(!activityResponse.ok)throw Object.assign(new Error(activityData?.message||'Family activity delete check failed.'),{status:502,code:'family_delete_check_failed'});
@@ -227,8 +239,9 @@ async function pushFamily(token,childId,body){
       if(!deleteResponse.ok)throw Object.assign(new Error(deleteData?.message||'Family cloud delete failed.'),{status:502,code:'family_delete_failed'});
     }
 
-    deletedCount=safeDeleteIds.length;
-    deleteSuppressed=deleteRows.length-safeDeleteIds.length;
+      deletedCount=safeDeleteIds.length;
+      deleteSuppressed=deleteRows.length-safeDeleteIds.length;
+    }
   }
 
   const rows=entries.map(entry=>normalizeEntry(entry,childId,body?.updatedAt)).filter(Boolean);
@@ -246,8 +259,12 @@ async function pushFamily(token,childId,body){
     });
     const tombResponse=await supabaseUserFetch(token,'/rest/v1/family_activity_tombstones?'+tombLookup.toString());
     const tombData=await jsonOrNull(tombResponse);
-    if(!tombResponse.ok)throw Object.assign(new Error(tombData?.message||'Family tombstone check failed.'),{status:502,code:'family_delete_check_failed'});
-    const tombstones=new Map((Array.isArray(tombData)?tombData:[]).map(row=>[
+    if(missingTombstoneTable(tombResponse,tombData)){
+      deletesSupported=false;
+    }else if(!tombResponse.ok){
+      throw Object.assign(new Error(tombData?.message||'Family tombstone check failed.'),{status:502,code:'family_delete_check_failed'});
+    }
+    const tombstones=new Map((deletesSupported&&Array.isArray(tombData)?tombData:[]).map(row=>[
       String(row.client_entry_id),
       new Date(row.deleted_at).getTime()
     ]));
@@ -298,7 +315,8 @@ async function pushFamily(token,childId,body){
     synced:allowed.length,
     deleted:deletedCount,
     deleteSuppressed,
-    suppressed:rows.length-allowed.length
+    suppressed:rows.length-allowed.length,
+    deletesSupported
   };
 }
 
@@ -325,7 +343,7 @@ module.exports=async function handler(req,res){
     await requireGuardian(token,childId);
 
     if(req.method==='GET'){
-      const [entries,deletes]=await Promise.all([
+      const [entries,deleteResult]=await Promise.all([
         pullFamily(token,childId),
         pullFamilyDeletes(token,childId)
       ]);
@@ -335,8 +353,8 @@ module.exports=async function handler(req,res){
         protocolVersion,
         childId,
         entries,
-        deletes,
-        deletesSupported:true
+        deletes:deleteResult.rows,
+        deletesSupported:deleteResult.supported
       });
     }
 
@@ -350,7 +368,7 @@ module.exports=async function handler(req,res){
       deleted:result.deleted,
       deleteSuppressed:result.deleteSuppressed,
       suppressed:result.suppressed,
-      deletesSupported:true
+      deletesSupported:result.deletesSupported
     });
   }catch(err){
     const status=Number(err?.status)||500;
