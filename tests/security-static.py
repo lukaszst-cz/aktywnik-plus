@@ -73,6 +73,15 @@ for match in matches:
             f"SECURITY STATIC FAIL: public.{name} reviewed authenticated EXECUTE grant missing"
         )
 
+
+role_hardening = Path("backend/migrations/018_profile_type_role_hardening.sql").read_text(encoding="utf-8").lower()
+if "revoke update on table public.profiles from authenticated" not in role_hardening:
+    raise SystemExit("SECURITY STATIC FAIL: profiles table-wide UPDATE revoke missing")
+if "grant update(display_name) on table public.profiles to authenticated" not in role_hardening:
+    raise SystemExit("SECURITY STATIC FAIL: profiles display_name-only UPDATE grant missing")
+if "grant update on table public.profiles to authenticated" in role_hardening:
+    raise SystemExit("SECURITY STATIC FAIL: broad profiles UPDATE grant reintroduced")
+
 print(
     f"security static PASS: exactly {len(ALLOWED)} reviewed public SECURITY DEFINER RPCs; "
     "empty search_path, auth.uid() checks and explicit EXECUTE grants verified"
