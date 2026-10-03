@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — family onboarding UX hardening
+
+- API odrzuca nazwę profilu dziecka dłuższą niż 60 znaków zamiast cicho ją obcinać;
+- School Cloud blokuje przycisk tworzenia profilu podczas trwającego requestu, ograniczając przypadkowe duplikaty;
+- test SQL potwierdza, że konto typu `child` nie może wywołać `create_guardian_child`;
+- backend smoke obejmuje limit długości nazwy.
+
+
 ## Unreleased — profile role escalation hardening
 
 - wykryto, że tabelowe `UPDATE profiles` pozwalało kontu `child` zmienić własne `profile_type` na `adult`;

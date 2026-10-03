@@ -478,6 +478,14 @@ jobs:
           if(familyChildRes.out.statusCode!==201||familyChildRes.out.body?.childId!=='abababab-abab-4bab-8bab-abababababab') throw new Error('family child onboarding API failed');
           if(!calls.some(x=>x.url.includes('/rest/v1/rpc/create_guardian_child'))) throw new Error('family child RPC missing');
 
+          const longChildNameRes=mock();
+          await familyChildren({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{displayName:'x'.repeat(61)}
+          },longChildNameRes);
+          if(longChildNameRes.out.statusCode!==400||longChildNameRes.out.body?.error!=='invalid_child_name') throw new Error('overlong child name was not rejected');
+
           const yearRes=mock();
           await schoolYears({
             method:'GET',
