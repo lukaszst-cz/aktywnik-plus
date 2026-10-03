@@ -33,7 +33,39 @@ end $$;
 
 reset role;
 
-do $$
+insert into profiles(id,display_name,profile_type)
+values ('94000000-0000-4000-8000-000000000002','Family Test Child Account','child');
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"94000000-0000-4000-8000-000000000002","role":"authenticated"}',
+  true
+);
+set local role authenticated;
+
+do $
+declare
+  blocked boolean := false;
+begin
+  begin
+    perform public.create_guardian_child('Must Not Be Created');
+  exception
+    when others then
+      if sqlerrm='adult_account_required' then
+        blocked := true;
+      else
+        raise;
+      end if;
+  end;
+
+  if not blocked then
+    raise exception 'FAMILY ONBOARDING FAIL: child account could create guardian child';
+  end if;
+end $;
+
+reset role;
+
+do $
 begin
   if not exists (
     select 1 from audit_events a
