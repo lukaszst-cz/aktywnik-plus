@@ -538,6 +538,18 @@ jobs:
           },classCreate);
           if(classCreate.out.statusCode!==201||classCreate.out.body?.classId!=='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbc') throw new Error('class creation API failed');
 
+          const longClassNameRes=mock();
+          await classes({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{
+              tenantId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+              schoolYearId:'ffffffff-ffff-4fff-8fff-ffffffffffff',
+              name:'x'.repeat(81)
+            }
+          },longClassNameRes);
+          if(longClassNameRes.out.statusCode!==400||longClassNameRes.out.body?.error!=='invalid_class_payload') throw new Error('overlong class name was not rejected');
+
           const inviteRes=mock();
           await classInvites({
             method:'POST',
@@ -545,6 +557,14 @@ jobs:
             body:{classId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',validDays:7}
           },inviteRes);
           if(inviteRes.out.statusCode!==201||inviteRes.out.body?.token!=='cccccccc-cccc-4ccc-8ccc-cccccccccccc') throw new Error('class invite API failed');
+
+          const badInviteValidityRes=mock();
+          await classInvites({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{classId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',validDays:31}
+          },badInviteValidityRes);
+          if(badInviteValidityRes.out.statusCode!==400||badInviteValidityRes.out.body?.error!=='invalid_invite_validity') throw new Error('invalid invite validity was not rejected');
 
           const joinRequest=mock();
           await classJoin({
