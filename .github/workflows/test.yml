@@ -60,6 +60,11 @@ jobs:
           grep -q "school_audit_trigger_count" backend/tests/security_preflight.sql
           grep -q "schoolRetentionMechanismReady:true" api/capabilities.js
           grep -q "schoolRetentionPolicyConfigured:false" api/capabilities.js
+          grep -q "familyCloudLinkReady:true" api/capabilities.js
+          grep -q "familySync:false" api/capabilities.js
+          grep -q 'id="familyCloudChildSelect"' app.html
+          grep -q 'id="familyCloudLinkBtn"' app.html
+          grep -q 'id="familyCloudCreateLinkBtn"' app.html
           grep -q "school-cloud.html" index.html
           grep -q "school-cloud.html" dla-nauczyciela.html
           grep -q "school-cloud.html" faq.html
@@ -220,6 +225,8 @@ jobs:
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionPolicyConfigured!==false) throw new Error('school retention policy must remain externally configurable');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.publicSecurityDefinerRpcSurface!==false) throw new Error('public SECURITY DEFINER surface must stay disabled');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolLifecycleRpcPrivilegeModel!=='public_invoker_private_definer') throw new Error('school lifecycle RPC privilege model mismatch');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudLinkReady!==true) throw new Error('family cloud link capability missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySync!==false) throw new Error('family sync must stay disabled until activity sync lands');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudOnboarding!==false) throw new Error('family onboarding capability must fail closed when cloud is off');
           }
           const health=require('./api/health.js');
