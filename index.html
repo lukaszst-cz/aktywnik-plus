@@ -58,7 +58,7 @@
 
     <section class="section">
       <h2>Czym jest Aktywnik+?</h2>
-      <p>Aktywnik+ to lekka aplikacja PWA do prostego mierzenia i zapisywania aktywności. W trybie osobistym wpis zapisuje się od razu, a konto i chmura są opcjonalne. W trybie rodzinnym dziecko może dodawać aktywności, a rodzic zatwierdza je w chronionej strefie. Moduł School ma już backend, role, RLS i odczyt klas, ale pełny lifecycle klasy jest nadal rozwijany.</p>
+      <p>Aktywnik+ to lekka aplikacja PWA do prostego mierzenia i zapisywania aktywności. W trybie osobistym wpis zapisuje się od razu, a konto i chmura są opcjonalne. W trybie rodzinnym dziecko może dodawać aktywności, a rodzic zatwierdza je w chronionej strefie. Moduł School ma już backend, role, RLS, tworzenie klas, zaproszenia, zgłoszenia rodziców i decyzje szkoły. School Cloud pozostaje betą przed wdrożeniem produkcyjnym.</p>
       <p><strong>Twórca i właściciel projektu: Łukasz St‑cz.</strong> Kod i rozwój projektu są publicznie dostępne na <a href="https://github.com/lukaszst-cz/aktywnik-plus" target="_blank" rel="noopener">GitHubie projektu</a>.</p>
     </section>
 
@@ -68,7 +68,7 @@
         <article><h3>💾 Local-first</h3><p>Bez konta możesz używać trybu osobistego i rodzinnego. Dane zapisują się lokalnie, działa backup JSON, CSV/PDF oraz autozapis niedokończonych wpisów.</p></article>
         <article><h3>☁️ Sync osobisty</h3><p>Opcjonalne konto Magic Link umożliwia push/pull wpisów osobistych. Nowsza wersja wygrywa według timestampu, a usunięcia są synchronizowane przez tombstones.</p></article>
         <article><h3>🔒 Bezpieczeństwo</h3><p>Supabase Auth, RLS na wszystkich publicznych tabelach, brak dostępu anon do danych, test izolacji tenantów i automatyczny audyt create/update/delete dla wpisów osobistych.</p></article>
-        <article><h3>🏫 School — rozwój</h3><p>Backend, role, model tenant, odczyt profilu i klas oraz raporty są przygotowane. Do ukończenia pozostaje tworzenie/dołączanie do klas i pełny workflow szkoła–rodzina.</p></article>
+        <article><h3>🏫 School Cloud — beta</h3><p>Działa lifecycle klasy: tworzenie klasy, zaproszenie, zgłoszenie opiekuna i akceptacja/odrzucenie. Dostęp kontrolują role i RLS.</p><p><a href="school-cloud.html">Otwórz School Cloud →</a></p></article>
         <article><h3>📴 Offline</h3><p>PWA działa po pierwszym uruchomieniu także bez stałego internetu. Zmiany mogą czekać lokalnie i zostać zsynchronizowane po odzyskaniu połączenia.</p></article>
         <article><h3>📝 Papier i OCR</h3><p>Wersja papierowa, PDF, CSV i import OCR pozostają równorzędną ścieżką dla rodzin i szkół, które nie chcą działać wyłącznie cyfrowo.</p></article>
       </div>
@@ -80,7 +80,7 @@
         <article><b>1</b><h3>Start</h3><p>Wybierz tryb Dla siebie albo Rodzina i zacznij bez zakładania konta.</p></article>
         <article><b>2</b><h3>Aktywność</h3><p>Użyj Start/Stop, wpisu ręcznego albo własnej nazwy aktywności.</p></article>
         <article><b>3</b><h3>Raport</h3><p>Miesięczny, kwartalny, półroczny lub roczny.</p></article>
-        <article><b>4</b><h3>Szkoła</h3><p>Moduł School rozwija klasy, role i raporty; pełne dołączanie rodziny do klasy jest kolejnym etapem.</p></article>
+        <article><b>4</b><h3>Szkoła</h3><p>School Cloud obsługuje tworzenie klasy, zaproszenie, zgłoszenie i decyzję; produkcyjne wdrożenie szkoły jest osobnym etapem.</p></article>
       </div>
     </section>
 
@@ -100,7 +100,7 @@
     <section id="dla-kogo" class="section alt">
       <h2>Jedna aplikacja, różne sposoby udziału</h2>
       <div class="cards">
-        <article><h3>Cyfrowo</h3><p>Tryb osobisty może synchronizować się między urządzeniami. Rodzina działa local-first, a School ma już fundament backendu i RLS; pełna zsynchronizowana klasa jest nadal rozwijana.</p></article>
+        <article><h3>Cyfrowo</h3><p>Tryb osobisty może synchronizować się między urządzeniami. Rodzina działa local-first, a School Cloud beta ma już bezpieczny lifecycle klas oparty o Auth, role i RLS.</p></article>
         <article><h3>Hybrydowo</h3><p>Aplikacja u rodziny, a do szkoły trafia PDF lub wydruk.</p></article>
         <article><h3>Papierowo</h3><p>Rodzina bez aplikacji korzysta z formularza papierowego na równych zasadach.</p></article>
       </div>
@@ -108,9 +108,10 @@
 
     <section class="section action">
       <h2>Dla użytkownika, rodziny, nauczyciela i szkoły</h2>
-      <p>W pilocie nauczyciel może korzystać z raportów PDF/CSV i modułu szkolnego. Backend School jest już uruchomiony technicznie: działa Auth, RLS, role i bezpieczny odczyt klas. Nadal rozwijane są tworzenie klasy, kody dołączenia, powiązanie rodziny z klasą i pełny workflow nauczyciela.</p>
+      <p>W pilocie nauczyciel może korzystać z raportów PDF/CSV oraz School Cloud beta. Działa Auth, RLS, role, tworzenie klas, tokeny zaproszeń, zgłoszenia opiekunów i decyzje szkoły. Do produkcji pozostają m.in. family sync, formalne wdrożenie szkoły/IOD i dalsze testy.</p>
       <div class="cta">
         <a class="primary" href="app.html">Otwórz Aktywnik+</a>
+        <a class="secondary" href="school-cloud.html">School Cloud — beta</a>
         <a class="secondary" href="docs/JAK-TO-DZIALA.md">Zasady działania</a>
         <a class="secondary" href="docs/WARUNKI-KRYTYCZNE-PILOTA.md">Warunki pilota</a>
       </div>
