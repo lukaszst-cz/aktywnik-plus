@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — personal delete sync
+
+- migracja 013: `personal_activity_tombstones` z RLS per właściciel;
+- usuwanie pojedynczego wpisu w trybie osobistym;
+- kolejka delete offline;
+- propagacja tombstones między urządzeniami;
+- ochrona nowszej edycji przed opóźnionym starszym usunięciem;
+- capability API raportuje `personalSyncDeletes: true`.
+
 ## Unreleased — pilot readiness hardening
 
 ### Backend i bezpieczeństwo
