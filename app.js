@@ -726,6 +726,33 @@ function renderPilot(){
   $('#childPanel').classList.toggle('hidden',!ready||currentMode!=='child');
   if(!ready||isSelfMode()){$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(isSelfMode())currentMode='child'}
 }
+function assertUniqueBackupIds(items,label){
+  if(!Array.isArray(items))return;
+  const seen=new Set();
+  for(const item of items){
+    if(!item||typeof item!=='object')continue;
+    const id=cleanText(item.id,80);if(!id)throw new Error('Kopia v'+BACKUP_VERSION+' zawiera '+label+' bez identyfikatora.');
+    if(seen.has(id))throw new Error('Kopia zawiera zduplikowany identyfikator '+label+'.');
+    seen.add(id);
+  }
+}
+function validateBackupIdentityIntegrity(raw){
+  if(raw?.format!=='aktywnik-plus-backup'||Number(raw.version)<BACKUP_VERSION)return;
+  const d=raw.data&&typeof raw.data==='object'&&!Array.isArray(raw.data)?raw.data:null;
+  if(!d)throw new Error('Nieprawidłowa struktura kopii Aktywnik+.');
+  assertUniqueBackupIds(d.children,'profilu');
+  assertUniqueBackupIds(d.entries,'wpisu');
+  const childIds=new Set((Array.isArray(d.children)?d.children:[]).map(child=>cleanText(child?.id,80)).filter(Boolean));
+  const requireKnownChild=(item,label)=>{
+    if(!item||typeof item!=='object')return;
+    const childId=cleanText(item.childId,80);
+    if(!childId||!childIds.has(childId))throw new Error('Kopia zawiera '+label+' przypisany do nieistniejącego profilu.');
+  };
+  (Array.isArray(d.entries)?d.entries:[]).forEach(item=>requireKnownChild(item,'wpis'));
+  (Array.isArray(d.approvalEvents)?d.approvalEvents:[]).forEach(item=>requireKnownChild(item,'zdarzenie akceptacji'));
+  (Array.isArray(d.rewards)?d.rewards:[]).forEach(item=>requireKnownChild(item,'nagrodę/ocenę'));
+  if(d.activeTimer)requireKnownChild(d.activeTimer,'aktywny pomiar');
+}
 function backupStateFromPayload(raw){
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Nieprawidłowy plik kopii.');
   if(raw.format!=null&&raw.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');
@@ -734,6 +761,7 @@ function backupStateFromPayload(raw){
     if(!Number.isInteger(version)||version<1)throw new Error('Nieprawidłowa wersja kopii Aktywnik+.');
     if(version>BACKUP_VERSION)throw new Error('Ta kopia pochodzi z nowszej wersji Aktywnik+. Najpierw zaktualizuj aplikację.');
   }
+  validateBackupIdentityIntegrity(raw);
   return safeBackupState(raw);
 }
 function makeBackupPayload(source=state){
