@@ -29,6 +29,7 @@ function persist({skipSync=false}={}){
     localStorage.setItem(KEY,JSON.stringify(state));
     lastPersistOk=true;
     if(!skipSync&&state.profileMode==='self')window.AktywnikSync?.markDirty?.(state);
+    if(!skipSync&&state.profileMode==='family')window.AktywnikFamilySync?.markDirty?.(state);
   }catch(err){
     lastPersistOk=false;
     console.error('Aktywnik+: local save failed',err);
@@ -49,7 +50,7 @@ function nowIso(){return new Date().toISOString()}
 function getChild(id){return state.children.find(c=>c.id===id)||null}
 function activeChild(){return getChild(state.activeChildId)||state.children[0]||null}
 function personalEntrySyncTime(entry){
-  const raw=entry?.updatedAt||entry?.stoppedAt||entry?.createdAt||'';
+  const raw=entry?.updatedAt||entry?.approvedAt||entry?.rejectedAt||entry?.stoppedAt||entry?.createdAt||'';
   const time=new Date(raw).getTime();
   return Number.isFinite(time)?time:0;
 }
@@ -125,7 +126,73 @@ function mergePersonalCloudState(entries,deletes){
   const removed=applyPersonalCloudDeletes(deletes);
   return {...merged,...removed};
 }
-window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries,mergePersonalCloudState};
+function normalizeFamilyCloudEntry(row,localChildId){
+  if(!row||typeof row!=='object'||!validUuid(row.client_entry_id)||!validDate(row.activity_date))return null;
+  const activity=cleanText(row.activity_type,80),minutes=clampInt(row.minutes,1,600,0);
+  if(!activity||!minutes)return null;
+  const status=['pending','approved','rejected'].includes(row.status)?row.status:null;
+  if(!status)return null;
+  const remoteStamp=safeIso(row.client_updated_at)||safeIso(row.updated_at)||nowIso();
+  return {
+    id:String(row.client_entry_id),
+    childId:localChildId,
+    date:row.activity_date,
+    activity,
+    minutes,
+    effort:clampInt(row.effort,1,5,2),
+    note:cleanText(row.note,120),
+    status,
+    source:row.source==='timer'?'timer':'manual',
+    createdAt:remoteStamp,
+    updatedAt:remoteStamp,
+    approvedAt:status==='approved'?(safeIso(row.approved_at)||remoteStamp):null,
+    rejectedAt:status==='rejected'?remoteStamp:null,
+    rejectionReason:status==='rejected'?cleanText(row.rejection_reason,160):''
+  };
+}
+function mergeFamilyCloudEntries(localChildId,rows){
+  if(isSelfMode()||!getChild(localChildId)||!Array.isArray(rows))return {added:0,updated:0,localNewer:0,ignored:0};
+  const byId=new Map(state.entries.filter(e=>e.childId===localChildId).map(e=>[e.id,e]));
+  let added=0,updated=0,localNewer=0,ignored=0;
+  for(const row of rows.slice(0,MAX_ENTRIES)){
+    const incoming=normalizeFamilyCloudEntry(row,localChildId);if(!incoming){ignored++;continue}
+    const existing=byId.get(incoming.id);
+    if(!existing){
+      state.entries.unshift(incoming);byId.set(incoming.id,incoming);added++;continue;
+    }
+    const remoteTime=personalEntrySyncTime(incoming),localTime=personalEntrySyncTime(existing);
+    if(remoteTime>localTime){
+      Object.assign(existing,{
+        date:incoming.date,
+        activity:incoming.activity,
+        minutes:incoming.minutes,
+        effort:incoming.effort,
+        note:incoming.note,
+        status:incoming.status,
+        source:incoming.source,
+        updatedAt:incoming.updatedAt,
+        approvedAt:incoming.approvedAt,
+        rejectedAt:incoming.rejectedAt,
+        rejectionReason:incoming.rejectionReason
+      });
+      updated++;
+    }else if(localTime>remoteTime){
+      localNewer++;
+    }
+  }
+  if(added||updated){
+    state.entries.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||personalEntrySyncTime(b)-personalEntrySyncTime(a));
+    state.entries=state.entries.slice(0,MAX_ENTRIES);
+    persist({skipSync:true});
+  }
+  if(localNewer)window.AktywnikFamilySync?.markDirty?.(state);
+  return {added,updated,localNewer,ignored};
+}
+window.AktywnikCloudBridge={
+  mergePersonalEntries:mergePersonalCloudEntries,
+  mergePersonalCloudState,
+  mergeFamilyCloudEntries
+};
 function parentChild(){return getChild(parentSelectedChildId)||activeChild()}
 function childEntries(childId){return state.entries.filter(e=>e.childId===childId)}
 function childRewards(childId){return state.rewards.filter(r=>r.childId===childId)}
@@ -386,7 +453,7 @@ function renderChildRewards(){
 
 function approve(id){
   if(!guardParent())return;const child=parentChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id&&x.status==='pending');if(!e)return;
-  const before={status:e.status};e.status='approved';e.rejectionReason='';e.approvedAt=nowIso();addApprovalEvent('approved',e,'parent','Rodzic zatwierdził wpis.',before,{status:e.status});persist();
+  const before={status:e.status};e.status='approved';e.rejectionReason='';e.approvedAt=nowIso();e.updatedAt=e.approvedAt;addApprovalEvent('approved',e,'parent','Rodzic zatwierdził wpis.',before,{status:e.status});persist();
 }
 function openParentCorrection(id){
   if(!guardParent())return;const child=parentChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id&&x.status==='pending');if(!e)return;
@@ -395,7 +462,7 @@ function openParentCorrection(id){
 function saveParentCorrection(){
   if(!guardParent())return;const id=$('#parentEditEntryId').value,child=parentChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id&&x.status==='pending');if(!e)return;
   const date=$('#parentEditDate').value,minutes=Number($('#parentEditMinutes').value);if(!allowedActivityDate(date)||!Number.isFinite(minutes)||minutes<1||minutes>600){alert('Sprawdź datę i czas (1–600 min).');return}
-  const before={date:e.date,minutes:e.minutes,effort:e.effort,note:e.note,status:e.status};e.date=date;e.minutes=Math.round(minutes);e.effort=clampInt($('#parentEditEffort').value,1,5,2);e.note=cleanText($('#parentEditNote').value,120);e.status='approved';e.rejectionReason='';e.approvedAt=nowIso();e.correctedByParent=true;
+  const before={date:e.date,minutes:e.minutes,effort:e.effort,note:e.note,status:e.status};e.date=date;e.minutes=Math.round(minutes);e.effort=clampInt($('#parentEditEffort').value,1,5,2);e.note=cleanText($('#parentEditNote').value,120);e.status='approved';e.rejectionReason='';e.approvedAt=nowIso();e.updatedAt=e.approvedAt;e.correctedByParent=true;
   addApprovalEvent('corrected',e,'parent','Rodzic poprawił i zatwierdził wpis.',before,{date:e.date,minutes:e.minutes,effort:e.effort,note:e.note,status:e.status});$('#parentEditDialog').close();persist();
 }
 function openReject(id){
@@ -404,12 +471,12 @@ function openReject(id){
 }
 function confirmReject(){
   if(!guardParent())return;const id=$('#rejectEntryId').value,child=parentChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id&&x.status==='pending');if(!e)return;
-  const reason=[cleanText($('#rejectReason').value,80),cleanText($('#rejectNote').value,120)].filter(Boolean).join(' — '),before={status:e.status};e.status='rejected';e.rejectionReason=reason||'Do poprawy';e.rejectedAt=nowIso();addApprovalEvent('rejected',e,'parent',e.rejectionReason,before,{status:e.status,rejectionReason:e.rejectionReason});$('#rejectDialog').close();persist();
+  const reason=[cleanText($('#rejectReason').value,80),cleanText($('#rejectNote').value,120)].filter(Boolean).join(' — '),before={status:e.status};e.status='rejected';e.rejectionReason=reason||'Do poprawy';e.rejectedAt=nowIso();e.updatedAt=e.rejectedAt;addApprovalEvent('rejected',e,'parent',e.rejectionReason,before,{status:e.status,rejectionReason:e.rejectionReason});$('#rejectDialog').close();persist();
 }
 function approveAllVisible(){
   if(!guardParent())return;const child=parentChild();if(!child)return;const pending=state.entries.filter(e=>e.childId===child.id&&e.status==='pending');if(!pending.length)return;
   if(!confirm('Zatwierdzić '+pending.length+' oczekujących wpisów profilu '+child.displayName+'?'))return;
-  pending.forEach(e=>{const before={status:e.status};e.status='approved';e.rejectionReason='';e.approvedAt=nowIso();addApprovalEvent('approved',e,'parent','Zatwierdzenie zbiorcze.',before,{status:e.status})});persist();
+  pending.forEach(e=>{const before={status:e.status};e.status='approved';e.rejectionReason='';e.approvedAt=nowIso();e.updatedAt=e.approvedAt;addApprovalEvent('approved',e,'parent','Zatwierdzenie zbiorcze.',before,{status:e.status})});persist();
 }
 function renderApprovals(){
   const list=$('#approvalList'),history=$('#approvalHistory');if(!parentUnlocked()||!parentChild()){$('#pendingCount').textContent='0';list.innerHTML='';history.innerHTML='';return}
@@ -614,7 +681,7 @@ function linkSelectedFamilyCloudChild(){
   const visible=availableFamilyCloudChildren().some(c=>String(c.id).toLowerCase()===cloudId);
   if(!visible){familyCloudStatus(uiText('parent.cloudInvalid','Wybrany profil chmurowy jest nieprawidłowy albo nie jest dostępny na tym koncie.'),'error');return false}
   if(familyCloudLinkedElsewhere(cloudId,child.id)){familyCloudStatus(uiText('parent.cloudAlreadyUsed','Ten profil chmurowy jest już połączony z innym lokalnym dzieckiem.'),'error');return false}
-  child.cloudChildId=cloudId;persist({skipSync:true});renderFamilyCloudLink();
+  child.cloudChildId=cloudId;persist({skipSync:true});window.AktywnikFamilySync?.markDirty?.(state);renderFamilyCloudLink();
   familyCloudStatus(uiText('parent.cloudLinkSaved','Powiązanie profilu zostało zapisane lokalnie.'),'ok');
   return true;
 }
@@ -627,7 +694,7 @@ async function createAndLinkFamilyCloudChild(){
     const cloudId=String(data?.childId||'').toLowerCase();
     if(!validUuid(cloudId))throw new Error('invalid_cloud_child_id');
     if(familyCloudLinkedElsewhere(cloudId,child.id))throw new Error('cloud_child_already_linked');
-    child.cloudChildId=cloudId;persist({skipSync:true});
+    child.cloudChildId=cloudId;persist({skipSync:true});window.AktywnikFamilySync?.markDirty?.(state);
     const context=await familyCloudApi('/api/v1/me');
     familyCloudContext={profile:context.profile||null,children:Array.isArray(context.children)?context.children:[]};
     familyCloudStatus(uiText('parent.cloudCreatedLinked','Profil dziecka został utworzony w chmurze i połączony.'),'ok');
@@ -643,7 +710,7 @@ function unlinkFamilyCloudChild(){
   if(!guardParent()||isSelfMode())return false;
   const child=parentChild();if(!child||!validUuid(child.cloudChildId))return false;
   if(!confirm(document.documentElement.lang==='en'?'Unlink this local profile from School Cloud? No cloud data will be deleted.':'Odłączyć ten lokalny profil od School Cloud? Dane w chmurze nie zostaną usunięte.'))return false;
-  child.cloudChildId=null;persist({skipSync:true});renderFamilyCloudLink();
+  child.cloudChildId=null;persist({skipSync:true});window.AktywnikFamilySync?.markDirty?.(state);renderFamilyCloudLink();
   familyCloudStatus(uiText('parent.cloudLinkRemoved','Powiązanie profilu zostało usunięte.'),'ok');
   return true;
 }
