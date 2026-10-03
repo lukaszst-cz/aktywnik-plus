@@ -136,3 +136,11 @@ button:focus-visible,.button-link:focus-visible,input:focus-visible,select:focus
 .badge[data-state="error"]{background:#fee2e2;color:#991b1b}
 .ocr-capability{margin-top:12px;align-items:center}
 .ocr-capability small{max-width:70ch;color:#64748b;line-height:1.45}
+
+/* PWA update notice */
+.app-update-notice{position:fixed;left:50%;bottom:18px;z-index:50;transform:translateX(-50%);width:min(720px,calc(100% - 28px));display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;background:#fff;border:1px solid #86efac;border-radius:18px;box-shadow:0 18px 45px rgba(15,23,42,.2)}
+.app-update-notice strong{display:block;margin-bottom:3px}
+.app-update-notice small{display:block;color:#475569;line-height:1.4}
+.app-update-notice .actions{margin-top:0;flex:0 0 auto}
+@media(max-width:680px){.app-update-notice{align-items:stretch;flex-direction:column}.app-update-notice .actions{width:100%}.app-update-notice .actions button{flex:1}}
+@media print{.app-update-notice{display:none!important}}
