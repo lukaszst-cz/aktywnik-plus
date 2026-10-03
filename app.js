@@ -12,6 +12,7 @@ const FAMILY_SYNC_LAST_KEY='aktywnik-plus-last-family-cloud-sync-v1';
 const CLOUD_SESSION_KEY='aktywnik-plus-cloud-session-v1';
 const ENTRY_DRAFT_MAX_AGE_MS=7*24*60*60*1000;
 const MAX_BACKUP_BYTES=2*1024*1024;
+const MAX_OCR_IMAGE_BYTES=12*1024*1024;
 const BACKUP_VERSION=6;
 const MAX_ENTRIES=5000;
 const MAX_CLASSES=100;
@@ -24,7 +25,7 @@ const PIN_LOCK_MS=30000;
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
 const defaultState={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
-let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let parentReportMonth=today().slice(0,7); let lastPersistOk=true; let familyCloudContext=null; let familyCloudBusy=false;
+let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let pendingPaperOcrImageFile=null; let parentReportMonth=today().slice(0,7); let lastPersistOk=true; let familyCloudContext=null; let familyCloudBusy=false;
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist({skipSync=false}={}){
   state.meta={...(state.meta||{}),lastWriteAt:nowIso()};
@@ -936,7 +937,7 @@ function parseDurationValue(value){
   return clampInt(raw.replace(/[^0-9.]/g,''),1,600,0);
 }
 function normalizeImportRow(row){
-  if(Array.isArray(row))row={date:row[0],activity:row[1],minutes:row[2],effort:row[3],note:row[4]};
+  if(Array.isArray(row)){const cells=row.length>=6&&/^\d{1,3}$/.test(String(row[0]??'').trim())?row.slice(1):row;row={date:cells[0],activity:cells[1],minutes:cells[2],effort:cells[3],note:cells[4]}};
   if(!row||typeof row!=='object')return null;const map={};Object.entries(row).forEach(([k,v])=>map[String(k).toLowerCase().trim()]=v);
   const date=cleanText(map.date??map.data??map['data aktywności'],20),activity=cleanText(map.activity??map.aktywnosc??map['aktywność']??map['rodzaj aktywności']??map.rodzaj,80),minutes=parseDurationValue(map.minutes??map.minuty??map.czas??map['czas trwania']),effort=clampInt(map.effort??map.wysilek??map['wysiłek']??map.zmeczenie??map['zmęczenie']??map['poziom zmęczenia'],1,5,2),note=cleanText(map.note??map.uwagi??map['uwaga']??map['podpis / uwagi opiekuna'],160);
   if(!allowedActivityDate(date)||!activity||!minutes)return null;return {date,activity,minutes,effort,note};
@@ -951,6 +952,73 @@ function parseImportText(text){
   const raw=String(text||'').trim();if(!raw)return [];if(raw.startsWith('{')||raw.startsWith('[')){try{const parsed=JSON.parse(raw),rows=Array.isArray(parsed)?parsed:(Array.isArray(parsed.rows)?parsed.rows:[]);return rows.map(normalizeImportRow).filter(Boolean)}catch{}}
   return parseDelimitedImport(raw);
 }
+function paperOcrSupported(){return typeof window.TextDetector==='function'&&typeof window.createImageBitmap==='function'}
+function renderPaperOcrCapability(){
+  const badge=$('#paperOcrCapabilityBadge'),button=$('#runLocalOcrBtn');if(!badge||!button)return;
+  const supported=paperOcrSupported();
+  badge.textContent=supported?'OCR lokalny dostępny':'OCR lokalny niedostępny';
+  badge.dataset.state=supported?'ok':'warn';
+  button.disabled=!supported||!pendingPaperOcrImageFile;
+}
+function loadPaperOcrImage(file){
+  if(!guardParent())return;
+  pendingPaperOcrImageFile=null;
+  const input=$('#paperOcrImageFile');
+  if(!file){renderPaperOcrCapability();return}
+  const allowed=new Set(['image/jpeg','image/png','image/webp']);
+  if(!allowed.has(String(file.type||'').toLowerCase())){$('#paperImportStatus').innerHTML='<p class="status-pending">Obsługiwane zdjęcia: JPG, PNG lub WebP.</p>';if(input)input.value='';renderPaperOcrCapability();return}
+  if(file.size>MAX_OCR_IMAGE_BYTES){$('#paperImportStatus').innerHTML='<p class="status-pending">Zdjęcie jest zbyt duże. Maksymalny rozmiar to 12 MB.</p>';if(input)input.value='';renderPaperOcrCapability();return}
+  pendingPaperOcrImageFile=file;
+  $('#paperImportStatus').innerHTML=paperOcrSupported()?'<p class="status-approved">Zdjęcie gotowe. OCR wykona się lokalnie na tym urządzeniu.</p>':'<p class="status-pending">Ta przeglądarka nie udostępnia lokalnego OCR. Użyj DocPilot albo wklej tekst OCR ręcznie.</p>';
+  renderPaperOcrCapability();
+}
+function ocrBlocksToDelimitedText(blocks){
+  const items=(Array.isArray(blocks)?blocks:[]).map(block=>{
+    const text=cleanText(block?.rawValue??block?.text,240);
+    const box=block?.boundingBox||{};
+    const x=Number(box.x),y=Number(box.y),width=Number(box.width),height=Number(box.height);
+    return text&&[x,y,width,height].every(Number.isFinite)?{text,x,y,width,height,cy:y+height/2}:null;
+  }).filter(Boolean);
+  if(!items.length)return '';
+  items.sort((a,b)=>a.cy-b.cy||a.x-b.x);
+  const heights=items.map(x=>x.height).filter(x=>x>0).sort((a,b)=>a-b),median=heights.length?heights[Math.floor(heights.length/2)]:16,tolerance=Math.max(5,median*.7);
+  const rows=[];
+  for(const item of items){
+    const last=rows[rows.length-1];
+    if(!last||Math.abs(item.cy-last.cy)>tolerance)rows.push({cy:item.cy,items:[item]});
+    else{last.items.push(item);last.cy=last.items.reduce((sum,x)=>sum+x.cy,0)/last.items.length}
+  }
+  return rows.map(row=>row.items.sort((a,b)=>a.x-b.x).map(item=>item.text.replace(/;/g,',')).join(';')).join('\n');
+}
+async function runLocalPaperOcr(){
+  if(!guardParent())return false;
+  const file=pendingPaperOcrImageFile;
+  if(!file){$('#paperImportStatus').innerHTML='<p class="status-pending">Najpierw wybierz zdjęcie karty.</p>';return false}
+  if(!paperOcrSupported()){$('#paperImportStatus').innerHTML='<p class="status-pending">Lokalny OCR nie jest dostępny w tej przeglądarce. Użyj DocPilot albo wklej tekst OCR ręcznie.</p>';return false}
+  const button=$('#runLocalOcrBtn');if(button)button.disabled=true;
+  $('#paperImportStatus').innerHTML='<p class="status-pending">Rozpoznaję tekst lokalnie na urządzeniu…</p>';
+  let bitmap=null;
+  try{
+    bitmap=await window.createImageBitmap(file);
+    const detector=new window.TextDetector();
+    const blocks=await detector.detect(bitmap);
+    const text=ocrBlocksToDelimitedText(blocks);
+    if(!text){$('#paperImportStatus').innerHTML='<p class="status-pending">Nie udało się rozpoznać tekstu. Spróbuj wyraźniejszego zdjęcia albo użyj DocPilot.</p>';return false}
+    $('#ocrPaste').value=text;
+    renderPaperImportPreview();
+    if(!pendingPaperImportRows.length)$('#paperImportStatus').innerHTML='<p class="status-pending">OCR odczytał tekst, ale nie rozpoznał poprawnych wierszy tabeli. Popraw tekst poniżej i użyj „Pokaż podgląd”.</p>';
+    return true;
+  }catch(err){
+    console.error('Aktywnik+: local OCR failed',err);
+    $('#paperImportStatus').innerHTML='<p class="status-pending">Lokalny OCR nie zakończył się powodzeniem. Zdjęcie nie zostało wysłane — użyj DocPilot albo wklej tekst ręcznie.</p>';
+    return false;
+  }finally{
+    try{bitmap?.close?.()}catch{}
+    renderPaperOcrCapability();
+  }
+}
+window.AktywnikPaperOcr={supported:paperOcrSupported,blocksToDelimitedText:ocrBlocksToDelimitedText,run:runLocalPaperOcr};
+
 async function loadPaperImportFile(file){
   if(!guardParent()||!file)return;try{$('#ocrPaste').value=await file.text();$('#paperImportStatus').innerHTML='<p class="status-approved">Plik wczytany. Sprawdź podgląd przed zapisem.</p>'}catch{$('#paperImportStatus').innerHTML='<p class="status-pending">Nie udało się odczytać pliku.</p>'}
 }
@@ -976,7 +1044,7 @@ function savePaperImport(){
   }
   state.paperImports=state.paperImports||[];
   state.paperImports.unshift({id:uuid(),classId,childName,familyChildId,rows,source:'paper_ocr',createdAt:nowIso()});
-  pendingPaperImportRows=[];$('#ocrPaste').value='';$('#paperImportFile').value='';$('#savePaperImportBtn').disabled=true;persist();$('#paperImportStatus').innerHTML='<p class="status-approved">Karta zapisana lokalnie i oznaczona jako oddana.</p>';
+  pendingPaperImportRows=[];pendingPaperOcrImageFile=null;$('#ocrPaste').value='';$('#paperImportFile').value='';if($('#paperOcrImageFile'))$('#paperOcrImageFile').value='';$('#savePaperImportBtn').disabled=true;renderPaperOcrCapability();persist();$('#paperImportStatus').innerHTML='<p class="status-approved">Karta zapisana lokalnie i oznaczona jako oddana.</p>';
 }
 function renderPaperImports(){
   const box=$('#paperImportHistory');if(!box)return;if(!parentUnlocked()){box.innerHTML='';return}const imports=state.paperImports||[];
@@ -1246,7 +1314,7 @@ function renderAll(){
   const child=activeChild();if(!child)return;
   renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();renderFatigueValue();if(isSelfMode())renderStorageStatus();
   if(parentUnlocked()){
-    renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();renderPilotDiagnostics();
+    renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();renderPilotDiagnostics();renderPaperOcrCapability();
   }else{
     $('#approvalList').innerHTML='';$('#approvalHistory').innerHTML='';$('#pendingCount').textContent='0';$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(currentMode!=='child')currentMode='child';
   }
@@ -1296,6 +1364,8 @@ $('#createClassBtn').onclick=createClass;
 $('#sendJoinRequestBtn').onclick=sendJoinRequest;
 $('#addPaperChildBtn').onclick=addPaperChild;
 $('#paperImportFile').onchange=e=>loadPaperImportFile(e.target.files?.[0]);
+$('#paperOcrImageFile').onchange=e=>loadPaperOcrImage(e.target.files?.[0]);
+$('#runLocalOcrBtn').onclick=runLocalPaperOcr;
 $('#parsePaperImportBtn').onclick=renderPaperImportPreview;
 $('#savePaperImportBtn').onclick=savePaperImport;
 $('#saveEntryBtn').onclick=saveEntry;
