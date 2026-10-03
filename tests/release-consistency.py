@@ -26,6 +26,8 @@ personal_sync = (ROOT / "sync-client.js").read_text(encoding="utf-8")
 family_sync = (ROOT / "family-sync-client.js").read_text(encoding="utf-8")
 production_smoke = (ROOT / "tests" / "production-smoke.mjs").read_text(encoding="utf-8")
 production_workflow = (ROOT / ".github" / "workflows" / "production-smoke.yml").read_text(encoding="utf-8")
+install = (ROOT / "install.js").read_text(encoding="utf-8")
+styles = (ROOT / "styles.css").read_text(encoding="utf-8")
 
 # Parent-only movement-load hint must stay outside child UI, exports and sync.
 assert "parentMovementLoadText" in app, "parent movement load hint missing"
@@ -54,6 +56,9 @@ for forbidden in ["displayName","cloudChildId","pinHash","pinSalt","access_token
     assert forbidden not in diag_report, f"diagnostics report contains sensitive field: {forbidden}"
 assert "AKTYWNIK_EXPECTED_COMMIT" in production_smoke, "production smoke does not verify exact commit"
 assert "AKTYWNIK_EXPECTED_COMMIT: ${{ github.sha }}" in production_workflow, "production workflow does not pass github.sha"
+assert "appUpdateNotice" in install and "controllerchange" in install and "registration.update()" in install, "PWA update notification missing"
+assert "app-update-notice" in styles, "PWA update notice styles missing"
+assert "navigator.serviceWorker.register('./sw.js')" not in app, "app.js still duplicates service worker registration"
 assert "0.5.0 beta.4" in about, "about page is stale"
 assert "0.5.0 beta.4" in faq, "FAQ page is stale"
 assert release.exists(), f"missing release notes: {release.name}"
