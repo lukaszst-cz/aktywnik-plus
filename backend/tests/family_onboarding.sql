@@ -43,7 +43,7 @@ select set_config(
 );
 set local role authenticated;
 
-do $
+do $$
 declare
   blocked boolean := false;
 begin
@@ -61,11 +61,11 @@ begin
   if not blocked then
     raise exception 'FAMILY ONBOARDING FAIL: child account could create guardian child';
   end if;
-end $;
+end $$;
 
 reset role;
 
-do $
+do $$
 begin
   if not exists (
     select 1 from audit_events a
