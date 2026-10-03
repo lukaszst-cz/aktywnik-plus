@@ -19,6 +19,7 @@ Aktywnik+ ma być prosty dla dziecka, rodzica i nauczyciela.
 5. Po odrzuceniu przez rodzica dziecko widzi powód, poprawia wpis i wysyła go ponownie.
 6. Po zatwierdzeniu aktywność trafia do dziennika i raportów.
 7. Dziecko widzi wyłącznie własne statystyki i własny postęp.
+8. Przy wpisie może zobaczyć neutralną informację „energia ruchu: lekka / umiarkowana / wysoka”. Jest ona liczona tylko do podglądu w aplikacji, nie jest celem i nie trafia do raportu nauczyciela, CSV ani synchronizacji chmurowej.
 
 Nie ma rankingów między dziećmi.
 
