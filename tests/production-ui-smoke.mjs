@@ -141,13 +141,21 @@ try{
   assert(parentText.includes('tylko strefa rodzica'),'parent-only privacy marker missing');
   assert(!parentText.includes('kcal'),'calorie text present in parent approval');
 
+  await waitFor("!!window.AktywnikPilotDiagnostics?.report && !!document.getElementById('pilotDiagnosticsGrid')",'pilot diagnostics');
+  const diagnostics=String(await evaluate("JSON.stringify(window.AktywnikPilotDiagnostics.report())"));
+  for(const forbidden of ['Pilot UI','2468','cloudChildId','access_token','refresh_token']){
+    assert(!diagnostics.includes(forbidden),'diagnostics leaked sensitive value: '+forbidden);
+  }
+  assert(String(await evaluate("document.getElementById('pilotDiagnosticsGrid')?.textContent||''")).includes('0.5.0 beta.4'),'production diagnostics version missing');
+
   console.log(JSON.stringify({
     ok:true,
     version:'0.5.0-beta.4',
     familyOnboarding:true,
     fatigueScale:true,
     childBoundary:true,
-    parentBoundary:true
+    parentBoundary:true,
+    diagnosticsPrivacy:true
   },null,2));
   ws.close();
   process.exit(0);
