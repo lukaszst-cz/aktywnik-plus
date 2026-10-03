@@ -48,6 +48,13 @@ jobs:
           test -f backend/tests/profile_role_escalation.sql
           grep -q "grant update(display_name)" backend/migrations/018_profile_type_role_hardening.sql
           grep -q "profile_update_columns" backend/tests/security_preflight.sql
+          test -f backend/migrations/019_school_audit_retention.sql
+          test -f backend/tests/school_audit_retention.sql
+          grep -q "create or replace function app_private.audit_school_change" backend/migrations/019_school_audit_retention.sql
+          grep -q "create or replace function app_private.prune_audit_events" backend/migrations/019_school_audit_retention.sql
+          grep -q "school_audit_trigger_count" backend/tests/security_preflight.sql
+          grep -q "schoolRetentionMechanismReady:true" api/capabilities.js
+          grep -q "schoolRetentionPolicyConfigured:false" api/capabilities.js
           grep -q "school-cloud.html" index.html
           grep -q "school-cloud.html" dla-nauczyciela.html
           grep -q "school-cloud.html" faq.html
@@ -203,6 +210,9 @@ jobs:
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.personalSyncProtocolVersion!==1) throw new Error('sync protocol capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.applicationRestoreDrillVerified!==true) throw new Error('application restore capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.profileRoleEscalationBlocked!==true) throw new Error('profile role hardening capability missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolAuditCoverageVerified!==true) throw new Error('school audit capability missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionMechanismReady!==true) throw new Error('school retention mechanism capability missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionPolicyConfigured!==false) throw new Error('school retention policy must remain externally configurable');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudOnboarding!==false) throw new Error('family onboarding capability must fail closed when cloud is off');
           }
           const health=require('./api/health.js');

@@ -67,6 +67,14 @@ Przykładowy cykl:
 
 Aktywnik+ nie powinien przechowywać danych uczniów „na zawsze” bez powodu.
 
+Technicznie wdrożony jest prywatny mechanizm `app_private.prune_audit_events(cutoff, dry_run)`:
+- domyślnie działa jako `dry_run=true`;
+- zwykły użytkownik `authenticated` ani `anon` nie może go uruchomić;
+- wykonanie jest zarezerwowane dla kontrolowanej ścieżki serwisowej (`service_role`);
+- aplikacja nie ustawia automatycznie żadnego okresu retencji ani harmonogramu.
+
+Konkretny cutoff, częstotliwość i procedura zatwierdzenia pozostają decyzją szkoły/IOD i powinny wynikać z przyjętej polityki retencji.
+
 ## Eksport i usunięcie
 
 Administrator szkoły powinien móc:
@@ -95,6 +103,18 @@ Rejestrujemy działania administracyjne:
 - wyjątkowy dostęp serwisowy.
 
 Audyt zapisuje identyfikator wykonującego, czas, typ operacji i zasób. Nie powinien kopiować całej treści aktywności do logu.
+
+Migracja 019 rozszerza automatyczny School audit na:
+- szkolne aktywności;
+- raporty;
+- plusy/oceny/uwagi;
+- przypisanie dziecka do klasy;
+- przypisanie nauczyciela;
+- zmiany klasy;
+- membership użytkownika w tenant/szkole;
+- dostęp serwisowy.
+
+Audyt działa triggerami PostgreSQL i zapisuje tylko metadane operacji, a nie kopię całego rekordu.
 
 ## Dostęp serwisowy „break glass”
 

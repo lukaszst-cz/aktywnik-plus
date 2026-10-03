@@ -116,7 +116,7 @@ Gotowe:
 - działający projekt Supabase w regionie EU;
 - Supabase Auth dla dorosłych;
 - role i model tenant;
-- migracje 001–018;
+- migracje 001–019;
 - RLS;
 - endpoint `GET /api/v1/me`;
 - endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
@@ -157,8 +157,9 @@ Pozostaje:
 | HTTPS | ✅ |
 | kopie zapasowe lokalne | ✅ eksport/import |
 | backend backup/restore | 🟡 restore danych aplikacji ✅ PASS; platformowy backup/restore Supabase nadal do próby |
-| audyt administracyjny | 🟡 wpisy osobiste create/update/delete audytowane automatycznie; pełny audyt School jeszcze do rozszerzenia |
+| audyt administracyjny | ✅ personal activity + School audit: aktywności, raporty, nagrody/oceny, klasy, nauczyciele, membership i dostęp serwisowy |
 | retencja/usuwanie lokalne | ✅ |
+| retencja logów School | 🟡 mechanizm techniczny ✅ (`dry_run` domyślnie, tylko `service_role`); okres retencji wymaga decyzji szkoły/IOD |
 | usuwanie/synchronizacja w chmurze | ✅ tombstones + propagacja delete w trybie osobistym |
 | eksport danych | ✅ JSON / CSV / PDF |
 | informacja o prywatności | ✅ |
@@ -179,7 +180,7 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`018`: zastosowane;
+- migracje `001`–`019`: zastosowane;
 - tabele `public`: 23;
 - RLS: 23/23;
 - granty dla `anon`: 0;
@@ -187,11 +188,12 @@ Sprawdzenie 2026-10-03:
 - `personal_activities`: polityki SELECT/INSERT/UPDATE/DELETE ograniczone do właściciela;
 - Supabase Security Advisor: 1 typ ostrzeżenia / 5 findings dla publicznych RPC `SECURITY DEFINER`;
 - `anon` i `PUBLIC` nie mają `EXECUTE` do tych RPC, `authenticated` ma dostęp; RPC mają pusty `search_path` i własne sprawdzanie tożsamości/uprawnień;
-- security preflight ma dokładną allowlistę tych 5 funkcji i blokuje wzrost tej powierzchni;
+- security preflight ma dokładną allowlistę tych 5 funkcji, blokuje wzrost tej powierzchni oraz wymaga 8 triggerów School audit i poprawnych uprawnień prywatnej funkcji retencji;
 - `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–018;
 - application restore drill: PASS dla profilu, rodziny, szkoły/klasy, raportu, aktywności rodzinnej i personal activity; test kończy się `ROLLBACK`;
 - migracja 018 jest trwale zastosowana live; test `child → adult` = BLOCKED/PASS, a `display_name` pozostaje edytowalne;
-- security preflight wymaga wyłącznie `UPDATE(display_name)` dla `authenticated` i zwraca PASS.
+- security preflight wymaga wyłącznie `UPDATE(display_name)` dla `authenticated` i zwraca PASS;
+- migracja 019: 8 triggerów School audit + prywatna funkcja retencji z `dry_run=true`, bez automatycznego harmonogramu.
 
 ## 12. Warunek publikacji pilota — ✅
 
@@ -219,7 +221,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 3. synchronizacja trybu rodzinnego;
 4. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
 5. backend restore drill — ✅ dane aplikacji; platformowy backup/restore Supabase nadal otwarty;
-6. pełna integracja `audit_events` i retencji — audyt trybu osobistego ✅, School nadal do rozszerzenia;
+6. School audit + mechanizm retencji — ✅ technicznie; okres/częstotliwość retencji nadal do zatwierdzenia przez szkołę/IOD;
 7. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
 8. formalna decyzja szkoły/IOD oraz DPIA;
 9. usunięcie/refaktor 5 publicznych RPC `SECURITY DEFINER` przed produkcyjnym School;

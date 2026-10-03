@@ -10,7 +10,7 @@ Techniczny przegląd bieżącego środowiska Aktywnik+ przed rozszerzaniem funkc
 
 Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - projekt aktywny w regionie EU (`eu-central-1`);
-- migracje `001`–`018` są zastosowane;
+- migracje `001`–`019` są zastosowane;
 - 23/23 tabel w schemacie `public` ma włączone RLS;
 - brak tabel publicznych bez polityki RLS;
 - brak grantów tabel dla roli `anon`;
@@ -19,6 +19,8 @@ Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - te 5 RPC są obecnie kontrolowanym wyjątkiem: `anon` i `PUBLIC` nie mają `EXECUTE`, `authenticated` ma dostęp, każda funkcja ma `search_path=''` i wewnętrzne sprawdzanie `auth.uid()` + roli/relacji;
 - `backend/tests/security_preflight.sql` ma dokładną allowlistę tych 5 RPC i ma kończyć się FAIL, jeśli pojawi się kolejny publiczny `SECURITY DEFINER` dostępny dla `authenticated` albo osłabnie hardening istniejących;
 - audit triggers dla personal activity create/update/delete: PASS;
+- School audit: 8 triggerów dla aktywności, raportów, nagród/ocen, klas, nauczycieli, membership i support access: PASS;
+- prywatna retencja audit_events: `authenticated=false`, `anon=false`, `service_role=true`, `dry_run` PASS;
 - class lifecycle test create/invite/request/accept: PASS.
 
 Repo zawiera `backend/tests/security_preflight.sql`, który ma być uruchamiany po zmianach schematu/RLS i kontroluje również powierzchnię `SECURITY DEFINER`.
@@ -33,5 +35,5 @@ Ten wynik nie zastępuje niezależnego pentestu ani formalnego audytu wdrożenia
 - test izolacji wielu kont/tenantów: PASS na danych syntetycznych;
 - refaktor 5 publicznych RPC `SECURITY DEFINER` do modelu bez ostrzeżenia Security Advisor;
 - application restore drill: PASS; platformowy backup/restore Supabase nadal do zweryfikowania;
-- dalsze domknięcie audytu i retencji School;
+- polityka okresu/częstotliwości retencji School — mechanizm techniczny gotowy, decyzja szkoły/IOD nadal wymagana;
 - testy E2E wielu realnych kont przed produkcją szkolną.
