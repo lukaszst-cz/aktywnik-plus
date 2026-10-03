@@ -26,7 +26,7 @@ module.exports = function handler(req,res){
       personalSyncBeta:true,
       personalSyncPull:true,
       personalSyncConflictRule:'newer_timestamp_wins',
-      personalSyncDeletes:false,
+      personalSyncDeletes:true,
       familySync:false,
       profileContext:cloud.enabled,
       classRead:cloud.enabled,
