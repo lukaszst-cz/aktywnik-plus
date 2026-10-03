@@ -2,6 +2,7 @@
 
 (function(){
   const KEY='aktywnik-plus-family-sync-outbox-v1';
+  const DELETE_KEY='aktywnik-plus-family-sync-deletes-v1';
   const LAST_SYNC_KEY='aktywnik-plus-last-family-cloud-sync-v1';
   const STATE_KEY='aktywnik-plus-data-v1';
   const SYNC_PROTOCOL_VERSION=1;
@@ -25,6 +26,18 @@
     try{
       if(value)localStorage.setItem(KEY,JSON.stringify(value));
       else localStorage.removeItem(KEY);
+    }catch{}
+  }
+  function readDeletes(){
+    try{
+      const value=JSON.parse(localStorage.getItem(DELETE_KEY)||'[]');
+      return Array.isArray(value)?value:[];
+    }catch{return []}
+  }
+  function writeDeletes(value){
+    try{
+      if(Array.isArray(value)&&value.length)localStorage.setItem(DELETE_KEY,JSON.stringify(value));
+      else localStorage.removeItem(DELETE_KEY);
     }catch{}
   }
   function readState(){
@@ -120,6 +133,26 @@
     });
     schedule();
   }
+  function markDeleted(localChildId,entryId,deletedAt){
+    if(!validUuid(entryId))return false;
+    const stamp=new Date(deletedAt||'');
+    if(Number.isNaN(stamp.getTime()))return false;
+    const state=readState();
+    if(state?.profileMode!=='family')return false;
+    const child=(Array.isArray(state.children)?state.children:[]).find(item=>String(item?.id||'')===String(localChildId||''));
+    if(!child||!validUuid(child.cloudChildId))return false;
+    const cloudChildId=String(child.cloudChildId).toLowerCase();
+    const rows=readDeletes().filter(row=>!(row.cloudChildId===cloudChildId&&row.id===entryId));
+    rows.push({
+      localChildId:String(localChildId),
+      cloudChildId,
+      id:String(entryId),
+      deletedAt:stamp.toISOString()
+    });
+    writeDeletes(rows);
+    schedule();
+    return true;
+  }
   function statusText(){
     if(!isFamilyMode())return '';
     const links=linkedChildren();
@@ -127,8 +160,8 @@
     const session=window.AktywnikAuth?.readSession?.();
     if(!session)return t('sync.familyLogin','rodzina · połączono profil, zaloguj konto');
     if(cloudEnabled===false||familySyncEnabled===false)return t('sync.familyDisabled','rodzina · sync beta wyłączony');
-    const q=read();
-    if(q?.dirty)return q?.lastError?t('sync.familyWaiting','rodzina · sync oczekuje'):t('sync.familyPending','rodzina · zmiany czekają na sync');
+    const q=read(),deletes=readDeletes();
+    if(q?.dirty||deletes.length)return q?.lastError?t('sync.familyWaiting','rodzina · sync oczekuje'):t('sync.familyPending','rodzina · zmiany czekają na sync');
     if(lastSync())return t('sync.familySynced','rodzina · zsynchronizowano');
     return t('sync.familyReady','rodzina · sync gotowy');
   }
@@ -161,13 +194,39 @@
   }
   async function flush(prepared){
     if(pushing||!isFamilyMode())return false;
-    const q=scrubStoredOutbox();if(!q?.dirty)return true;
+    const scrubbed=scrubStoredOutbox();
+    const pendingDeletes=readDeletes();
+    if(!scrubbed?.dirty&&!pendingDeletes.length)return true;
     const ctx=prepared||await context();if(!ctx)return false;
+
+    const q=scrubbed||{
+      dirty:false,
+      updatedAt:new Date().toISOString(),
+      attempts:0,
+      lastError:null,
+      snapshot:minimalFamilySnapshot(readState())||{profileMode:'family',groups:[]}
+    };
+
+    const groups=new Map();
+    for(const group of q.snapshot?.groups||[]){
+      if(!validUuid(group.cloudChildId))continue;
+      groups.set(group.cloudChildId,{
+        cloudChildId:group.cloudChildId,
+        entries:Array.isArray(group.entries)?group.entries:[],
+        deletes:[]
+      });
+    }
+    for(const item of pendingDeletes){
+      if(!validUuid(item?.cloudChildId)||!validUuid(item?.id))continue;
+      if(!groups.has(item.cloudChildId)){
+        groups.set(item.cloudChildId,{cloudChildId:item.cloudChildId,entries:[],deletes:[]});
+      }
+      groups.get(item.cloudChildId).deletes.push({id:item.id,deletedAt:item.deletedAt});
+    }
 
     pushing=true;
     try{
-      for(const group of q.snapshot.groups||[]){
-        if(!validUuid(group.cloudChildId))continue;
+      for(const group of groups.values()){
         const res=await fetch('/api/v1/family-sync',{
           method:'POST',
           cache:'no-store',
@@ -179,14 +238,15 @@
             protocolVersion:SYNC_PROTOCOL_VERSION,
             childId:group.cloudChildId,
             updatedAt:q.updatedAt,
-            entries:Array.isArray(group.entries)?group.entries:[]
+            entries:Array.isArray(group.entries)?group.entries:[],
+            deletes:Array.isArray(group.deletes)?group.deletes:[]
           })
         });
         const data=await res.json().catch(()=>null);
         if(!res.ok)throw new Error(data?.message||data?.error||('HTTP '+res.status));
         assertProtocol(data);
       }
-      write(null);recordSync();renderStatus();return true;
+      write(null);writeDeletes([]);recordSync();renderStatus();return true;
     }catch(err){
       write({...q,attempts:Number(q.attempts||0)+1,lastError:String(err?.message||err),lastAttemptAt:new Date().toISOString()});
       renderStatus();return false;
@@ -196,13 +256,13 @@
     if(pulling||!isFamilyMode())return false;
     const ctx=prepared||await context();if(!ctx)return false;
     const bridge=window.AktywnikCloudBridge;
-    if(!bridge?.mergeFamilyCloudEntries)return false;
+    if(!bridge?.mergeFamilyCloudState)return false;
 
     const state=readState(),links=linkedChildren(state);
     if(!links.length)return false;
     pulling=true;
     try{
-      const totals={added:0,updated:0,localNewer:0,ignored:0};
+      const totals={added:0,updated:0,deleted:0,localNewer:0,ignored:0};
       for(const link of links){
         const url='/api/v1/family-sync?protocolVersion='+SYNC_PROTOCOL_VERSION+'&childId='+encodeURIComponent(link.cloudChildId);
         const res=await fetch(url,{
@@ -212,7 +272,7 @@
         const data=await res.json().catch(()=>null);
         if(!res.ok)throw new Error(data?.message||data?.error||('HTTP '+res.status));
         assertProtocol(data);
-        const result=bridge.mergeFamilyCloudEntries(link.localChildId,Array.isArray(data?.entries)?data.entries:[]);
+        const result=bridge.mergeFamilyCloudState(link.localChildId,Array.isArray(data?.entries)?data.entries:[],Array.isArray(data?.deletes)?data.deletes:[]);
         for(const key of Object.keys(totals))totals[key]+=Number(result?.[key]||0);
       }
       recordSync();renderStatus();return totals;
@@ -239,6 +299,7 @@
   }
   function clear(){
     write(null);
+    writeDeletes([]);
     try{localStorage.removeItem(LAST_SYNC_KEY)}catch{}
     renderStatus();
   }
@@ -247,7 +308,7 @@
   window.addEventListener('aktywnik:languagechange',renderStatus);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')schedule()});
   window.addEventListener('storage',event=>{
-    if(event.key==='aktywnik-plus-cloud-session-v1'||event.key===KEY||event.key===STATE_KEY)renderStatus();
+    if(event.key==='aktywnik-plus-cloud-session-v1'||event.key===KEY||event.key===DELETE_KEY||event.key===STATE_KEY)renderStatus();
   });
   document.addEventListener('DOMContentLoaded',()=>{scrubStoredOutbox();renderStatus();schedule()});
 
@@ -255,6 +316,8 @@
     protocolVersion:SYNC_PROTOCOL_VERSION,
     minimalFamilySnapshot,
     markDirty,
+    markDeleted,
+    readDeletes,
     flush,
     pull,
     syncNow,
