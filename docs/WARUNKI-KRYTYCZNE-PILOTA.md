@@ -151,7 +151,7 @@ Pozostaje:
 | --- | --- |
 | backend API + personal sync | ✅ |
 | uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
-| role/uprawnienia w DB | ✅ RLS wdrożone |
+| role/uprawnienia w DB | 🟡 RLS wdrożone; migracja 018 blokująca self-escalation jest gotowa, ale jeszcze niewdrożona live |
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
 | HTTPS | ✅ |
 | kopie zapasowe lokalne | ✅ eksport/import |
@@ -167,7 +167,7 @@ Pozostaje:
 | formalne uzgodnienie szkoła/IOD | 🔴 decyzja zewnętrzna |
 | DPIA screening — materiał | ✅ przygotowany |
 | DPIA — decyzja administratora | 🔴 decyzja zewnętrzna |
-| test techniczny bezpieczeństwa | 🟡 CI + database preflight PASS; Security Advisor: 5 kontrolowanych WARN `SECURITY DEFINER` do refaktoru przed School production |
+| test techniczny bezpieczeństwa | 🟡 CI PASS; Security Advisor: 5 kontrolowanych WARN `SECURITY DEFINER`; migracja 018 wymagana live przed dalszym family cloud |
 | E2E izolacji wielu kont/tenantów | ✅ test RLS PASS na danych syntetycznych |
 | niezależny pentest / formalny review | 🟡 przed produkcyjnym School |
 | procedura incydentów | ✅ przygotowana |
@@ -187,7 +187,10 @@ Sprawdzenie 2026-10-03:
 - Supabase Security Advisor: 1 typ ostrzeżenia / 5 findings dla publicznych RPC `SECURITY DEFINER`;
 - `anon` i `PUBLIC` nie mają `EXECUTE` do tych RPC, `authenticated` ma dostęp; RPC mają pusty `search_path` i własne sprawdzanie tożsamości/uprawnień;
 - security preflight ma dokładną allowlistę tych 5 funkcji i blokuje wzrost tej powierzchni;
-- `backend/tests/security_preflight.sql`: PASS.
+- `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–017;
+- wykryto self-escalation `child → adult` przez szeroki grant `UPDATE profiles`;
+- migracja 018 jest przygotowana i przetestowana z rollbackiem, ale **nie została jeszcze trwale zastosowana live**;
+- po wdrożeniu 018 security preflight ma wymagać wyłącznie `UPDATE(display_name)` dla `authenticated`.
 
 ## 12. Warunek publikacji pilota — ✅
 
@@ -211,14 +214,15 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 ## Rzeczy nadal realnie nierozwiązane
 
 1. family onboarding — ✅ rodzic może utworzyć profil dziecka w School Cloud bez e-maila/hasła dziecka;
-2. synchronizacja trybu rodzinnego;
-3. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
-4. zweryfikowany backend backup/restore drill;
-5. pełna integracja `audit_events` i retencji — audyt trybu osobistego ✅, School nadal do rozszerzenia;
-6. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
-7. formalna decyzja szkoły/IOD oraz DPIA;
-8. usunięcie/refaktor 5 publicznych RPC `SECURITY DEFINER` przed produkcyjnym School;
-9. niezależny security review/pentest przed produkcyjnym School.
+2. wdrożenie migracji 018 na live Supabase i ponowny security preflight;
+3. synchronizacja trybu rodzinnego;
+4. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
+5. zweryfikowany backend backup/restore drill;
+6. pełna integracja `audit_events` i retencji — audyt trybu osobistego ✅, School nadal do rozszerzenia;
+7. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
+8. formalna decyzja szkoły/IOD oraz DPIA;
+9. usunięcie/refaktor 5 publicznych RPC `SECURITY DEFINER` przed produkcyjnym School;
+10. niezależny security review/pentest przed produkcyjnym School.
 
 ## Źródła i dokumenty
 
