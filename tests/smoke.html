@@ -633,7 +633,7 @@ async function run(){
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('full local wipe left parent session state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('full local wipe removed language preference');
 
-    pass('beta2 personal + family beta sync foundations, explicit cloud child links, minimal sync payloads, per-profile drafts, smart duration, data controls, complete local wipe, family PIN roles, multi-child isolation, reports, audit, backup guards and PWA');
+    pass('beta3 personal + full family sync, explicit cloud child links, delete/decision sync, minimal sync payloads, per-profile drafts, smart duration, data controls, complete local wipe, family PIN roles, multi-child isolation, reports, audit, backup guards and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
