@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — FK index performance hardening
+
+- Supabase Performance Advisor wskazał 4 klucze obce bez indeksów pokrywających;
+- migracja 021 dodaje indeksy dla `class_invites.created_by` oraz `class_join_requests.child_id/decided_by/requested_by`;
+- migracja jest wyłącznie addytywna i nie zmienia danych ani RLS;
+- `backend/tests/performance_preflight.sql` weryfikuje obecność indeksów;
+- migracja 021 + performance preflight przeszły PASS na live schemacie w transakcji zakończonej rollbackiem;
+- migracja 021 nie została jeszcze trwale wdrożona na Supabase.
+
+
 ## Unreleased — public RPC privilege refactor
 
 - migracja 020 przenosi uprzywilejowaną logikę lifecycle do nieeksponowanego `app_private`;
