@@ -109,7 +109,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  request_hash text := encode(digest(convert_to(btrim(coalesce(child_name,'')),'UTF8'),'sha256'),'hex');
+  request_hash text := encode(extensions.digest(convert_to(btrim(coalesce(child_name,'')),'UTF8'),'sha256'),'hex');
   existing_result uuid;
   created_result uuid;
 begin
@@ -135,7 +135,7 @@ set search_path = ''
 as $$
 declare
   request_hash text := encode(
-    digest(
+    extensions.digest(
       convert_to(
         coalesce(target_tenant::text,'')||'|'||
         coalesce(target_school_year::text,'')||'|'||
@@ -171,7 +171,7 @@ as $$
 declare
   normalized_days integer := greatest(1,least(coalesce(valid_days,14),30));
   request_hash text := encode(
-    digest(
+    extensions.digest(
       convert_to(coalesce(target_class::text,'')||'|'||normalized_days::text,'UTF8'),
       'sha256'
     ),
