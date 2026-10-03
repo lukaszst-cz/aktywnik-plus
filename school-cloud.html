@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="landing.css">
+  <title>Aktywnik+ School — klasy i zaproszenia</title>
+</head>
+<body>
+<header class="nav">
+  <a class="logo" href="./">Aktywnik+</a>
+  <nav>
+    <a href="app.html">Aplikacja</a>
+    <a href="konto.html">Konto</a>
+    <a href="prywatnosc.html">Prywatność</a>
+  </nav>
+</header>
+
+<main class="section">
+  <span class="pill">School Cloud • beta</span>
+  <h1>Klasy i dołączanie</h1>
+  <p>Panel korzysta z konta Aktywnik+ i uprawnień zapisanych w bazie. Widoczność danych ogranicza RLS.</p>
+
+  <section id="schoolCloudLoginRequired" class="section action hidden">
+    <h2>Zaloguj się</h2>
+    <p>Do funkcji School potrzebne jest konto dorosłego.</p>
+    <a class="primary" href="konto.html">Przejdź do logowania</a>
+  </section>
+
+  <section id="schoolCloudMain" class="hidden">
+    <section class="section action">
+      <div class="section-head">
+        <div>
+          <h2>Moje konto School</h2>
+          <p id="schoolCloudProfile">Ładowanie…</p>
+        </div>
+        <button id="schoolCloudRefreshBtn" class="secondary" type="button">Odśwież</button>
+      </div>
+      <label>Szkoła / organizacja
+        <select id="schoolTenantSelect"></select>
+      </label>
+      <p id="schoolCloudStatus" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="schoolStaffPanel" class="section action hidden">
+      <h2>Moje klasy</h2>
+      <div id="schoolAdminCreateBox" class="hidden">
+        <div class="cards">
+          <label>Rok szkolny
+            <select id="schoolYearSelect"></select>
+          </label>
+          <label>Nazwa klasy
+            <input id="schoolCloudClassName" maxlength="80" placeholder="np. 5A — WF">
+          </label>
+        </div>
+        <div class="cta">
+          <button id="schoolCloudCreateClassBtn" class="primary" type="button">Utwórz klasę</button>
+        </div>
+      </div>
+      <div id="schoolCloudClasses" class="cards"></div>
+    </section>
+
+    <section id="schoolJoinRequestsPanel" class="section action hidden">
+      <h2>Zgłoszenia do klasy</h2>
+      <label>Klasa
+        <select id="schoolRequestClassSelect"></select>
+      </label>
+      <div class="cta">
+        <button id="schoolLoadRequestsBtn" class="secondary" type="button">Pokaż zgłoszenia</button>
+      </div>
+      <div id="schoolCloudRequests" class="cards"></div>
+    </section>
+
+    <section id="schoolGuardianPanel" class="section action hidden">
+      <h2>Dołącz dziecko do klasy</h2>
+      <p>Wklej token zaproszenia otrzymany od szkoły. Token nie ujawnia publicznej listy klas.</p>
+      <label>Dziecko
+        <select id="schoolGuardianChildSelect"></select>
+      </label>
+      <label>Token zaproszenia
+        <input id="schoolInviteTokenInput" autocomplete="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+      </label>
+      <div class="cta">
+        <button id="schoolRequestJoinBtn" class="primary" type="button">Wyślij zgłoszenie</button>
+      </div>
+    </section>
+  </section>
+</main>
+
+<footer>Aktywnik+ School • beta • <a href="docs/WARUNKI-KRYTYCZNE-PILOTA.md">warunki pilota</a></footer>
+
+<script src="auth-config.js"></script>
+<script src="auth.js"></script>
+<script src="school-cloud.js"></script>
+</body>
+</html>

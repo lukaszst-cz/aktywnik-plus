@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — School Cloud UI
+
+- nowy `school-cloud.html` dostępny z ekranu konta;
+- role i dzieci pobierane z `/api/v1/me` przez RLS;
+- lata szkolne pobierane przez nowy `/api/v1/school-years`;
+- school_admin może utworzyć klasę bez ręcznych UUID;
+- staff może wygenerować zaproszenie i obsłużyć zgłoszenia;
+- opiekun może wysłać zgłoszenie dla dziecka już obecnego w chmurze.
+
 ## Unreleased — school class lifecycle backend
 
 - migracje 015–016: bezpieczny workflow klasy i tworzenie klasy;

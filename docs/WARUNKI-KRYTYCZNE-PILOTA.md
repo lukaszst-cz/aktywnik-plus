@@ -132,7 +132,16 @@ Gotowe dodatkowo:
 - test SQL create → invite → request → accept: PASS.
 
 Pozostaje:
-- finalny UX nauczyciela i rodzica dla tego flow;
+Gotowe w UI:
+- osobny panel `school-cloud.html` dla kont dorosłych;
+- wybór tenant/szkoły i roku szkolnego;
+- tworzenie klasy dla school_admin;
+- generowanie tokenu zaproszenia;
+- wybór dziecka widocznego opiekunowi przez RLS;
+- wysłanie zgłoszenia oraz akceptacja/odrzucenie przez staff.
+
+Pozostaje:
+- onboarding/synchronizacja profili rodzinnych do chmury;
 - E2E przez publiczne API z realnymi kontami testowymi przed School production.
 
 ## 10. Warunki produkcyjne — stan bieżący
@@ -153,7 +162,7 @@ Pozostaje:
 | informacja o prywatności | ✅ |
 | pakiet szkoła/IOD | ✅ przygotowany |
 | backend lifecycle klasy | ✅ create/invite/request/accept + audit |
-| UI lifecycle klasy | 🟡 do podpięcia do backendu |
+| UI lifecycle klasy | ✅ School Cloud: klasy, zaproszenia, zgłoszenia, decyzje |
 | formalne uzgodnienie szkoła/IOD | 🔴 decyzja zewnętrzna |
 | DPIA screening — materiał | ✅ przygotowany |
 | DPIA — decyzja administratora | 🔴 decyzja zewnętrzna |
@@ -198,7 +207,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 
 ## Rzeczy nadal realnie nierozwiązane
 
-1. finalny UI lifecycle klasy/dołączania — backend ✅;
+1. family onboarding/sync — School Cloud UI ✅, ale profil dziecka musi już istnieć w chmurze;
 2. synchronizacja trybu rodzinnego;
 3. bezpieczna synchronizacja usunięć / tombstones — ✅ tryb osobisty;
 4. zweryfikowany backend backup/restore drill;
