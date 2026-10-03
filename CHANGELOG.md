@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0-beta.4 — Family Pilot Hardening — 2026-10-03
+
+- dodano neutralny, wyłącznie lokalny wskaźnik „energia ruchu: lekka / umiarkowana / wysoka” w dzienniku dziecka;
+- wskaźnik jest liczony tylko do prezentacji i nie jest zapisywany jako pole aktywności;
+- nie trafia do CSV, PDF/A4, School Cloud, personal sync ani family sync;
+- dodano test release-consistency blokujący przypadkowy wyciek tej informacji do eksportów lub synchronizacji;
+- podniesiono numer wersji, production smoke i cache PWA do beta.4;
+- backend, RLS oraz protokół family sync pozostają zgodne z beta.3.
+
 ## 0.5.0-beta.3 — Full Family Sync Pilot — 2026-10-03
 
 - migracje 023, 024 i 025 są trwale zastosowane na live Supabase;
