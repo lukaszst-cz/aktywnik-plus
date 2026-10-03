@@ -265,7 +265,7 @@
             updatedAt:q.updatedAt,
             entries:Array.isArray(group.entries)?group.entries:[],
             deletes:Array.isArray(group.deletes)?group.deletes:[],
-            decisions:Array.isArray(group.decisions)?group.decisions:[]
+            decisions:ctx.caps?.cloud?.familySyncDecisionHistory===true&&Array.isArray(group.decisions)?group.decisions:[]
           })
         });
         const data=await res.json().catch(()=>null);
@@ -274,7 +274,7 @@
         if(group.deletes?.length&&data?.deletesSupported!==true){
           throw new Error('family_delete_sync_not_ready');
         }
-        if(group.decisions?.length&&data?.decisionHistorySupported!==true){
+        if(ctx.caps?.cloud?.familySyncDecisionHistory===true&&group.decisions?.length&&data?.decisionHistorySupported!==true){
           throw new Error('family_decision_history_not_ready');
         }
       }
