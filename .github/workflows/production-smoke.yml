@@ -31,6 +31,11 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      - name: Verify production smoke scripts
+        run: |
+          node --check tests/production-smoke.mjs
+          node --check tests/production-ui-smoke.mjs
+
       - name: Verify production deployment
         env:
           AKTYWNIK_BASE_URL: https://aktywnik-plus.vercel.app
@@ -48,3 +53,21 @@ jobs:
             fi
             sleep 10
           done
+
+      - name: Verify production family UI
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --no-first-run \
+            --remote-debugging-port=9225 \
+            --user-data-dir=/tmp/aktywnik-production-ui \
+            'https://aktywnik-plus.vercel.app/app.html?production-ui-smoke=1' \
+            >/tmp/aktywnik-production-ui.log 2>&1 &
+          echo $! > /tmp/aktywnik-production-ui.pid
+          sleep 2
+          node tests/production-ui-smoke.mjs 9225 'https://aktywnik-plus.vercel.app/app.html'
+          echo "Aktywnik+ production family UI smoke PASS"
