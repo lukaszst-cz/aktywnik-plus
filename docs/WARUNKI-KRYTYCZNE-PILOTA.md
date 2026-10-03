@@ -106,7 +106,7 @@ Dostępne:
 
 Aplikacja może przechowywać wynik przekazany przez nauczyciela, ale nie ustala sama zasad oceniania ani przeliczników.
 
-## 9. Prawdziwa wspólna klasa — 🟡 fundament techniczny gotowy
+## 9. Prawdziwa wspólna klasa — 🟡 backend lifecycle gotowy, UI do domknięcia
 
 To nie jest już brak backendu.
 
@@ -121,13 +121,19 @@ Gotowe:
 - `/api/v1/sync` dla trybu osobistego;
 - fail-closed przy braku konfiguracji bezpieczeństwa.
 
+Gotowe dodatkowo:
+- tworzenie klasy przez `school_admin`;
+- automatyczne przypisanie twórcy do klasy;
+- czasowe tokeny zaproszeń;
+- zgłoszenie dziecka przez opiekuna;
+- akceptacja/odrzucenie przez nauczyciela lub admina;
+- automatyczne `class_children` po akceptacji;
+- pełny audit trail;
+- test SQL create → invite → request → accept: PASS.
+
 Pozostaje:
-- tworzenie klasy;
-- zaproszenie/kod dołączenia;
-- powiązanie rodzica/dziecka z klasą;
-- akceptacja zgłoszenia;
-- pełny UX nauczyciela;
-- E2E wielu realnych kont.
+- finalny UX nauczyciela i rodzica dla tego flow;
+- E2E przez publiczne API z realnymi kontami testowymi przed School production.
 
 ## 10. Warunki produkcyjne — stan bieżący
 
@@ -146,6 +152,8 @@ Pozostaje:
 | eksport danych | ✅ JSON / CSV / PDF |
 | informacja o prywatności | ✅ |
 | pakiet szkoła/IOD | ✅ przygotowany |
+| backend lifecycle klasy | ✅ create/invite/request/accept + audit |
+| UI lifecycle klasy | 🟡 do podpięcia do backendu |
 | formalne uzgodnienie szkoła/IOD | 🔴 decyzja zewnętrzna |
 | DPIA screening — materiał | ✅ przygotowany |
 | DPIA — decyzja administratora | 🔴 decyzja zewnętrzna |
@@ -160,7 +168,7 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`014`: zastosowane;
+- migracje `001`–`016`: zastosowane;
 - tabele `public`: 20;
 - RLS: 20/20;
 - granty dla `anon`: 0;
@@ -190,7 +198,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 
 ## Rzeczy nadal realnie nierozwiązane
 
-1. pełny lifecycle klasy i dołączania rodziny;
+1. finalny UI lifecycle klasy/dołączania — backend ✅;
 2. synchronizacja trybu rodzinnego;
 3. bezpieczna synchronizacja usunięć / tombstones — ✅ tryb osobisty;
 4. zweryfikowany backend backup/restore drill;
