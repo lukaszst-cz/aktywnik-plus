@@ -74,7 +74,8 @@ Gotowe:
 - `docs/DPIA-SCREENING.md`;
 - `docs/PROCEDURA-INCYDENTOW.md`;
 - `docs/SECURITY-REVIEW-2026-10-03.md`;
-- `docs/BACKUP-RESTORE.md`.
+- `docs/BACKUP-RESTORE.md`;
+- `backend/tests/application_restore_drill.sql` — live-verified, syntetyczny restore drill z `ROLLBACK`.
 
 Pozostaje po stronie szkoły/administratora danych:
 - podstawa prawna;
@@ -155,7 +156,7 @@ Pozostaje:
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
 | HTTPS | ✅ |
 | kopie zapasowe lokalne | ✅ eksport/import |
-| backend backup/restore | 🟡 runbook gotowy; brak potwierdzonego restore drill |
+| backend backup/restore | 🟡 restore danych aplikacji ✅ PASS; platformowy backup/restore Supabase nadal do próby |
 | audyt administracyjny | 🟡 wpisy osobiste create/update/delete audytowane automatycznie; pełny audyt School jeszcze do rozszerzenia |
 | retencja/usuwanie lokalne | ✅ |
 | usuwanie/synchronizacja w chmurze | ✅ tombstones + propagacja delete w trybie osobistym |
@@ -188,6 +189,7 @@ Sprawdzenie 2026-10-03:
 - `anon` i `PUBLIC` nie mają `EXECUTE` do tych RPC, `authenticated` ma dostęp; RPC mają pusty `search_path` i własne sprawdzanie tożsamości/uprawnień;
 - security preflight ma dokładną allowlistę tych 5 funkcji i blokuje wzrost tej powierzchni;
 - `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–017;
+- application restore drill: PASS dla profilu, rodziny, szkoły/klasy, raportu, aktywności rodzinnej i personal activity; test kończy się `ROLLBACK`;
 - wykryto self-escalation `child → adult` przez szeroki grant `UPDATE profiles`;
 - migracja 018 jest przygotowana i przetestowana z rollbackiem, ale **nie została jeszcze trwale zastosowana live**;
 - po wdrożeniu 018 security preflight ma wymagać wyłącznie `UPDATE(display_name)` dla `authenticated`.
@@ -217,7 +219,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 2. wdrożenie migracji 018 na live Supabase i ponowny security preflight;
 3. synchronizacja trybu rodzinnego;
 4. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
-5. zweryfikowany backend backup/restore drill;
+5. backend restore drill — ✅ dane aplikacji; platformowy backup/restore Supabase nadal otwarty;
 6. pełna integracja `audit_events` i retencji — audyt trybu osobistego ✅, School nadal do rozszerzenia;
 7. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
 8. formalna decyzja szkoły/IOD oraz DPIA;
