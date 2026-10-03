@@ -1,66 +1,54 @@
 # Warunki krytyczne wersji pilotażowej Aktywnik+
 
-Ten dokument pokazuje aktualny stan pilota i rozdziela:
-- **✅ spełnione w obecnym pilocie**;
-- **🟡 częściowo rozwiązane / przygotowane projektowo**;
-- **🔴 wymagające backendu albo decyzji szkoły**.
+Stan zweryfikowany: **2026-10-03**.
+
+Legenda:
+- **✅ spełnione / zweryfikowane technicznie**;
+- **🟡 częściowo otwarte albo wymagające domknięcia przed Aktywnik+ School**;
+- **🔴 zablokowane wyłącznie przez decyzję zewnętrzną / formalną**.
 
 ## Status tej wersji
 
-Aktywnik+ jest obecnie **bezpłatnym pilotem projektu rodzicielskiego**.
+Aktywnik+ działa jako **0.5.0-beta.2, local-first z opcjonalnym kontem i synchronizacją trybu osobistego**.
 
 Nie jest jeszcze:
-- szkolnym systemem informatycznym;
-- centralnym dziennikiem;
-- produkcyjnym SaaS z kontami i wspólną bazą;
-- miejscem do przechowywania pełnej dokumentacji uczniów.
+- szkolnym dziennikiem elektronicznym;
+- kompletnym produkcyjnym Aktywnik+ School;
+- systemem do przechowywania pełnej dokumentacji ucznia.
 
 Publiczna wersja:
 **https://aktywnik-plus.vercel.app**
 
-## 1. Hosting publicznego pilota — ✅ spełnione
+## 1. Hosting publicznego pilota — ✅
 
-Pilot jest hostowany na Vercel, a nie na GitHub Pages.
+- Vercel + HTTPS;
+- stały publiczny adres;
+- Content-Security-Policy i HSTS;
+- blokada obcych iframe;
+- kod i dokumentacja w GitHub;
+- dane testowe są syntetyczne.
 
-Aktualnie:
-- działa przez HTTPS;
-- ma stały publiczny adres;
-- ma Content-Security-Policy;
-- ma HSTS;
-- blokuje osadzanie w obcych iframe;
-- nie prosi o hasła użytkowników;
-- nie przechowuje centralnie danych dzieci;
-- GitHub służy do kodu i dokumentacji.
-
-Frontend pilota nadal nie jest backendem szkolnym.
-
-## 2. Dane pilota pozostają lokalnie — 🟡 mocno ograniczone ryzyko
-
-Wpisy są zapisane lokalnie w pamięci przeglądarki urządzenia.
+## 2. Local-first + opcjonalna synchronizacja — 🟡
 
 Zrobione:
-- eksport kopii do JSON;
-- import kopii;
-- przycisk prośby o trwałą pamięć przeglądarki;
-- ręczne usunięcie danych lokalnych;
-- raport PDF;
-- eksport CSV;
-- brak automatycznej wysyłki danych do GitHuba/Vercela;
-- brak obowiązkowego logowania.
+- pełna praca bez konta;
+- eksport/import JSON;
+- CSV/PDF;
+- trwała pamięć przeglądarki;
+- autozapis niedokończonych wpisów osobno dla profili;
+- opcjonalne konto dorosłego przez Magic Link;
+- tryb osobisty: push → pull do Supabase;
+- merge wpisów z różnych urządzeń na podstawie timestampów;
+- RLS ogranicza dane do właściciela.
 
 Pozostaje:
-- dane są zależne od konkretnego urządzenia/profilu przeglądarki;
-- skasowanie danych przeglądarki bez kopii może usunąć historię;
-- nie ma jeszcze szyfrowanej kopii chmurowej.
+- tryb rodzinny nie ma jeszcze pełnej synchronizacji chmurowej;
+- usuwanie wpisów nie ma jeszcze synchronizacji/tombstones;
+- synchronizacja nie zastępuje jeszcze zweryfikowanego backup/restore backendu.
 
-## 3. Minimum danych o dziecku — ✅ spełnione
+## 3. Minimum danych o dziecku — ✅
 
-W pilocie preferowane są:
-- imię + inicjał albo umówiony identyfikator;
-- aktywność, data, czas;
-- opcjonalny wysiłek i uwaga.
-
-Nie wymagamy:
+Projekt nie wymaga:
 - adresu;
 - telefonu dziecka;
 - GPS;
@@ -70,142 +58,152 @@ Nie wymagamy:
 - zdjęcia twarzy;
 - publicznej listy klasy.
 
-Nazwa dziecka może zostać pominięta przy starcie.
+Podstawowy wpis to identyfikator/profil, aktywność, data i czas; wysiłek/uwaga są opcjonalne.
 
-## 4. Brak publicznych danych dzieci w repo — ✅ spełnione jako zasada projektu
+## 4. Brak publicznych danych dzieci w repo — ✅
 
-Publiczne repozytorium zawiera kod, dokumentację i dane demonstracyjne.
+Repo zawiera kod, dokumentację i dane syntetyczne. Prawdziwe raporty dzieci, listy klas, tokeny i sekrety nie należą do repo.
 
-Nie wolno umieszczać:
-- prawdziwej listy klasy;
-- rzeczywistych raportów dzieci;
-- eksportów z danymi dzieci;
-- sekretów, tokenów i danych logowania;
-- kopii dokumentacji szkolnej.
+## 5. Szkoła / dyrektor / IOD — 🟡 pakiet gotowy, decyzja zewnętrzna
 
-Testy używają danych syntetycznych.
+Gotowe:
+- `docs/PAKIET-SZKOLA-IOD.md`;
+- mapa minimalnych danych i ról;
+- opis hostingu i zabezpieczeń;
+- `docs/DPIA-SCREENING.md`;
+- `docs/PROCEDURA-INCYDENTOW.md`;
+- `docs/SECURITY-REVIEW-2026-10-03.md`;
+- `docs/BACKUP-RESTORE.md`.
 
-## 5. Rola szkoły / dyrektora / IOD — 🟡 przygotujemy pakiet, decyzja pozostaje po stronie szkoły
+Pozostaje po stronie szkoły/administratora danych:
+- podstawa prawna;
+- formalny model administrator/podmiot przetwarzający;
+- zatwierdzenie retencji;
+- decyzja i ewentualne wykonanie DPIA;
+- formalna zgoda na wdrożenie.
 
-Możemy przygotować:
-- opis celu i zakresu pilota;
-- mapę danych;
-- listę ról;
-- model dostępu;
-- propozycję retencji;
-- checklistę dla dyrektora/IOD;
-- screening pytań do DPIA;
-- opis dostawcy i hostingu.
+## 6. Podwyższona ochrona dzieci — ✅
 
-Nie możemy za szkołę:
-- wybrać podstawy prawnej;
-- zatwierdzić modelu przetwarzania;
-- zdecydować o DPIA;
-- zatwierdzić formalnego wdrożenia.
+- brak rankingów dzieci;
+- brak porównań między dziećmi;
+- brak GPS;
+- brak wagi/kalorii/wyglądu;
+- brak automatycznej oceny dziecka;
+- statystyki dotyczą własnej historii;
+- prosta papierowa alternatywa.
 
-## 6. Podwyższona ochrona dzieci — ✅ spełnione projektowo
+## 7. Papierowa alternatywa — ✅
 
-Aktywnik+:
-- nie tworzy rankingów dzieci;
-- nie porównuje dzieci ze sobą;
-- nie śledzi wagi, kalorii ani wyglądu;
-- nie wymaga GPS;
-- pokazuje prosty interfejs;
-- statystyki dotyczą własnej historii dziecka;
-- szybkie czasy treningu są zapisem faktycznych zajęć, a nie celem do „nabijania”.
-
-## 7. Papierowa alternatywa — ✅ spełnione
-
-Dostępne są:
+Dostępne:
 - aplikacja;
 - tryb hybrydowy;
 - formularz papierowy;
 - arkusz 70 wpisów;
-- druk / zapis PDF;
-- import papierowej karty po OCR/CSV/JSON.
+- PDF;
+- import OCR/CSV/JSON.
 
-Brak aplikacji nie blokuje udziału w programie.
+## 8. Plusy i oceny — ✅ projektowo
 
-## 8. Plusy i oceny — ✅ spełnione projektowo
+Aplikacja może przechowywać wynik przekazany przez nauczyciela, ale nie ustala sama zasad oceniania ani przeliczników.
 
-Aktywnik+:
-- może zapisać plus/ocenę;
-- nie narzuca przelicznika;
-- nie ustala sam zasad oceniania.
+## 9. Prawdziwa wspólna klasa — 🟡 fundament techniczny gotowy
 
-Reguły pozostają po stronie nauczyciela/szkoły.
+To nie jest już brak backendu.
 
-## 9. Prawdziwa wspólna klasa — 🔴 wymaga backendu
+Gotowe:
+- działający projekt Supabase w regionie EU;
+- Supabase Auth dla dorosłych;
+- role i model tenant;
+- migracje 001–012;
+- RLS;
+- endpoint `GET /api/v1/me`;
+- endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
+- `/api/v1/sync` dla trybu osobistego;
+- fail-closed przy braku konfiguracji bezpieczeństwa.
 
-Obecny kod klasy jest lokalnym demo UX.
-
-Prawdziwe dołączanie między urządzeniami wymaga:
-- backendu;
-- bazy;
-- synchronizacji;
-- identyfikacji dorosłych;
-- uprawnień po stronie serwera/bazy.
-
-To pozostaje największą techniczną granicą pilota.
+Pozostaje:
+- tworzenie klasy;
+- zaproszenie/kod dołączenia;
+- powiązanie rodzica/dziecka z klasą;
+- akceptacja zgłoszenia;
+- pełny UX nauczyciela;
+- E2E wielu realnych kont.
 
 ## 10. Warunki produkcyjne — stan bieżący
 
 | Warunek | Stan |
 | --- | --- |
-| backend produkcyjny | 🟡 działa szkielet Vercel API; cloud sync celowo wyłączony do czasu bazy/auth |
-| uwierzytelnianie | 🟡 model bez haseł zaprojektowany; Supabase Auth do podłączenia |
-| role/uprawnienia | 🟡 dokumentacja + schema DB + przygotowane RLS; wymagane wdrożenie i testy w Supabase |
-| izolacja szkół / tenant | 🟡 tenant_id + przygotowane RLS; wymagane wdrożenie i testy |
-| HTTPS | ✅ działa na Vercel |
-| kopie zapasowe | 🟡 lokalny eksport/import działa; brak backupu serwerowego |
-| audyt administracyjny | 🟡 schema przewiduje audit_events; brak backendu |
-| retencja/usuwanie | 🟡 opisane; lokalne usunięcie działa; brak polityki serwerowej |
+| backend API + personal sync | ✅ |
+| uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
+| role/uprawnienia w DB | ✅ RLS wdrożone |
+| izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
+| HTTPS | ✅ |
+| kopie zapasowe lokalne | ✅ eksport/import |
+| backend backup/restore | 🟡 runbook gotowy; brak potwierdzonego restore drill |
+| audyt administracyjny | 🟡 schema jest; pełna integracja zdarzeń jeszcze nie |
+| retencja/usuwanie lokalne | ✅ |
+| usuwanie/synchronizacja w chmurze | 🟡 brak tombstones |
 | eksport danych | ✅ JSON / CSV / PDF |
-| informacja o prywatności | ✅ publiczna strona |
-| uzgodnienie ze szkołą/IOD | 🔴 decyzja szkoły |
-| DPIA screening | 🔴 do wykonania przy formalnym wdrożeniu |
-| testy bezpieczeństwa | 🟡 CI/smoke testy są; formalny security review przed produkcją |
-| procedura incydentów | 🟡 dokument do przygotowania przed wdrożeniem szkolnym |
-| środowisko testowe bez prawdziwych danych | ✅ dane syntetyczne |
+| informacja o prywatności | ✅ |
+| pakiet szkoła/IOD | ✅ przygotowany |
+| formalne uzgodnienie szkoła/IOD | 🔴 decyzja zewnętrzna |
+| DPIA screening — materiał | ✅ przygotowany |
+| DPIA — decyzja administratora | 🔴 decyzja zewnętrzna |
+| test techniczny bezpieczeństwa | ✅ CI + database preflight + Security Advisor |
+| niezależny pentest / formalny review | 🟡 przed produkcyjnym School |
+| procedura incydentów | ✅ przygotowana |
+| środowisko testowe bez prawdziwych danych | ✅ |
 
-## 11. Warunek publikacji — ✅ spełnione
+## 11. Weryfikacja bazy Supabase — ✅
 
-Publiczny pilot jasno komunikuje, że:
-- jest bezpłatnym projektem rodzicielskim;
-- działa bez konta;
-- dane pilota są lokalne;
-- nie jest jeszcze szkolnym systemem informatycznym.
+Sprawdzenie 2026-10-03:
+- projekt `aktywnik-plus`: ACTIVE_HEALTHY;
+- region: `eu-central-1`;
+- migracje `001`–`012`: zastosowane;
+- tabele `public`: 20;
+- RLS: 20/20;
+- granty dla `anon`: 0;
+- tabele bez polityk: 0;
+- `personal_activities`: polityki SELECT/INSERT/UPDATE/DELETE ograniczone do właściciela;
+- Supabase Security Advisor: 0 aktywnych problemów;
+- `backend/tests/security_preflight.sql`: PASS.
 
-## Backend — stan 0.1.3
+## 12. Warunek publikacji pilota — ✅
 
-Na produkcji działają:
+Publiczna wersja powinna jasno komunikować:
+- local-first;
+- konto jest opcjonalne;
+- chmura jest funkcją beta;
+- pełny Aktywnik+ School nie jest jeszcze wdrożeniem produkcyjnym szkoły.
+
+## Backend — stan 0.5.0-beta.2
+
+Dostępne:
 - `/api/health`;
 - `/api/capabilities`;
-- chronione endpointy `/api/v1/classes` i `/api/v1/sync`.
+- `GET/POST /api/v1/sync` — tryb osobisty;
+- `GET /api/v1/me` — profil i membership zalogowanego użytkownika;
+- `GET /api/v1/classes` — klasy widoczne przez RLS.
 
-Chronione endpointy zwracają `503 cloud_sync_disabled`, dopóki nie ma jednocześnie:
-- bazy;
-- autoryzacji;
-- jawnego `AKTYWNIK_CLOUD_SYNC=true`.
+Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-role nie jest wymagany do odczytu/zapisu danych użytkownika.
 
-To oznacza, że backend już istnieje technicznie, ale nie przyjmuje danych szkolnych bez pełnej konfiguracji bezpieczeństwa.
+## Rzeczy nadal realnie nierozwiązane
 
-## Najważniejsze nierozwiązane rzeczy
+1. pełny lifecycle klasy i dołączania rodziny;
+2. synchronizacja trybu rodzinnego;
+3. bezpieczna synchronizacja usunięć / tombstones;
+4. zweryfikowany backend backup/restore drill;
+5. pełna integracja `audit_events` i retencji;
+6. E2E wielu kont/tenantów;
+7. formalna decyzja szkoły/IOD oraz DPIA;
+8. niezależny security review/pentest przed produkcyjnym School.
 
-Do przejścia z pilota do Aktywnik+ School pozostają przede wszystkim:
-1. podłączenie produkcyjnej bazy Supabase/PostgreSQL;
-2. synchronizacja między urządzeniami;
-3. bezpieczne konta dorosłych;
-4. wdrożenie i testy RLS;
-5. backup/restore backendu;
-6. audyt i retencja po stronie serwera;
-7. formalne ustalenia ze szkołą/IOD;
-8. DPIA screening;
-9. security review.
-
-## Źródła
+## Źródła i dokumenty
 
 - RODO: https://eur-lex.europa.eu/eli/reg/2016/679
 - UODO: https://uodo.gov.pl/
-- EDPB — dzieci: https://www.edpb.europa.eu/topics/key-gdpr-concepts/children_en
-- Vercel — dokumentacja bezpieczeństwa i hostingu: https://vercel.com/docs
+- `docs/PAKIET-SZKOLA-IOD.md`
+- `docs/DPIA-SCREENING.md`
+- `docs/PROCEDURA-INCYDENTOW.md`
+- `docs/SECURITY-REVIEW-2026-10-03.md`
+- `docs/BACKUP-RESTORE.md`

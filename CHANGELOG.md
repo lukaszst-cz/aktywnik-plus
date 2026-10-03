@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — pilot readiness hardening
+
+### Backend i bezpieczeństwo
+- zwykłe endpointy użytkownika korzystają z publishable key + Bearer JWT + RLS, bez service-role;
+- dodano `GET /api/v1/me` oraz RLS-scoped `GET /api/v1/classes`;
+- dodano aktualny database security preflight;
+- capability API rozróżnia funkcje działające od nadal otwartych (delete sync, family sync, backup/restore, audit).
+
+### Gotowość organizacyjna
+- zaktualizowano krytyczne warunki pilota do stanu 0.5.0-beta.2;
+- dodano pakiet szkoła/IOD, DPIA screening, procedurę incydentów, security review i runbook backup/restore.
+
 ## 0.5.0-beta.2 — Pull & Merge
 
 ### Synchronizacja osobista
