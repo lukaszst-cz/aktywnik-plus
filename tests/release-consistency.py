@@ -44,6 +44,10 @@ assert "0.5.0 beta.4" in app_html, "app version badge does not expose beta.4"
 assert "Zmęczenie 1–5" in app_html, "fatigue scale is not aligned with the paper journal"
 assert "activityEffortValue" in app_html, "fatigue scale selected value is not visible"
 assert "pilotDiagnosticsCard" in app_html, "parent pilot diagnostics panel missing"
+assert "paperOcrImageFile" in app_html and 'capture="environment"' in app_html, "local photo OCR input missing"
+assert "TextDetector" in app and "AktywnikPaperOcr" in app, "local OCR implementation missing"
+assert "MAX_OCR_IMAGE_BYTES" in app, "local OCR image size guard missing"
+assert "tesseract" not in app.lower() and "cdn" not in app.lower(), "local OCR must not depend on a runtime CDN"
 assert "AktywnikPilotDiagnostics" in app, "pilot diagnostics API missing"
 diag_report = app.split("function pilotDiagnosticsReport()",1)[1].split("async function syncPilotNow()",1)[0]
 for forbidden in ["displayName","cloudChildId","pinHash","pinSalt","access_token","refresh_token"]:
