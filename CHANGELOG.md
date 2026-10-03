@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — School audit and retention controls
+
+- migracja 019 rozszerza automatyczny audit trail na kluczowe operacje School;
+- aktywności, raporty, nagrody/oceny, class membership, teacher assignment, tenant membership i support access są audytowane triggerami;
+- prywatny `app_private.prune_audit_events(cutoff, dry_run)` domyślnie działa w trybie dry-run;
+- `anon` i `authenticated` nie mają prawa uruchomić retencji; ma je wyłącznie kontrolowana ścieżka `service_role`;
+- okres retencji nie jest zaszyty w kodzie ani automatycznie harmonogramowany — pozostaje decyzją szkoły/IOD;
+- finalny SQL 019 przeszedł test transakcyjny PASS przed wdrożeniem; po wdrożeniu potwierdzono 8 triggerów i brak nowego ostrzeżenia Security Advisor.
+
 ## Unreleased — profile role hardening live
 
 - migracja 018 jest trwale zastosowana na live Supabase;
