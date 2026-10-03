@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<title>Aktywnik+ smoke 0.4.0</title>
+<title>Aktywnik+ smoke 0.5.0-beta.4</title>
 <style>body{font-family:system-ui;margin:20px}#result{padding:12px;border:1px solid #ccc}.pass{background:#e8fff0}.fail{background:#ffecec}iframe{width:100%;height:900px;border:1px solid #ddd;margin-top:12px}</style>
 </head>
 <body>
@@ -382,6 +382,21 @@ async function run(){
     const familyOutbox=JSON.parse(localStorage.getItem(FAMILY_SYNC_KEY)||'null');
     if(!familyOutbox?.dirty||familyOutbox.snapshot?.groups?.length!==2)throw new Error('family sync outbox not queued');
 
+    // Offline must keep the family outbox intact; reconnect may flush it.
+    const onlineDescriptor=Object.getOwnPropertyDescriptor(w.Navigator.prototype,'onLine');
+    try{
+      Object.defineProperty(w.navigator,'onLine',{configurable:true,get:()=>false});
+      familySyncRequests.length=0;
+      const offlineResult=await w.AktywnikFamilySync.syncNow();
+      if(offlineResult!==false)throw new Error('family sync ran while offline');
+      if(familySyncRequests.length!==0)throw new Error('offline family sync sent network request');
+      const offlineOutbox=JSON.parse(localStorage.getItem(FAMILY_SYNC_KEY)||'null');
+      if(!offlineOutbox?.dirty)throw new Error('offline family sync lost queued changes');
+    }finally{
+      try{delete w.navigator.onLine}catch{}
+      if(onlineDescriptor)Object.defineProperty(w.Navigator.prototype,'onLine',onlineDescriptor);
+    }
+
     const localFamilyEntry=saved.entries.find(x=>x.childId==='child-a');
     if(!localFamilyEntry)throw new Error('family sync local entry missing');
 
@@ -634,7 +649,7 @@ async function run(){
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('full local wipe left parent session state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('full local wipe removed language preference');
 
-    pass('beta3 personal + full family sync, explicit cloud child links, delete/decision sync, minimal sync payloads, per-profile drafts, smart duration, data controls, complete local wipe, family PIN roles, multi-child isolation, reports, audit, backup guards and PWA');
+    pass('beta4 personal + full family sync, offline queue preservation, explicit cloud child links, delete/decision sync, fatigue 1-5, minimal sync payloads, per-profile drafts, data controls, family PIN roles, multi-child isolation, reports, audit, backup guards and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
