@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — School Cloud request timeout
+
+- requesty School Cloud mają 15-sekundowy timeout przez `AbortController`;
+- zawieszone połączenie nie blokuje już przycisków bez końca;
+- po timeout użytkownik dostaje czytelny komunikat i może ponowić operację;
+- CI pilnuje obecności timeout guardu;
+- brak zmian w bazie, RLS i API contract.
+
+
 ## Unreleased — School Cloud submit/input hardening
 
 - API odrzuca nazwę klasy dłuższą niż 80 znaków zamiast cicho ją obcinać;
