@@ -347,7 +347,7 @@
           <label>Dziecko / identyfikator<input id="importChildName" maxlength="60" placeholder="np. Daniel S." /></label>
           <label>Plik CSV / JSON / TXT<input id="paperImportFile" type="file" accept=".csv,.json,.txt,text/csv,application/json,text/plain" /></label>
           <label class="wide">Wklej tekst po OCR
-            <textarea id="ocrPaste" rows="6" placeholder="Data;Aktywność;Czas;Wysiłek;Uwagi&#10;2026-10-01;Judo;90;3;trening klubowy"></textarea>
+            <textarea id="ocrPaste" rows="6" placeholder="Data;Aktywność;Czas;Zmęczenie;Uwagi&#10;2026-10-01;Judo;90;3;trening klubowy"></textarea>
           </label>
         </div>
         <div class="actions">
@@ -382,7 +382,7 @@
             </select>
           </label>
           <label><span>Akceptacja rodzica</span><select id="requireParentApproval"><option value="yes">Wymagana</option><option value="no">Niewymagana</option></select></label>
-          <label><span>Poziom wysiłku</span><select id="useEffort"><option value="yes">Pokazuj</option><option value="no">Ukryj</option></select></label>
+          <label><span>Zmęczenie 1–5</span><select id="useEffort"><option value="yes">Pokazuj</option><option value="no">Ukryj</option></select></label>
           <label><span>Plusy</span><select id="usePluses"><option value="yes">Używamy</option><option value="no">Nie używamy</option></select></label>
           <label><span>Oceny za plusy</span><select id="gradeRule"><option value="manual">Decyzja nauczyciela</option><option value="none">Bez przeliczania</option></select></label>
           <label>Maks. minut liczonych dziennie<input id="maxCountedMinutes" type="number" min="0" max="600" placeholder="bez limitu" /></label>
