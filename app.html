@@ -133,7 +133,7 @@
             <small id="durationSuggestionHint" class="duration-suggestion hidden" aria-live="polite"></small>
             <small data-i18n="app.durationHelp">Wybierz rzeczywisty czas treningu albo wpisz własną liczbę minut. To zapis zajęć, nie cel do osiągnięcia.</small>
           </div>
-          <label><span data-i18n="app.effort">Wysiłek 1–5</span><input id="activityEffort" type="range" min="1" max="5" value="2" /></label>
+          <label><span data-i18n="app.effort">Zmęczenie 1–5</span><input id="activityEffort" type="range" min="1" max="5" value="2" /></label>
           <label class="wide"><span data-i18n="app.customName">Własna nazwa aktywności (opcjonalnie)</span><input id="customActivityName" maxlength="80" placeholder="np. trening siłowy, ogród, spacer po lesie" data-i18n-placeholder="app.customPlaceholder" /></label>
           <label class="wide"><span data-i18n="app.note">Notatka (opcjonalnie)</span><input id="activityNote" maxlength="120" placeholder="np. z rodziną, trening, rekreacyjnie" data-i18n-placeholder="app.notePlaceholder" /></label>
         </div>
@@ -427,7 +427,7 @@
     <form method="dialog">
       <div class="section-head"><h2 data-i18n="parent.correctApprove">Popraw i zatwierdź wpis</h2><button value="cancel" class="ghost" data-i18n="app.cancel">Anuluj</button></div>
       <input id="parentEditEntryId" type="hidden" />
-      <div class="form-grid"><label>Data<input id="parentEditDate" type="date" /></label><label>Czas (min)<input id="parentEditMinutes" type="number" min="1" max="600" /></label><label>Wysiłek 1–5<input id="parentEditEffort" type="number" min="1" max="5" /></label><label class="wide">Notatka<input id="parentEditNote" maxlength="120" /></label></div>
+      <div class="form-grid"><label>Data<input id="parentEditDate" type="date" /></label><label>Czas (min)<input id="parentEditMinutes" type="number" min="1" max="600" /></label><label>Zmęczenie 1–5<input id="parentEditEffort" type="number" min="1" max="5" /></label><label class="wide">Notatka<input id="parentEditNote" maxlength="120" /></label></div>
       <div class="actions"><button id="saveParentCorrectionBtn" type="button" class="primary" data-i18n="parent.saveCorrection">Zapisz poprawkę i zatwierdź</button></div>
     </form>
   </dialog>
