@@ -92,7 +92,7 @@ select set_config(
 );
 set local role authenticated;
 
-do $
+do $$
 declare
   visible_count integer;
   blocked boolean := false;
@@ -124,7 +124,7 @@ begin
   if not blocked then
     raise exception 'FAMILY SYNC FAIL: unrelated adult could write child activity';
   end if;
-end $;
+end $$;
 
 reset role;
 rollback;
