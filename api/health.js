@@ -17,6 +17,7 @@ module.exports = function handler(req,res){
     service:'aktywnik-plus-api',
     version:'0.5.0-beta.4',
     environment:process.env.VERCEL_ENV || 'local',
+    commit:process.env.VERCEL_GIT_COMMIT_SHA || null,
     backend:'full-family-sync-pilot',
     databaseConfigured:cloud.databaseConfigured,
     authConfigured:cloud.authConfigured,
