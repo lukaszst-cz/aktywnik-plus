@@ -282,6 +282,10 @@ async function run(){
     const cloudA='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',cloudB='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2';
     const originalFamilyFetch=w.fetch;
     const originalValidSession=w.AktywnikAuth.validSession;
+    let familyDecisionEnabled=false;
+    const familySyncRequests=[];
+    const remoteDecisionId='91919191-9191-4191-8191-919191919191';
+    const remoteDecisionEntryId='92929292-9292-4292-8292-929292929292';
     w.AktywnikAuth.validSession=async()=>({access_token:'family-link-test-token'});
     w.fetch=async(url,options={})=>{
       const target=String(url);
@@ -294,6 +298,54 @@ async function run(){
           {id:cloudB,display_name:'Cloud B'}
         ]
       }),{status:200,headers:{'Content-Type':'application/json'}});
+      if(target.includes('/api/capabilities'))return new w.Response(JSON.stringify({
+        cloud:{
+          enabled:true,
+          familySyncBeta:true,
+          familySyncDeletes:true,
+          familySyncDecisionHistory:familyDecisionEnabled
+        }
+      }),{status:200,headers:{'Content-Type':'application/json'}});
+      if(target.includes('/api/v1/family-sync')){
+        const method=String(options.method||'GET').toUpperCase();
+        if(method==='POST'){
+          const body=JSON.parse(String(options.body||'{}'));
+          familySyncRequests.push(body);
+          return new w.Response(JSON.stringify({
+            ok:true,
+            mode:'family',
+            protocolVersion:1,
+            childId:body.childId,
+            synced:Array.isArray(body.entries)?body.entries.length:0,
+            deleted:Array.isArray(body.deletes)?body.deletes.length:0,
+            suppressed:0,
+            deletesSupported:true,
+            decisionsSynced:familyDecisionEnabled&&Array.isArray(body.decisions)?body.decisions.length:0,
+            decisionHistorySupported:familyDecisionEnabled
+          }),{status:200,headers:{'Content-Type':'application/json'}});
+        }
+        const childId=new URL(target,location.href).searchParams.get('childId');
+        const decisions=familyDecisionEnabled&&childId===cloudB?[{
+          client_event_id:remoteDecisionId,
+          client_entry_id:remoteDecisionEntryId,
+          decision:'rejected',
+          reason:'Popraw czas',
+          before_state:{status:'pending'},
+          after_state:{status:'rejected',rejectionReason:'Popraw czas'},
+          decided_at:'2026-10-03T09:15:00.000Z'
+        }]:[];
+        return new w.Response(JSON.stringify({
+          ok:true,
+          mode:'family',
+          protocolVersion:1,
+          childId,
+          entries:[],
+          deletes:[],
+          decisions,
+          deletesSupported:true,
+          decisionHistorySupported:familyDecisionEnabled
+        }),{status:200,headers:{'Content-Type':'application/json'}});
+      }
       return originalFamilyFetch(url,options);
     };
     if(!await w.AktywnikFamilyCloudLink.refresh())throw new Error('family cloud children refresh failed');
@@ -382,6 +434,56 @@ async function run(){
     if(olderFamilyMerge.localNewer!==1)throw new Error('older family cloud entry did not preserve local version');
     w.AktywnikFamilySync.clear();
     if(localStorage.getItem(FAMILY_DELETE_KEY)!==null)throw new Error('family delete queue was not cleared');
+
+    familySyncRequests.length=0;
+    localStorage.removeItem(FAMILY_SYNC_KEY);
+    const deleteOnlyId='93939393-9393-4393-8393-939393939393';
+    if(!w.AktywnikFamilySync.markDeleted('child-a',deleteOnlyId,new w.Date().toISOString()))throw new Error('delete-only family tombstone was not queued');
+    if(localStorage.getItem(FAMILY_SYNC_KEY)!==null)throw new Error('delete-only test unexpectedly created regular family outbox');
+    if(!await w.AktywnikFamilySync.syncNow())throw new Error('delete-only family sync did not run');
+    const deleteOnlyPush=familySyncRequests.find(body=>Array.isArray(body.deletes)&&body.deletes.some(x=>x.id===deleteOnlyId));
+    if(!deleteOnlyPush)throw new Error('delete-only family queue was not sent');
+    if(localStorage.getItem(FAMILY_DELETE_KEY)!==null)throw new Error('delete-only queue was not cleared after server acknowledgement');
+
+    const localDecisionId='94949494-9494-4494-8494-949494949494';
+    const localDecisionEntryId='95959595-9595-4595-8595-959595959595';
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    saved.approvalEvents=[{
+      id:localDecisionId,
+      entryId:localDecisionEntryId,
+      childId:'child-a',
+      action:'approved',
+      actor:'parent',
+      note:'Rodzic zatwierdził wpis.',
+      before:{status:'pending'},
+      after:{status:'approved'},
+      at:'2026-10-03T09:10:00.000Z'
+    },...(saved.approvalEvents||[])];
+    localStorage.setItem(KEY,JSON.stringify(saved));
+
+    familyDecisionEnabled=false;
+    familySyncRequests.length=0;
+    w.AktywnikFamilySync.markDirty(saved);
+    if(!await w.AktywnikFamilySync.flush())throw new Error('family sync failed while decision capability disabled');
+    const disabledDecisionPush=familySyncRequests.find(body=>body.childId===cloudA);
+    if(!disabledDecisionPush||disabledDecisionPush.decisions?.length!==0)throw new Error('family decision leaked before capability was enabled');
+
+    familyDecisionEnabled=true;
+    familySyncRequests.length=0;
+    w.AktywnikFamilySync.markDirty(saved);
+    if(!await w.AktywnikFamilySync.flush())throw new Error('family decision sync failed after capability enable');
+    const enabledDecisionPush=familySyncRequests.find(body=>body.childId===cloudA&&body.decisions?.some(x=>x.id===localDecisionId));
+    if(!enabledDecisionPush)throw new Error('guardian decision was not sent after capability enable');
+
+    const firstDecisionPull=await w.AktywnikFamilySync.pull();
+    if(!firstDecisionPull||firstDecisionPull.decisionsAdded!==1)throw new Error('family decision pull did not add remote decision');
+    const afterDecisionPull=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(!afterDecisionPull.approvalEvents?.some(x=>x.id===remoteDecisionId&&x.childId===childB.id&&x.action==='rejected'))throw new Error('remote family decision was not merged into matching child');
+    const secondDecisionPull=await w.AktywnikFamilySync.pull();
+    if(!secondDecisionPull||secondDecisionPull.decisionsAdded!==0)throw new Error('family decision pull duplicated existing event');
+
+    w.AktywnikFamilySync.clear();
+    familyDecisionEnabled=false;
 
     const linkBackup=w.makeBackupPayload(saved);
     const linkRestored=w.backupStateFromPayload(linkBackup);
