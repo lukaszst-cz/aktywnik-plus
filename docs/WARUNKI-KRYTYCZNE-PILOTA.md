@@ -9,7 +9,7 @@ Legenda:
 
 ## Status tej wersji
 
-Aktywnik+ działa jako **0.5.0-beta.2, local-first z opcjonalnym kontem i synchronizacją trybu osobistego**.
+Aktywnik+ działa jako **0.5.0-beta.2, local-first z opcjonalnym kontem, pełnym sync trybu osobistego i family activity sync beta dla jawnie powiązanych profili**.
 
 Nie jest jeszcze:
 - szkolnym dziennikiem elektronicznym;
@@ -41,10 +41,11 @@ Zrobione:
 - merge wpisów z różnych urządzeń na podstawie timestampów;
 - usuwanie wpisów w trybie osobistym: tombstones + propagacja między urządzeniami;
 - RLS ogranicza dane do właściciela;
-- tryb rodzinny jest jawnie local-only po stronie klienta i nie trafia do personal sync.
+- tryb rodzinny nie trafia do personal sync; ma osobny family sync beta tylko dla profili z jawnym `cloudChildId`;
 
 Pozostaje:
-- tryb rodzinny nie ma jeszcze pełnej synchronizacji chmurowej;
+- family activity push/pull + statusy `pending/approved/rejected`: ✅ beta;
+- rodzinne delete/tombstones i pełna historia decyzji: nadal otwarte;
 - synchronizacja nie zastępuje jeszcze zweryfikowanego backup/restore backendu.
 
 ## 3. Minimum danych o dziecku — ✅
@@ -116,7 +117,7 @@ Gotowe:
 - działający projekt Supabase w regionie EU;
 - Supabase Auth dla dorosłych;
 - role i model tenant;
-- migracje 001–021;
+- migracje 001–022;
 - RLS;
 - endpoint `GET /api/v1/me`;
 - endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
@@ -144,7 +145,7 @@ Gotowe w UI:
 - wysłanie zgłoszenia oraz akceptacja/odrzucenie przez staff.
 
 Pozostaje:
-- pełna synchronizacja aktywności trybu rodzinnego do chmury;
+- family activity sync beta działa; do pełnego family sync pozostają delete/tombstones i historia decyzji;
 - E2E przez publiczne API z realnymi kontami testowymi przed School production.
 
 ## 10. Warunki produkcyjne — stan bieżący
@@ -181,7 +182,7 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`021`: zastosowane;
+- migracje `001`–`022`: zastosowane;
 - tabele `public`: 23;
 - RLS: 23/23;
 - granty dla `anon`: 0;
@@ -190,13 +191,14 @@ Sprawdzenie 2026-10-03:
 - Supabase Security Advisor po migracji 020: **0 aktywnych lintów**;
 - publiczne RPC lifecycle są `SECURITY INVOKER`, a uprzywilejowana logika znajduje się w nieeksponowanym `app_private`;
 - security preflight wymaga zera publicznych `SECURITY DEFINER` wykonywalnych przez `authenticated`, dokładnie 5 wrapperów invoker + 5 prywatnych helperów oraz 8 triggerów School audit;
-- `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–020;
+- `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–022;
 - application restore drill: PASS dla profilu, rodziny, szkoły/klasy, raportu, aktywności rodzinnej i personal activity; test kończy się `ROLLBACK`;
 - migracja 018 jest trwale zastosowana live; test `child → adult` = BLOCKED/PASS, a `display_name` pozostaje edytowalne;
 - security preflight wymaga wyłącznie `UPDATE(display_name)` dla `authenticated` i zwraca PASS;
 - migracja 019: 8 triggerów School audit + prywatna funkcja retencji z `dry_run=true`, bez automatycznego harmonogramu;
 - migracja 020: publiczne RPC lifecycle → `SECURITY INVOKER`, uprzywilejowane helpery → `app_private`; class lifecycle PASS, family onboarding PASS, Security Advisor 0 lintów;
-- migracja 021: indeksy pokrywające 4 wcześniej nieindeksowane FK; live performance preflight PASS.
+- migracja 021: indeksy pokrywające 4 wcześniej nieindeksowane FK; live performance preflight PASS;
+- migracja 022: `client_entry_id`/`client_updated_at` dla family activities + RLS `tenant_id IS NULL`; pre-deploy rollback test PASS, live schema/policies/preflight PASS.
 
 ## 12. Warunek publikacji pilota — ✅
 
@@ -221,8 +223,8 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 
 1. family onboarding — ✅ rodzic może utworzyć profil dziecka w School Cloud bez e-maila/hasła dziecka;
 2. migracja 018 / profile role hardening — ✅ live + security preflight PASS;
-3. synchronizacja trybu rodzinnego — jawne powiązanie profilu lokalny→cloud ✅, przesyłanie aktywności nadal otwarte;
-4. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
+3. synchronizacja trybu rodzinnego — jawne powiązanie ✅ + activity push/pull/status beta ✅; delete/history nadal otwarte;
+4. synchronizacja usunięć w trybie rodzinnym — nadal otwarta; dołożyć family tombstones;
 5. backend restore drill — ✅ dane aplikacji; platformowy backup/restore Supabase nadal otwarty;
 6. School audit + mechanizm retencji — ✅ technicznie; okres/częstotliwość retencji nadal do zatwierdzenia przez szkołę/IOD;
 7. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
