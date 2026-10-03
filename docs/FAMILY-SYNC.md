@@ -71,6 +71,7 @@ Brak numeru jest chwilowo traktowany jako v1 dla zgodności podczas rolling depl
 
 Backend dodatkowo waliduje rzeczywistą datę kalendarzową wpisu oraz timestamp klienta. Timestamp może wyprzedzać zegar serwera najwyżej o 15 minut; większy skew jest odrzucany, żeby błędny zegar urządzenia nie „zamroził” konfliktów regułą nowszy-wygrywa.
 Pojedynczy batch nie może też zawierać zduplikowanego ID wpisu, zduplikowanego tombstone'a ani jednocześnie aktualizacji i usunięcia tego samego ID.
+Outbox trybu osobistego jest minimalny: nie przechowuje pełnego lokalnego stanu aplikacji, tylko dane wpisów potrzebne do synchronizacji. To ogranicza ilość danych lokalnych i sieciowych związanych z chmurą.
 
 Przepływ wpisu:
 
