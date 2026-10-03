@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — full family sync live
+
+- migracje 023, 024 i 025 są trwale zastosowane na live Supabase;
+- School Cloud idempotency retry test: PASS;
+- family delete/tombstone regression: PASS;
+- family decision-history regression: PASS;
+- pełny security preflight po 025: PASS;
+- class lifecycle: PASS; family onboarding: PASS;
+- Supabase Security Advisor: **0 aktywnych lintów**;
+- capability API raportuje pełny family sync, family delete sync i family decision history jako aktywne wyłącznie przy `cloud.enabled=true`;
+- family sync nadal pozostaje local-first i fail-closed przy niepełnej konfiguracji chmury.
+
 ## Unreleased — family decision history
 
 - migracja 025 dodaje stabilne `client_event_id` / `client_entry_id` do historii decyzji rodzinnych;
@@ -11,7 +23,7 @@
 - import kopii / pełny reset czyści również family delete queue;
 - browser smoke sprawdza capability gate, wysyłkę decyzji, merge bez duplikatów i delete-only queue;
 - 023+024+025 + decision-history regression + security preflight: PASS w rollbacku;
-- migracja 025 nie jest jeszcze live, więc capability pozostaje `false`.
+- migracja 025 jest live; `familySyncDecisionHistory` jest aktywne przy `cloud.enabled=true`.
 
 
 ## Unreleased — family delete sync
@@ -24,7 +36,7 @@
 - rodzic może usuwać wpisy rodzinne z kolejki decyzji, historii i raportu; panel dziecka nie dostaje family DELETE;
 - browser smoke sprawdza izolację rodzeństwa oraz starszy/nowszy tombstone;
 - migration 024 + RLS regression: PASS; migracje 023+024 + security preflight: PASS w rollbacku;
-- migracja 024 nie jest jeszcze live, więc capability `familySyncDeletes` pozostaje `false`.
+- migracja 024 jest live; `familySyncDeletes` jest aktywne przy `cloud.enabled=true`.
 
 
 ## Unreleased — School Cloud retry idempotency
@@ -36,7 +48,7 @@
 - publiczne wrappery pozostają `SECURITY INVOKER`, a uprzywilejowana logika i ledger pozostają w `app_private`;
 - API ma zgodny wstecz fallback do starych RPC wyłącznie przy `PGRST202`, więc merge kodu nie wymusza natychmiastowego wdrożenia migracji 023;
 - UI przechowuje w `sessionStorage` tylko hash payloadu + UUID operacji, nie nazwę dziecka/klasy;
-- migration 023 + retry test + security preflight: PASS w transakcji z rollbackiem; migracja nie jest jeszcze live.
+- migracja 023 jest live; retry test + security preflight: PASS.
 
 
 ## Unreleased — family activity sync beta
@@ -49,8 +61,8 @@
 - push/pull obejmuje treść wpisu i status `pending/approved/rejected`;
 - konflikt rozstrzyga nowszy timestamp; decyzje rodzica dostają jawny `updatedAt`;
 - restore i pełny local wipe czyszczą również rodzinny outbox;
-- usuwanie rodzinnych wpisów oraz synchronizacja pełnej historii decyzji pozostają jeszcze wyłączone;
-- capability API utrzymuje `familySync:false`, a beta raportowana jest osobno jako `familySyncBeta`.
+- rodzinne usuwanie i historia decyzji zostały domknięte późniejszymi migracjami 024–025;
+- capability API po rolloutcie 025 raportuje pełny family sync przy `cloud.enabled=true`.
 
 ## Unreleased — explicit family cloud profile links
 
