@@ -1,5 +1,5 @@
 const base=(process.env.AKTYWNIK_BASE_URL || 'https://aktywnik-plus.vercel.app').replace(/\/$/,'');
-const expected=process.env.AKTYWNIK_EXPECTED_VERSION || '0.5.0-beta.3';
+const expected=process.env.AKTYWNIK_EXPECTED_VERSION || '0.5.0-beta.4';
 const requireCloud=String(process.env.AKTYWNIK_REQUIRE_CLOUD || 'true').toLowerCase()==='true';
 
 async function request(path,options={}){
