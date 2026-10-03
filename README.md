@@ -84,6 +84,7 @@ Przeczytaj przed pilotażem:
 - panel szkoły z wyborem trybu **cyfrowy / hybrydowy / papierowy**;
 - konfiguracja akceptacji rodzica, poziomu wysiłku, plusów i zasad oceniania;
 - historia plusów i ocen przyznanych przez nauczyciela;
+- School Cloud: tworzenie profilu dziecka przez opiekuna, klasy, tokeny zaproszeń, zgłoszenia i decyzje szkoły;
 - formularz papierowy dla rodzin, które nie chcą korzystać z aplikacji.
 
 ## Gdzie działa
@@ -169,7 +170,7 @@ Szczegóły: [Logowanie bez tarcia](docs/LOGOWANIE-BEZ-TARCIA.md).
 Backendowy fundament jest już połączony z projektem Supabase:
 - `/api/health` i `/api/capabilities`;
 - `/api/v1/sync` — beta synchronizacji trybu osobistego;
-- migracje `001–016`;
+- migracje `001–017`;
 - wszystkie tabele publiczne mają RLS;
 - osobna tabela `personal_activities` dla trybu **Dla siebie**;
 - local-first sync queue po stronie PWA tylko dla trybu osobistego;
@@ -191,4 +192,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.5.0-beta.2 Pull & Merge` — tryb osobisty ma dwukierunkową synchronizację push/pull z regułą „nowszy timestamp wygrywa” oraz propagację usunięć przez tombstones. Brakujące wpisy z innego urządzenia są scalane lokalnie, a nowsza wersja lokalna nie jest nadpisywana. Tryb rodzinny pozostaje local-only do czasu osobnego, bezpiecznego family sync. Local-first pozostaje zasadą.
+`0.5.0-beta.2 Pull & Merge` — tryb osobisty ma dwukierunkową synchronizację push/pull z regułą „nowszy timestamp wygrywa” oraz propagację usunięć przez tombstones. Brakujące wpisy z innego urządzenia są scalane lokalnie, a nowsza wersja lokalna nie jest nadpisywana. Tryb rodzinny pozostaje local-only dla aktywności; School Cloud potrafi już bezpiecznie utworzyć profil dziecka i dołączyć go do klasy. Local-first pozostaje zasadą.
