@@ -38,6 +38,12 @@ jobs:
           node --check api/v1/class-invites.js
           node --check api/v1/class-join.js
           node --check api/v1/me.js
+          grep -q "0.5.0 beta.2" index.html
+          grep -q "0.5.0 beta.2" o-projekcie.html
+          grep -q "FAQ — 0.5.0 beta.2" faq.html
+          ! grep -q "Universal 0.4.0" o-projekcie.html
+          ! grep -q "Universal 0.4.0" faq.html
+          ! grep -q "Nie ma jeszcze centralnego konta ani synchronizacji" faq.html
           node --check api/v1/school-years.js
           node --check api/v1/sync.js
           python3 - <<'PY'
