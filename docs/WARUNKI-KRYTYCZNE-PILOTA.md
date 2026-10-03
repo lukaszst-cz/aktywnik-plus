@@ -115,7 +115,7 @@ Gotowe:
 - działający projekt Supabase w regionie EU;
 - Supabase Auth dla dorosłych;
 - role i model tenant;
-- migracje 001–016;
+- migracje 001–017;
 - RLS;
 - endpoint `GET /api/v1/me`;
 - endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
@@ -141,7 +141,8 @@ Gotowe w UI:
 - wysłanie zgłoszenia oraz akceptacja/odrzucenie przez staff.
 
 Pozostaje:
-- onboarding/synchronizacja profili rodzinnych do chmury;
+- onboarding profilu dziecka do chmury przez opiekuna: ✅;
+- synchronizacja aktywności rodzinnych między urządzeniami;
 - E2E przez publiczne API z realnymi kontami testowymi przed School production.
 
 ## 10. Warunki produkcyjne — stan bieżący
@@ -166,7 +167,7 @@ Pozostaje:
 | formalne uzgodnienie szkoła/IOD | 🔴 decyzja zewnętrzna |
 | DPIA screening — materiał | ✅ przygotowany |
 | DPIA — decyzja administratora | 🔴 decyzja zewnętrzna |
-| test techniczny bezpieczeństwa | 🟡 CI + database preflight PASS; Security Advisor: 4 kontrolowane WARN `SECURITY DEFINER` do refaktoru przed School production |
+| test techniczny bezpieczeństwa | 🟡 CI + database preflight PASS; Security Advisor: 5 kontrolowanych WARN `SECURITY DEFINER` do refaktoru przed School production |
 | E2E izolacji wielu kont/tenantów | ✅ test RLS PASS na danych syntetycznych |
 | niezależny pentest / formalny review | 🟡 przed produkcyjnym School |
 | procedura incydentów | ✅ przygotowana |
@@ -177,13 +178,13 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`016`: zastosowane;
+- migracje `001`–`017`: zastosowane;
 - tabele `public`: 23;
 - RLS: 23/23;
 - granty dla `anon`: 0;
 - tabele bez polityk: 0;
 - `personal_activities`: polityki SELECT/INSERT/UPDATE/DELETE ograniczone do właściciela;
-- Supabase Security Advisor: 1 typ ostrzeżenia / 4 findings dla publicznych RPC `SECURITY DEFINER`;
+- Supabase Security Advisor: 1 typ ostrzeżenia / 5 findings dla publicznych RPC `SECURITY DEFINER`;
 - `anon` i `PUBLIC` nie mają `EXECUTE` do tych RPC, `authenticated` ma dostęp; RPC mają pusty `search_path` i własne sprawdzanie tożsamości/uprawnień;
 - security preflight ma dokładną allowlistę tych 4 funkcji i blokuje wzrost tej powierzchni;
 - `backend/tests/security_preflight.sql`: PASS.
@@ -203,20 +204,21 @@ Dostępne:
 - `/api/capabilities`;
 - `GET/POST /api/v1/sync` — tryb osobisty;
 - `GET /api/v1/me` — profil i membership zalogowanego użytkownika;
-- `GET /api/v1/classes` — klasy widoczne przez RLS.
+- `GET /api/v1/classes` — klasy widoczne przez RLS;
+- `POST /api/v1/family-children` — tworzenie profilu dziecka przez opiekuna.
 
 Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-role nie jest wymagany do odczytu/zapisu danych użytkownika.
 
 ## Rzeczy nadal realnie nierozwiązane
 
-1. family onboarding/sync — School Cloud UI ✅, ale profil dziecka musi już istnieć w chmurze;
+1. family onboarding — ✅ opiekun tworzy profil dziecka w School Cloud; pełny family sync aktywności nadal otwarty;
 2. synchronizacja trybu rodzinnego;
 3. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
 4. zweryfikowany backend backup/restore drill;
 5. pełna integracja `audit_events` i retencji — audyt trybu osobistego ✅, School nadal do rozszerzenia;
 6. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
 7. formalna decyzja szkoły/IOD oraz DPIA;
-8. usunięcie/refaktor 4 publicznych RPC `SECURITY DEFINER` przed produkcyjnym School;
+8. usunięcie/refaktor 5 publicznych RPC `SECURITY DEFINER` przed produkcyjnym School;
 9. niezależny security review/pentest przed produkcyjnym School.
 
 ## Źródła i dokumenty
