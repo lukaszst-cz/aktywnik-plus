@@ -186,8 +186,9 @@ jobs:
           console.log('backend API smoke OK');
 
           const classes=require('./api/v1/classes.js');
+          const me=require('./api/v1/me.js');
           const sync=require('./api/v1/sync.js');
-          for (const handler of [classes,sync]){
+          for (const handler of [classes,me,sync]){
             const res=mock();
             handler({method:'GET'},res);
             if(res.out.statusCode!==503) throw new Error('cloud endpoint must fail closed');
@@ -199,7 +200,8 @@ jobs:
           process.env.AKTYWNIK_RLS_VERIFIED='true';
           process.env.AUTH_MODE='supabase';
           process.env.SUPABASE_URL='https://example.supabase.co';
-          process.env.SUPABASE_SECRET_KEY='server-secret-placeholder';
+          delete process.env.SUPABASE_SECRET_KEY;
+          delete process.env.SUPABASE_SERVICE_ROLE_KEY;
           process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
 
           const originalFetch=global.fetch;
@@ -222,6 +224,15 @@ jobs:
                 client_updated_at:'2026-10-02T20:05:00.000Z',
                 updated_at:'2026-10-02T20:05:00.000Z'
               }])};
+            }
+            if(String(url).includes('/rest/v1/profiles')){
+              return {ok:true,status:200,text:async()=>JSON.stringify([{id:'11111111-1111-4111-8111-111111111111',display_name:'Tester',profile_type:'adult'}])};
+            }
+            if(String(url).includes('/rest/v1/memberships')){
+              return {ok:true,status:200,text:async()=>JSON.stringify([{tenant_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',role:'guardian',active:true}])};
+            }
+            if(String(url).includes('/rest/v1/classes')){
+              return {ok:true,status:200,text:async()=>JSON.stringify([{id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',name:'5A',tenant_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',school_year_id:null,archived_at:null}])};
             }
             throw new Error('unexpected fetch '+url);
           };
@@ -259,7 +270,17 @@ jobs:
           if(pullRes.out.body.entries[0]?.activity_type!=='Rower') throw new Error('personal pull payload');
           if(!calls.some(x=>x.url.includes('/rest/v1/personal_activities')&&String(x.options?.method||'GET').toUpperCase()==='GET')) throw new Error('personal sync read missing');
 
+          const meRes=mock();
+          await me({method:'GET',headers:{authorization:'Bearer test-token'}},meRes);
+          if(meRes.out.statusCode!==200||meRes.out.body?.profile?.display_name!=='Tester') throw new Error('authenticated profile endpoint failed');
+          if(meRes.out.body?.memberships?.[0]?.role!=='guardian') throw new Error('membership context missing');
+
+          const classRes=mock();
+          await classes({method:'GET',headers:{authorization:'Bearer test-token'}},classRes);
+          if(classRes.out.statusCode!==200||classRes.out.body?.classes?.[0]?.name!=='5A') throw new Error('RLS classes endpoint failed');
+          if(!calls.some(x=>x.url.includes('/rest/v1/classes'))) throw new Error('classes did not use Supabase user API');
+
           global.fetch=originalFetch;
-          console.log('personal push + pull sync beta smoke OK');
+          console.log('personal sync + authenticated profile/classes API smoke OK');
           })().catch(err=>{console.error(err);process.exit(1)});
           NODE
