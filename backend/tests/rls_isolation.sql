@@ -141,17 +141,35 @@ begin
 end $$;
 select pg_temp.back_to_admin();
 
--- Anonymous: brak danych.
+-- Anonymous: brak dostępu. W obecnej konfiguracji rola anon nie ma nawet GRANT SELECT,
+-- co jest silniejszym zabezpieczeniem niż samo filtrowanie RLS.
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 do $$
 begin
-  if exists(select 1 from children) then raise exception 'RLS LEAK: anon children'; end if;
-  if exists(select 1 from activities) then raise exception 'RLS LEAK: anon activities'; end if;
-  if exists(select 1 from reports) then raise exception 'RLS LEAK: anon reports'; end if;
+  begin
+    perform 1 from children limit 1;
+    raise exception 'RLS/GRANT FAIL: anon unexpectedly has SELECT on children';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform 1 from activities limit 1;
+    raise exception 'RLS/GRANT FAIL: anon unexpectedly has SELECT on activities';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform 1 from reports limit 1;
+    raise exception 'RLS/GRANT FAIL: anon unexpectedly has SELECT on reports';
+  exception
+    when insufficient_privilege then null;
+  end;
 end $$;
 reset role;
 
 rollback;
+
+select 'PASS' as status, 'tenant/user RLS isolation verified; anon has no SELECT grants' as summary;
 
 -- PASS oznacza brak wyjątku.
