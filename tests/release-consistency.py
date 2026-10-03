@@ -3,7 +3,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-assert version == "0.5.0-beta.3", f"unexpected VERSION: {version}"
+assert version == "0.5.0-beta.4", f"unexpected VERSION: {version}"
 
 health = (ROOT / "api" / "health.js").read_text(encoding="utf-8")
 m = re.search(r"version:'([^']+)'", health)
@@ -17,8 +17,8 @@ i18n = (ROOT / "i18n.js").read_text(encoding="utf-8")
 release = ROOT / "docs" / f"RELEASE-{version}.md"
 
 assert version in readme, "README does not expose current version"
-assert "0.5.0 beta.3" in landing, "landing does not expose beta.3"
-assert "0.5.0 beta.3" in i18n, "i18n does not expose beta.3"
+assert "0.5.0 beta.4" in landing, "landing does not expose beta.4"
+assert "0.5.0 beta.4" in i18n, "i18n does not expose beta.4"
 assert release.exists(), f"missing release notes: {release.name}"
 
 stale = [
