@@ -81,7 +81,53 @@ begin
 end $$;
 
 reset role;
+
+insert into public.profiles(id,display_name,profile_type)
+values ('98000000-0000-4000-8000-000000000006','Family Sync Stranger','adult');
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"98000000-0000-4000-8000-000000000006","role":"authenticated"}',
+  true
+);
+set local role authenticated;
+
+do $$
+declare
+  visible_count integer;
+  blocked boolean := false;
+begin
+  select count(*)
+    into visible_count
+  from public.activities
+  where child_id='98000000-0000-4000-8000-000000000002';
+
+  if visible_count <> 0 then
+    raise exception 'FAMILY SYNC FAIL: unrelated adult could read child activity';
+  end if;
+
+  begin
+    insert into public.activities(
+      child_id,tenant_id,client_entry_id,client_updated_at,
+      activity_date,activity_type,minutes,status,source,updated_at
+    ) values (
+      '98000000-0000-4000-8000-000000000002',
+      null,
+      '98000000-0000-4000-8000-000000000007',
+      now(),
+      '2026-10-03','Unauthorized write',10,'pending','manual',now()
+    );
+  exception
+    when insufficient_privilege then blocked := true;
+  end;
+
+  if not blocked then
+    raise exception 'FAMILY SYNC FAIL: unrelated adult could write child activity';
+  end if;
+end $$;
+
+reset role;
 rollback;
 
 select 'PASS' as status,
-       'family activity identity + guardian write + tenant injection guard verified' as summary;
+       'family activity identity + guardian write + tenant injection + unrelated-adult isolation verified' as summary;
