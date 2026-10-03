@@ -30,8 +30,11 @@ module.exports = function handler(req,res){
       familySync:false,
       profileContext:cloud.enabled,
       classRead:cloud.enabled,
-      classLifecycle:false,
-      auditEventsIntegrated:false,
+      classLifecycleApi:cloud.enabled,
+      classInviteWorkflow:cloud.enabled,
+      classJoinDecisionWorkflow:cloud.enabled,
+      classLifecycleUi:false,
+      auditEventsIntegrated:'personal_and_class_lifecycle',
       serverBackupRestoreVerified:false
     }
   });

@@ -71,7 +71,7 @@ begin
   ) then
     raise exception 'SECURITY PREFLIGHT FAIL: personal delete audit trigger missing';
   end if;
-end $;
+end $$;
 
 select
   'PASS' as status,
