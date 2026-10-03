@@ -6,11 +6,11 @@ Techniczny przegląd bieżącego środowiska Aktywnik+ przed rozszerzaniem funkc
 
 ## Wynik
 
-**PASS warunkowy dla obecnego personal sync; BLOKER rozszerzania family cloud do czasu wdrożenia migracji 018.**
+**PASS warunkowy dla obecnego zakresu beta; migracja 018 blokująca self-escalation jest wdrożona live.**
 
 Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - projekt aktywny w regionie EU (`eu-central-1`);
-- migracje `001`–`017` są zastosowane;
+- migracje `001`–`018` są zastosowane;
 - 23/23 tabel w schemacie `public` ma włączone RLS;
 - brak tabel publicznych bez polityki RLS;
 - brak grantów tabel dla roli `anon`;
@@ -31,8 +31,7 @@ Ten wynik nie zastępuje niezależnego pentestu ani formalnego audytu wdrożenia
 
 - synchronizacja usunięć / tombstones w trybie osobistym: wdrożona;
 - test izolacji wielu kont/tenantów: PASS na danych syntetycznych;
-- trwałe wdrożenie migracji 018 i ponowny security preflight;
 - refaktor 5 publicznych RPC `SECURITY DEFINER` do modelu bez ostrzeżenia Security Advisor;
-- zweryfikowany restore z kopii backendu;
+- application restore drill: PASS; platformowy backup/restore Supabase nadal do zweryfikowania;
 - dalsze domknięcie audytu i retencji School;
 - testy E2E wielu realnych kont przed produkcją szkolną.
