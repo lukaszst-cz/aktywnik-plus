@@ -12,6 +12,10 @@ declare
   unexpected_authenticated_definer text;
   unsafe_allowlisted_definer text;
   profile_update_columns text;
+  school_audit_trigger_count integer;
+  retention_auth_exec boolean;
+  retention_anon_exec boolean;
+  retention_service_exec boolean;
 begin
   select string_agg(c.relname, ', ' order by c.relname)
     into missing_rls
@@ -174,9 +178,62 @@ begin
   ) then
     raise exception 'SECURITY PREFLIGHT FAIL: personal delete audit trigger missing';
   end if;
-end $$;
+
+  select count(*)
+    into school_audit_trigger_count
+  from pg_trigger
+  where tgname in (
+    'audit_school_activities',
+    'audit_school_reports',
+    'audit_school_rewards',
+    'audit_school_class_children',
+    'audit_school_class_teachers',
+    'audit_school_classes',
+    'audit_school_memberships',
+    'audit_support_access_grants'
+  )
+    and not tgisinternal;
+
+  if school_audit_trigger_count <> 8 then
+    raise exception 'SECURITY PREFLIGHT FAIL: SCHOOL audit trigger coverage incomplete (%)',
+      school_audit_trigger_count;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='app_private'
+      and p.proname='audit_school_change'
+      and p.prosecdef
+  ) then
+    raise exception 'SECURITY PREFLIGHT FAIL: private School audit function missing';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_proc p
+    join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='app_private'
+      and p.proname='prune_audit_events'
+      and p.prosecdef
+  ) then
+    raise exception 'SECURITY PREFLIGHT FAIL: private audit retention function missing';
+  end if;
+
+  select
+    has_function_privilege('authenticated','app_private.prune_audit_events(timestamptz,boolean)'::regprocedure,'EXECUTE'),
+    has_function_privilege('anon','app_private.prune_audit_events(timestamptz,boolean)'::regprocedure,'EXECUTE'),
+    has_function_privilege('service_role','app_private.prune_audit_events(timestamptz,boolean)'::regprocedure,'EXECUTE')
+  into retention_auth_exec,retention_anon_exec,retention_service_exec;
+
+  if retention_auth_exec or retention_anon_exec or not retention_service_exec then
+    raise exception 'SECURITY PREFLIGHT FAIL: audit retention privileges invalid auth=% anon=% service=%',
+      retention_auth_exec,retention_anon_exec,retention_service_exec;
+  end if;
+end $;
 
 select
   'PASS' as status,
   (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r') as public_tables,
-  'RLS enabled; anon blocked; profile role protected; policies present; SECURITY DEFINER surface allowlisted' as check_summary;
+  'RLS enabled; anon blocked; profile role protected; personal+School audit present; private retention guarded; SECURITY DEFINER surface allowlisted' as check_summary;
