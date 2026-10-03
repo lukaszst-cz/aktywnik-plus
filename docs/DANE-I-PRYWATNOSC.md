@@ -146,6 +146,18 @@ Docelowo:
 
 Przed produkcyjnym wdrożeniem szkolnym należy wykonać co najmniej formalny screening DPIA. Jeżeli analiza wskaże wysokie ryzyko, szkoła jako administrator wykonuje ocenę skutków przed rozpoczęciem przetwarzania.
 
+## Zdjęcie karty / OCR lokalny
+
+Bezpośredni OCR zdjęcia jest funkcją progresywną: działa tylko w przeglądarkach udostępniających lokalny `TextDetector` i `createImageBitmap`. Aktywnik+ nie pobiera silnika OCR z zewnętrznego CDN i nie wysyła zdjęcia do zewnętrznego API.
+
+Dla pliku obrazu obowiązuje:
+- JPG/PNG/WebP, maks. 12 MB;
+- plik pozostaje wyłącznie w pamięci bieżącej strony;
+- obraz nie trafia do `state`, kopii JSON, personal sync, family sync ani School Cloud;
+- po OCR do formularza trafia wyłącznie rozpoznany tekst;
+- przed zapisem zawsze jest podgląd i możliwość korekty;
+- jeśli przeglądarka nie wspiera lokalnego OCR, pozostaje ścieżka DocPilot / CSV / JSON / TXT / ręczne wklejenie OCR.
+
 ## Tryb papierowy
 
 Rodzic może pozostać przy papierowym dzienniku, jeśli szkoła dopuszcza taki wariant. Dziecko nie powinno być przez to gorzej traktowane. Dane papierowe nie muszą być przepisywane do systemu poza informacjami potrzebnymi nauczycielowi, np. statusem raportu, plusem lub oceną.
