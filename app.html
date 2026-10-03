@@ -243,6 +243,23 @@
         </div>
       </section>
 
+      <section id="pilotDiagnosticsCard" class="card">
+        <div class="section-head">
+          <div>
+            <h2 data-i18n="parent.diagTitle">🩺 Diagnostyka pilota</h2>
+            <small data-i18n="parent.diagText">Szybki podgląd stanu urządzenia i synchronizacji. Raport techniczny nie zawiera nazw dzieci, PIN-u ani tokenów.</small>
+          </div>
+          <span id="pilotDiagnosticsBadge" class="badge">—</span>
+        </div>
+        <div id="pilotDiagnosticsGrid" class="snapshot-grid"></div>
+        <div class="actions">
+          <button id="pilotSyncNowBtn" class="primary" type="button" data-i18n="parent.diagSync">Synchronizuj teraz</button>
+          <button id="pilotDiagnosticsRefreshBtn" class="ghost" type="button" data-i18n="parent.diagRefresh">Odśwież status</button>
+          <button id="pilotDiagnosticsCopyBtn" class="ghost" type="button" data-i18n="parent.diagCopy">Kopiuj raport diagnostyczny</button>
+        </div>
+        <small id="pilotDiagnosticsStatus" class="calm-note" aria-live="polite" data-i18n="parent.diagHint">Do testu dwóch urządzeń najlepiej mieć „online”, połączony profil i pustą kolejkę synchronizacji.</small>
+      </section>
+
       <section class="card">
         <div class="section-head"><h2 data-i18n="parent.security">Bezpieczeństwo strefy rodzica</h2><span class="badge" data-i18n="parent.pinLocal">PIN lokalny</span></div>
         <div class="form-grid">
