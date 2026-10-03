@@ -116,7 +116,7 @@ Gotowe:
 - działający projekt Supabase w regionie EU;
 - Supabase Auth dla dorosłych;
 - role i model tenant;
-- migracje 001–017;
+- migracje 001–018;
 - RLS;
 - endpoint `GET /api/v1/me`;
 - endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
@@ -152,7 +152,7 @@ Pozostaje:
 | --- | --- |
 | backend API + personal sync | ✅ |
 | uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
-| role/uprawnienia w DB | 🟡 RLS wdrożone; migracja 018 blokująca self-escalation jest gotowa, ale jeszcze niewdrożona live |
+| role/uprawnienia w DB | ✅ RLS + migracja 018 live; `profile_type` nie jest samodzielnie edytowalne przez użytkownika |
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
 | HTTPS | ✅ |
 | kopie zapasowe lokalne | ✅ eksport/import |
@@ -168,7 +168,7 @@ Pozostaje:
 | formalne uzgodnienie szkoła/IOD | 🔴 decyzja zewnętrzna |
 | DPIA screening — materiał | ✅ przygotowany |
 | DPIA — decyzja administratora | 🔴 decyzja zewnętrzna |
-| test techniczny bezpieczeństwa | 🟡 CI PASS; Security Advisor: 5 kontrolowanych WARN `SECURITY DEFINER`; migracja 018 wymagana live przed dalszym family cloud |
+| test techniczny bezpieczeństwa | 🟡 CI + database preflight PASS; Security Advisor: 5 kontrolowanych WARN `SECURITY DEFINER` do refaktoru przed School production |
 | E2E izolacji wielu kont/tenantów | ✅ test RLS PASS na danych syntetycznych |
 | niezależny pentest / formalny review | 🟡 przed produkcyjnym School |
 | procedura incydentów | ✅ przygotowana |
@@ -179,7 +179,7 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`017`: zastosowane;
+- migracje `001`–`018`: zastosowane;
 - tabele `public`: 23;
 - RLS: 23/23;
 - granty dla `anon`: 0;
@@ -188,11 +188,10 @@ Sprawdzenie 2026-10-03:
 - Supabase Security Advisor: 1 typ ostrzeżenia / 5 findings dla publicznych RPC `SECURITY DEFINER`;
 - `anon` i `PUBLIC` nie mają `EXECUTE` do tych RPC, `authenticated` ma dostęp; RPC mają pusty `search_path` i własne sprawdzanie tożsamości/uprawnień;
 - security preflight ma dokładną allowlistę tych 5 funkcji i blokuje wzrost tej powierzchni;
-- `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–017;
+- `backend/tests/security_preflight.sql`: PASS dla obecnego schematu 001–018;
 - application restore drill: PASS dla profilu, rodziny, szkoły/klasy, raportu, aktywności rodzinnej i personal activity; test kończy się `ROLLBACK`;
-- wykryto self-escalation `child → adult` przez szeroki grant `UPDATE profiles`;
-- migracja 018 jest przygotowana i przetestowana z rollbackiem, ale **nie została jeszcze trwale zastosowana live**;
-- po wdrożeniu 018 security preflight ma wymagać wyłącznie `UPDATE(display_name)` dla `authenticated`.
+- migracja 018 jest trwale zastosowana live; test `child → adult` = BLOCKED/PASS, a `display_name` pozostaje edytowalne;
+- security preflight wymaga wyłącznie `UPDATE(display_name)` dla `authenticated` i zwraca PASS.
 
 ## 12. Warunek publikacji pilota — ✅
 
@@ -216,7 +215,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 ## Rzeczy nadal realnie nierozwiązane
 
 1. family onboarding — ✅ rodzic może utworzyć profil dziecka w School Cloud bez e-maila/hasła dziecka;
-2. wdrożenie migracji 018 na live Supabase i ponowny security preflight;
+2. migracja 018 / profile role hardening — ✅ live + security preflight PASS;
 3. synchronizacja trybu rodzinnego;
 4. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
 5. backend restore drill — ✅ dane aplikacji; platformowy backup/restore Supabase nadal otwarty;

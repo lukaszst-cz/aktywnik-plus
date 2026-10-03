@@ -23,6 +23,7 @@ module.exports = function handler(req,res){
       supabaseUserApiConfigured:cloud.supabaseConfigured,
       authenticationConfigured:cloud.authConfigured,
       rowLevelSecurityVerified:cloud.rlsVerified,
+      profileRoleEscalationBlocked:true,
       personalSyncBeta:true,
       personalSyncProtocolVersion:1,
       personalSyncPull:true,

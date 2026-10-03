@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — profile role hardening live
+
+- migracja 018 jest trwale zastosowana na live Supabase;
+- `authenticated` może aktualizować wyłącznie `profiles.display_name`;
+- self-escalation `profile_type: child → adult` jest zablokowana;
+- live regression test: PASS;
+- database security preflight po wdrożeniu: PASS;
+- Security Advisor nadal raportuje wyłącznie 5 wcześniej kontrolowanych RPC `SECURITY DEFINER`.
+
+
 ## Unreleased — application restore drill
 
 - syntetyczny backup/delete/restore round-trip dla profilu, rodziny, szkoły, raportu i wpisu osobistego;
