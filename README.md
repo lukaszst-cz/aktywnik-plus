@@ -127,6 +127,7 @@ Dokumentacja:
 
 ## Prywatność i podejście
 
+- skala zmęczenia 1–5 jest zgodna z papierowym dziennikiem; dodatkowy wskaźnik obciążenia pozostaje wyłącznie w chronionej strefie rodzica i nie trafia do raportów szkolnych;
 - brak rankingów między dziećmi;
 - brak śledzenia masy ciała, kalorii i wyglądu;
 - dane demonstracyjne nie powinny zawierać prawdziwych danych dzieci;
