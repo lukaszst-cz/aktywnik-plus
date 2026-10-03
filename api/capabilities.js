@@ -28,6 +28,7 @@ module.exports = function handler(req,res){
       personalSyncConflictRule:'newer_timestamp_wins',
       personalSyncDeletes:true,
       familySync:false,
+      familyCloudOnboarding:cloud.enabled,
       profileContext:cloud.enabled,
       classRead:cloud.enabled,
       classLifecycleApi:cloud.enabled,
