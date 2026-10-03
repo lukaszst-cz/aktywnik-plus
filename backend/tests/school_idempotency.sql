@@ -63,15 +63,6 @@ begin
     raise exception 'IDEMPOTENCY FAIL: child guardian relation duplicated/missing';
   end if;
 
-  if (
-    select count(*) from public.audit_events
-    where actor_id='98000000-0000-4000-8000-000000000001'
-      and event_type='family_child_created'
-      and resource_id=child_a
-  ) <> 1 then
-    raise exception 'IDEMPOTENCY FAIL: child audit duplicated/missing';
-  end if;
-
   begin
     perform public.create_guardian_child_idempotent(
       'Different Child',
@@ -140,7 +131,18 @@ end $$;
 
 reset role;
 
-do $$
+do $
+begin
+  if (
+    select count(*) from public.audit_events
+    where actor_id='98000000-0000-4000-8000-000000000001'
+      and event_type='family_child_created'
+  ) <> 1 then
+    raise exception 'IDEMPOTENCY FAIL: child audit duplicated/missing';
+  end if;
+end $;
+
+do $
 begin
   if has_table_privilege('authenticated','app_private.idempotency_keys','SELECT')
      or has_table_privilege('authenticated','app_private.idempotency_keys','INSERT')
