@@ -14,8 +14,8 @@ module.exports = async function handler(req,res){
   const token=requireBearer(req,res);
   if(!token)return;
 
-  const displayName=String(req.body?.displayName||'').trim().slice(0,60);
-  if(!displayName)return res.status(400).json({ok:false,error:'invalid_child_name'});
+  const displayName=String(req.body?.displayName||'').trim();
+  if(!displayName||displayName.length>60)return res.status(400).json({ok:false,error:'invalid_child_name'});
 
   try{
     const response=await supabaseUserFetch(token,'/rest/v1/rpc/create_guardian_child',{
