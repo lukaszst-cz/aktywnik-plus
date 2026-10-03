@@ -19,13 +19,15 @@ app = (ROOT / "app.js").read_text(encoding="utf-8")
 personal_sync = (ROOT / "sync-client.js").read_text(encoding="utf-8")
 family_sync = (ROOT / "family-sync-client.js").read_text(encoding="utf-8")
 
-# Child-only movement-energy hint must remain presentation-only.
-assert "childMovementEnergyText" in app, "child movement energy hint missing"
-assert "kcal" not in app.lower(), "calorie counting must not be introduced into the child UI"
-assert "childMovementEnergy" not in personal_sync, "child movement energy leaked into personal sync"
-assert "childMovementEnergy" not in family_sync, "child movement energy leaked into family sync"
+# Parent-only movement-load hint must stay outside child UI, exports and sync.
+assert "parentMovementLoadText" in app, "parent movement load hint missing"
+assert "kcal" not in app.lower(), "calorie counting must not be introduced"
+child_section = app.split("function renderChildEntries()",1)[1].split("function renderChildRewards()",1)[0]
+assert "parentMovementLoad" not in child_section, "parent movement load leaked into child UI"
+assert "parentMovementLoad" not in personal_sync, "parent movement load leaked into personal sync"
+assert "parentMovementLoad" not in family_sync, "parent movement load leaked into family sync"
 export_section = app.split("function exportReportCsv()",1)[1].split("function renderFavoritesEditor()",1)[0]
-assert "childMovementEnergy" not in export_section, "child movement energy leaked into teacher/self exports or reports"
+assert "parentMovementLoad" not in export_section, "parent movement load leaked into teacher/self exports or reports"
 
 assert version in readme, "README does not expose current version"
 assert "0.5.0 beta.4" in landing, "landing does not expose beta.4"
