@@ -31,7 +31,7 @@ module.exports = function handler(req,res){
       personalSyncDeletes:true,
       familySync:false,
       familySyncBeta:cloud.enabled,
-      familySyncDeletes:false,
+      familySyncDeletes:true,
       familySyncDecisionHistory:false,
       familyCloudLinkReady:true,
       familyCloudOnboarding:cloud.enabled,
