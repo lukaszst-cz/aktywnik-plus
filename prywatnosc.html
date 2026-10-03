@@ -20,7 +20,7 @@
   <div class="cards">
     <article>
       <h3>Co zapisuje aplikacja?</h3>
-      <p>Nazwę wyświetlaną profilu, datę i rodzaj aktywności, czas, opcjonalny poziom wysiłku, notatkę oraz lokalne ustawienia. W trybie rodzinnym dodatkowo zapisywane są decyzje rodzica.</p>
+      <p>Nazwę wyświetlaną profilu, datę i rodzaj aktywności, czas, skalę zmęczenia 1–5, notatkę oraz lokalne ustawienia. W trybie rodzinnym dodatkowo zapisywane są decyzje rodzica.</p>
     </article>
     <article>
       <h3>Gdzie są dane?</h3>
@@ -43,6 +43,9 @@
 
     <h2>GitHub</h2>
     <p>Kod projektu jest publiczny, ale prawdziwe dane dzieci nie powinny trafiać do repozytorium. Repo zawiera wyłącznie kod, dokumentację i dane demonstracyjne.</p>
+
+    <h2>Zdjęcie karty i OCR lokalny</h2>
+    <p>Jeżeli przeglądarka obsługuje lokalny mechanizm rozpoznawania tekstu, zdjęcie JPG/PNG/WebP może zostać odczytane bez wysyłania obrazu do zewnętrznego API. Plik zdjęcia jest używany wyłącznie w pamięci bieżącej strony, nie jest dodawany do kopii JSON, family sync ani School Cloud i znika po odświeżeniu lub zamknięciu strony. Wynik OCR zawsze wymaga podglądu i może być poprawiony przed zapisaniem importu.</p>
 
     <h2>School Cloud — beta</h2>
     <p>Backend, konta dorosłych, role, RLS i lifecycle klas są już technicznie dostępne w wersji beta. Produkcyjne wdrożenie szkolne nadal wymaga kontrolowanego E2E, polityki retencji, decyzji szkoły/IOD, ewentualnej DPIA oraz niezależnego przeglądu bezpieczeństwa.</p>
