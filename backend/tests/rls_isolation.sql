@@ -145,7 +145,7 @@ select pg_temp.back_to_admin();
 -- co jest silniejszym zabezpieczeniem niż samo filtrowanie RLS.
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
-do $
+do $$
 begin
   begin
     perform 1 from children limit 1;
@@ -165,7 +165,7 @@ begin
   exception
     when insufficient_privilege then null;
   end;
-end $;
+end $$;
 reset role;
 
 rollback;
