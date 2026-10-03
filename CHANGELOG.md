@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — guardian child cloud onboarding
+
+- dorosły opiekun może utworzyć profil dziecka w School Cloud bez osobnego e-maila i hasła dziecka;
+- migracja 017 dodaje reviewed RPC `create_guardian_child` z kontrolą `auth.uid()`, typu profilu dorosłego i audytem;
+- endpoint `POST /api/v1/family-children` używa JWT użytkownika i Supabase RLS/RPC, bez service-role;
+- profil dziecka jest od razu powiązany z opiekunem jako `manager`;
+- School Cloud UI pozwala utworzyć profil i następnie wysłać zgłoszenie do klasy;
+- live test transakcyjny onboardingu: PASS; security preflight: PASS;
+- Security Advisor ma obecnie 5 kontrolowanych WARN `SECURITY DEFINER`, śledzonych przed School production.
+
+
 ## Unreleased — personal sync data minimization
 
 - personal sync outbox nie zapisuje już całego lokalnego stanu aplikacji;
@@ -39,8 +50,8 @@
 
 ## Unreleased — SECURITY DEFINER surface guard
 
-- live Supabase Security Advisor ma 4 kontrolowane WARN dla publicznych RPC `SECURITY DEFINER`;
-- `backend/tests/security_preflight.sql` ma dokładną allowlistę tych 4 funkcji i blokuje wzrost powierzchni;
+- live Supabase Security Advisor ma 5 kontrolowanych WARN dla publicznych RPC `SECURITY DEFINER`;
+- `backend/tests/security_preflight.sql` ma dokładną allowlistę tych 5 funkcji i blokuje wzrost powierzchni;
 - preflight sprawdza brak EXECUTE dla `anon`/`PUBLIC`, pusty `search_path`, `auth.uid()` oraz oczekiwany grant dla `authenticated`;
 - GitHub Actions uruchamia dodatkowy statyczny test migracji bez dostępu do sekretów bazy;
 - dokumentacja bezpieczeństwa i warunki pilota zostały wyrównane z live Supabase;
