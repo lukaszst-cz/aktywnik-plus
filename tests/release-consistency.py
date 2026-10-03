@@ -10,6 +10,7 @@ m = re.search(r"version:'([^']+)'", health)
 assert m, "api/health.js version missing"
 assert m.group(1) == version, f"health version {m.group(1)} != VERSION {version}"
 assert "full-family-sync-pilot" in health, "health backend stage is stale"
+assert "VERCEL_GIT_COMMIT_SHA" in health, "health does not expose deployed commit"
 
 readme = (ROOT / "README.md").read_text(encoding="utf-8")
 landing = (ROOT / "index.html").read_text(encoding="utf-8")
@@ -23,6 +24,8 @@ release = ROOT / "docs" / f"RELEASE-{version}.md"
 app = (ROOT / "app.js").read_text(encoding="utf-8")
 personal_sync = (ROOT / "sync-client.js").read_text(encoding="utf-8")
 family_sync = (ROOT / "family-sync-client.js").read_text(encoding="utf-8")
+production_smoke = (ROOT / "tests" / "production-smoke.mjs").read_text(encoding="utf-8")
+production_workflow = (ROOT / ".github" / "workflows" / "production-smoke.yml").read_text(encoding="utf-8")
 
 # Parent-only movement-load hint must stay outside child UI, exports and sync.
 assert "parentMovementLoadText" in app, "parent movement load hint missing"
@@ -40,6 +43,13 @@ assert "0.5.0 beta.4" in i18n, "i18n does not expose beta.4"
 assert "0.5.0 beta.4" in app_html, "app version badge does not expose beta.4"
 assert "Zmęczenie 1–5" in app_html, "fatigue scale is not aligned with the paper journal"
 assert "activityEffortValue" in app_html, "fatigue scale selected value is not visible"
+assert "pilotDiagnosticsCard" in app_html, "parent pilot diagnostics panel missing"
+assert "AktywnikPilotDiagnostics" in app, "pilot diagnostics API missing"
+diag_report = app.split("function pilotDiagnosticsReport()",1)[1].split("async function syncPilotNow()",1)[0]
+for forbidden in ["displayName","cloudChildId","pinHash","pinSalt","access_token","refresh_token"]:
+    assert forbidden not in diag_report, f"diagnostics report contains sensitive field: {forbidden}"
+assert "AKTYWNIK_EXPECTED_COMMIT" in production_smoke, "production smoke does not verify exact commit"
+assert "AKTYWNIK_EXPECTED_COMMIT: ${{ github.sha }}" in production_workflow, "production workflow does not pass github.sha"
 assert "0.5.0 beta.4" in about, "about page is stale"
 assert "0.5.0 beta.4" in faq, "FAQ page is stale"
 assert release.exists(), f"missing release notes: {release.name}"
