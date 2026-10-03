@@ -17,14 +17,27 @@
   async function api(path,options={}){
     const s=await session();
     if(!s?.access_token)throw Object.assign(new Error('authentication_required'),{status:401});
-    const res=await fetch(path,{
-      ...options,
-      headers:{
-        'Content-Type':'application/json',
-        Authorization:'Bearer '+s.access_token,
-        ...(options.headers||{})
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),15000);
+    let res;
+    try{
+      res=await fetch(path,{
+        ...options,
+        signal:controller.signal,
+        headers:{
+          'Content-Type':'application/json',
+          Authorization:'Bearer '+s.access_token,
+          ...(options.headers||{})
+        }
+      });
+    }catch(err){
+      if(err?.name==='AbortError'){
+        throw Object.assign(new Error('Przekroczono czas oczekiwania. Spróbuj ponownie.'),{status:408,code:'request_timeout'});
       }
-    });
+      throw err;
+    }finally{
+      clearTimeout(timeout);
+    }
     let data=null;try{data=await res.json()}catch{}
     if(!res.ok)throw Object.assign(new Error(data?.detail||data?.message||data?.error||('HTTP '+res.status)),{status:res.status,data});
     return data;
