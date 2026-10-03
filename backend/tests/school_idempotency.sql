@@ -131,7 +131,7 @@ end $$;
 
 reset role;
 
-do $
+do $$
 begin
   if (
     select count(*) from public.audit_events
@@ -140,9 +140,9 @@ begin
   ) <> 1 then
     raise exception 'IDEMPOTENCY FAIL: child audit duplicated/missing';
   end if;
-end $;
+end $$;
 
-do $
+do $$
 begin
   if has_table_privilege('authenticated','app_private.idempotency_keys','SELECT')
      or has_table_privilege('authenticated','app_private.idempotency_keys','INSERT')
