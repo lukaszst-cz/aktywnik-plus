@@ -29,6 +29,7 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.4**.
 - [x] Security Advisor: 0 aktywnych lintów
 - [x] migracje Supabase 001–025 live
 - [x] GitHub CI dla 0.5.0-beta.4: PASS — syntax/PWA, papier 70 wpisów, browser UI, i18n, PWA runtime, backend API
+- [x] automatyczny test: family sync nie wysyła danych offline i zachowuje kolejkę do reconnect
 
 ## Stan przed szerszym publicznym pilotem
 
@@ -40,7 +41,7 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.4**.
 - [ ] brak świeżych błędów runtime po wdrożeniu beta.4
 - [ ] główne pliki runtime na produkcji zgodne z bieżącym `main`
 - [ ] smoke na dwóch rzeczywistych urządzeniach: urządzenie A → sync → urządzenie B
-- [ ] smoke offline → reconnect → sync
+- [ ] fizyczny smoke offline → reconnect → sync na realnym urządzeniu — zachowanie kolejki offline jest już sprawdzane automatycznie
 - [ ] smoke delete → tombstone → drugie urządzenie
 - [ ] smoke decyzji rodzica → drugie urządzenie
 - [ ] instalacja PWA na Androidzie i ponowne uruchomienie
