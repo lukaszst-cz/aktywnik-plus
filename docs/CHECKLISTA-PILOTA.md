@@ -28,17 +28,17 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.4**.
 - [x] blokada self-escalation `child → adult`
 - [x] Security Advisor: 0 aktywnych lintów
 - [x] migracje Supabase 001–025 live
-- [x] GitHub CI po family sync: PASS
+- [x] GitHub CI dla 0.5.0-beta.4: PASS — syntax/PWA, papier 70 wpisów, browser UI, i18n, PWA runtime, backend API
 
 ## Stan przed szerszym publicznym pilotem
 
-- [x] **Vercel production zaktualizowany do 0.5.0-beta.4**
-- [x] `/api/health` na produkcji raportuje `0.5.0-beta.4`
-- [x] `/api/capabilities` potwierdza produkcyjną chmurę, Auth i RLS
-- [x] production smoke z `require_cloud=true`: PASS
-- [x] deployment Vercel: `READY`
-- [x] brak świeżych błędów runtime po wdrożeniu
-- [x] 28/28 głównych plików runtime na produkcji zgodnych bit-po-bicie z aktualnym `main`
+- [ ] **Vercel production zaktualizowany do 0.5.0-beta.4** — obecnie blokuje `build-rate-limit`
+- [ ] `/api/health` na produkcji raportuje `0.5.0-beta.4`
+- [x] ostatnia zweryfikowana produkcja 0.5.0-beta.3 potwierdza chmurę, Auth i RLS
+- [ ] production smoke beta.4 z `require_cloud=true`: PASS
+- [ ] deployment Vercel beta.4: `READY`
+- [ ] brak świeżych błędów runtime po wdrożeniu beta.4
+- [ ] główne pliki runtime na produkcji zgodne z bieżącym `main`
 - [ ] smoke na dwóch rzeczywistych urządzeniach: urządzenie A → sync → urządzenie B
 - [ ] smoke offline → reconnect → sync
 - [ ] smoke delete → tombstone → drugie urządzenie
@@ -47,9 +47,9 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.4**.
 - [ ] przykładowy raport zapisany/drukowany jako PDF
 - [ ] 3–7 dni testu jednej rodziny przed szerszym pilotem
 
-### Vercel — stan końcowy
+### Vercel — stan bieżący
 
-Historyczny status GitHub/Vercel przy starszym commicie może nadal wskazywać `build-rate-limit`, ale nie opisuje już aktualnej produkcji. Bieżący alias produkcyjny działa na deploymentcie `READY`, zwraca 0.5.0-beta.4 i przeszedł production smoke.
+Kod 0.5.0-beta.4 jest na `main` i pełny GitHub CI przechodzi. Automatyczny deployment beta.4 jest obecnie blokowany przez `build-rate-limit` Vercela. Ostatnia zweryfikowana produkcja pozostaje na 0.5.0-beta.3 i wcześniej miała status `READY` oraz production smoke PASS. Nie generować pustych commitów w celu obchodzenia limitu; po zwolnieniu limitu wykonać jeden redeploy bieżącego `main` i production smoke.
 
 ## School Cloud — technicznie gotowe do kontrolowanego E2E
 
