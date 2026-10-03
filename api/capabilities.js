@@ -37,6 +37,8 @@ module.exports = function handler(req,res){
       classInviteWorkflow:cloud.enabled,
       classJoinDecisionWorkflow:cloud.enabled,
       classLifecycleUi:true,
+      publicSecurityDefinerRpcSurface:false,
+      schoolLifecycleRpcPrivilegeModel:'public_invoker_private_definer',
       auditEventsIntegrated:'personal_and_school',
       schoolAuditCoverageVerified:true,
       schoolRetentionMechanismReady:true,
