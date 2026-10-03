@@ -15,7 +15,7 @@
 <main class="section">
   <span class="pill">Prywatność — wersja pilotażowa</span>
   <h2>Co dzieje się z danymi w obecnym pilocie?</h2>
-  <p><strong>Obecna wersja Aktywnik+ nie ma centralnego konta ani bazy danych uczniów.</strong> Wpisy pilota są przechowywane lokalnie w przeglądarce na urządzeniu użytkownika lub rodziny.</p>
+  <p><strong>Aktywnik+ działa local-first.</strong> Bez konta wpisy pozostają lokalnie w przeglądarce. Dorosły może opcjonalnie zalogować się przez Magic Link i włączyć synchronizację osobistą lub rodzinną dla jawnie powiązanych profili dziecka. School Cloud beta korzysta z backendu, Auth i RLS, ale nie jest jeszcze formalnym wdrożeniem produkcyjnym szkoły.</p>
 
   <div class="cards">
     <article>
@@ -24,11 +24,11 @@
     </article>
     <article>
       <h3>Gdzie są dane?</h3>
-      <p>Na urządzeniu i w przeglądarce, z której korzysta użytkownik lub rodzina. Pilot nie synchronizuje tych danych z innymi telefonami ani z panelem nauczyciela. Dane lokalne nie są szyfrowane przez Aktywnik+, dlatego osoba mająca dostęp do tego samego profilu przeglądarki może je zobaczyć.</p>
+      <p>Podstawowa kopia pozostaje na urządzeniu i w przeglądarce. Po świadomym włączeniu konta wybrane dane wymagane do synchronizacji mogą trafić do chmury Supabase zgodnie z rolami i RLS. Tryb rodzinny synchronizuje aktywności tylko dla profilu jawnie powiązanego przez rodzica; aplikacja nie dopasowuje dzieci automatycznie po imieniu. Dane lokalne nie są dodatkowo szyfrowane przez Aktywnik+ w pamięci przeglądarki, dlatego osoba mająca dostęp do tego samego profilu przeglądarki może je zobaczyć.</p>
     </article>
     <article>
       <h3>Kto je widzi?</h3>
-      <p>Osoby korzystające z tego urządzenia. Nauczyciel otrzymuje informacje dopiero wtedy, gdy użytkownik lub rodzic sam przekaże raport, CSV, PDF lub wydruk.</p>
+      <p>W trybie lokalnym — osoby korzystające z danego profilu przeglądarki. Po zalogowaniu dane chmurowe są ograniczane przez konto, role i RLS. Nauczyciel nie otrzymuje prywatnych informacji rodzica ani dodatkowego wskaźnika obciążenia wysiłkiem; raport szkolny zawiera tylko pola przewidziane dla dziennika i przekazane w danym workflow.</p>
     </article>
   </div>
 
@@ -44,8 +44,8 @@
     <h2>GitHub</h2>
     <p>Kod projektu jest publiczny, ale prawdziwe dane dzieci nie powinny trafiać do repozytorium. Repo zawiera wyłącznie kod, dokumentację i dane demonstracyjne.</p>
 
-    <h2>Wersja szkolna w przyszłości</h2>
-    <p>Jeżeli powstanie Aktywnik+ School z kontami i synchronizacją, będzie to osobny etap z backendem, uprawnieniami, izolacją szkół, retencją danych i formalnym modelem ochrony danych uzgodnionym ze szkołą.</p>
+    <h2>School Cloud — beta</h2>
+    <p>Backend, konta dorosłych, role, RLS i lifecycle klas są już technicznie dostępne w wersji beta. Produkcyjne wdrożenie szkolne nadal wymaga kontrolowanego E2E, polityki retencji, decyzji szkoły/IOD, ewentualnej DPIA oraz niezależnego przeglądu bezpieczeństwa.</p>
 
     <p><small>Ta strona opisuje techniczne działanie obecnego pilota i nie zastępuje dokumentacji wymaganej przy formalnym wdrożeniu szkolnym.</small></p>
   </section>
