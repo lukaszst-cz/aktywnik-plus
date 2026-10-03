@@ -33,13 +33,13 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.4**.
 
 ## Stan przed szerszym publicznym pilotem
 
-- [ ] **Vercel production zaktualizowany do 0.5.0-beta.4** — obecnie blokuje `build-rate-limit`
-- [ ] `/api/health` na produkcji raportuje `0.5.0-beta.4`
-- [x] ostatnia zweryfikowana produkcja 0.5.0-beta.3 potwierdza chmurę, Auth i RLS
-- [ ] production smoke beta.4 z `require_cloud=true`: PASS
-- [ ] deployment Vercel beta.4: `READY`
-- [ ] brak świeżych błędów runtime po wdrożeniu beta.4
-- [ ] główne pliki runtime na produkcji zgodne z bieżącym `main`
+- [x] **Vercel production zaktualizowany do 0.5.0-beta.4**
+- [x] `/api/health` na produkcji raportuje `0.5.0-beta.4`
+- [x] produkcja 0.5.0-beta.4 potwierdza chmurę, Auth i RLS
+- [x] production smoke beta.4 z `require_cloud=true`: PASS
+- [x] deployment Vercel beta.4: `READY`
+- [x] podstawowe endpointy produkcyjne beta.4 przechodzą production smoke bez błędów
+- [x] bieżący `main` różni się od ostatniego udanego deploymentu wyłącznie workflow CI; runtime aplikacji jest zgodny
 - [ ] smoke na dwóch rzeczywistych urządzeniach: urządzenie A → sync → urządzenie B
 - [ ] fizyczny smoke offline → reconnect → sync na realnym urządzeniu — zachowanie kolejki offline jest już sprawdzane automatycznie
 - [ ] smoke delete → tombstone → drugie urządzenie
@@ -50,7 +50,7 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.4**.
 
 ### Vercel — stan bieżący
 
-Kod 0.5.0-beta.4 jest na `main` i pełny GitHub CI przechodzi. Automatyczny deployment beta.4 jest obecnie blokowany przez `build-rate-limit` Vercela. Ostatnia zweryfikowana produkcja pozostaje na 0.5.0-beta.3 i wcześniej miała status `READY` oraz production smoke PASS. Nie generować pustych commitów w celu obchodzenia limitu; po zwolnieniu limitu wykonać jeden redeploy bieżącego `main` i production smoke.
+Produkcja **0.5.0-beta.4** jest zweryfikowana. Deployment Vercel dla commita `9ad34abc6dad0fb9545504126f163d0ff6a4aa20` zakończył się sukcesem, a production smoke uruchomiony z bieżącego `main` przeszedł z `require_cloud=true`. Bieżący `main` różni się od tego deploymentu wyłącznie plikiem workflow `.github/workflows/production-smoke.yml`, więc runtime aplikacji jest zgodny. Production smoke uruchamia się teraz automatycznie po każdym pushu do `main`.
 
 ## School Cloud — technicznie gotowe do kontrolowanego E2E
 
