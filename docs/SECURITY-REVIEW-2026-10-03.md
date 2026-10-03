@@ -10,7 +10,7 @@ Techniczny przegląd bieżącego środowiska Aktywnik+ przed rozszerzaniem funkc
 
 Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - projekt aktywny w regionie EU (`eu-central-1`);
-- migracje `001`–`022` są zastosowane;
+- migracje `001`–`025` są zastosowane;
 - 23/23 tabel w schemacie `public` ma włączone RLS;
 - brak tabel publicznych bez polityki RLS;
 - brak grantów tabel dla roli `anon`;
@@ -25,10 +25,11 @@ Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - class lifecycle po migracji 020 (`SECURITY INVOKER` wrappers): PASS;
 - family onboarding po migracji 020: PASS;
 - family activity sync / migracja 022: pre-deploy RLS regression PASS; po wdrożeniu potwierdzono kolumny, indeksy, `tenant_id IS NULL` w family policies oraz pełny security preflight PASS;
-- School Cloud idempotency / migracja 023: retry-regression + rozszerzony security preflight PASS w transakcji z rollbackiem; ledger pozostaje w `app_private` bez bezpośrednich grantów klienta; migracja nie jest jeszcze live;
-- family delete tombstones / migracja 024: guardian-only RLS, school-row isolation i unrelated-adult isolation PASS; 023+024 + pełny security preflight PASS w transakcji z rollbackiem; migracja nie jest jeszcze live;
-- family decision history / migracja 025: istniejące guardian-only INSERT + family SELECT RLS pozostają bez poszerzania grantów; stabilny `client_event_id`, historia zachowana po delete aktywności, unrelated-adult isolation + duplicate regression PASS; 023+024+025 + pełny security preflight PASS w rollbacku; migracja nie jest jeszcze live;
-- Security Advisor po migracji 020: 0 aktywnych lintów.
+- School Cloud idempotency / migracja 023: live retry-regression PASS; ledger pozostaje w `app_private` bez bezpośrednich grantów klienta;
+- family delete tombstones / migracja 024: live; guardian-only RLS, school-row isolation i unrelated-adult isolation PASS;
+- family decision history / migracja 025: live; guardian-only INSERT + family SELECT RLS, stabilny `client_event_id`, historia zachowana po delete aktywności, unrelated-adult isolation + duplicate regression PASS;
+- Security Advisor po migracji 025: 0 aktywnych lintów;
+- pełny security preflight po 025: PASS; class lifecycle: PASS; family onboarding: PASS.
 
 Repo zawiera `backend/tests/security_preflight.sql`, który ma być uruchamiany po zmianach schematu/RLS i kontroluje również powierzchnię `SECURITY DEFINER`.
 
