@@ -45,6 +45,10 @@ jobs:
           grep -q "school-cloud.html" dla-nauczyciela.html
           grep -q "school-cloud.html" faq.html
           ! grep -q "pełny lifecycle klasy jest nadal rozwijany" index.html
+          test -f backend/migrations/018_profile_type_role_hardening.sql
+          test -f backend/tests/profile_role_escalation.sql
+          grep -q "grant update(display_name)" backend/migrations/018_profile_type_role_hardening.sql
+          grep -q "profile_update_columns" backend/tests/security_preflight.sql
           python3 tests/security-static.py
           python3 - <<'PY'
           import json, os, re
@@ -194,6 +198,7 @@ jobs:
             if(res.out.statusCode!==200) throw new Error(file+' status');
             if(!res.out.body) throw new Error(file+' no body');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.personalSyncProtocolVersion!==1) throw new Error('sync protocol capability missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.profileRoleEscalationBlocked!==true) throw new Error('profile role hardening capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudOnboarding!==false) throw new Error('family onboarding capability must fail closed when cloud is off');
           }
           const health=require('./api/health.js');
