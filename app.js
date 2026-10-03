@@ -1028,7 +1028,7 @@ function safeBackupState(raw){
   }).filter(Boolean);
   const approvalEvents=(Array.isArray(d.approvalEvents)?d.approvalEvents:[]).slice(0,10000).map(ev=>{
     if(!ev||typeof ev!=='object')return null;const childId=ids.has(ev.childId)?ev.childId:fallback;if(!childId)return null;
-    return {id:cleanText(ev.id,80)||uuid(),entryId:cleanText(ev.entryId,80),childId,action:['created','edited','resubmitted','approved','approved_auto','corrected','rejected'].includes(ev.action)?ev.action:'edited',actor:['child','parent','system'].includes(ev.actor)?ev.actor:'system',note:cleanText(ev.note,240),at:ev.at||nowIso(),before:ev.before&&typeof ev.before==='object'?ev.before:null,after:ev.after&&typeof ev.after==='object'?ev.after:null};
+    return {id:cleanText(ev.id,80)||uuid(),entryId:cleanText(ev.entryId,80),childId,action:['created','edited','resubmitted','approved','approved_auto','corrected','rejected','deleted'].includes(ev.action)?ev.action:'edited',actor:['child','parent','system'].includes(ev.actor)?ev.actor:'system',note:cleanText(ev.note,240),at:ev.at||nowIso(),before:ev.before&&typeof ev.before==='object'?ev.before:null,after:ev.after&&typeof ev.after==='object'?ev.after:null};
   }).filter(Boolean);
   const rewards=(Array.isArray(d.rewards)?d.rewards:[]).slice(0,2000).map(r=>{if(!r||typeof r!=='object')return null;const childId=ids.has(r.childId)?r.childId:fallback;if(!childId)return null;return {...r,id:cleanText(r.id,80)||uuid(),childId,type:['plus','grade','note'].includes(r.type)?r.type:'plus',value:cleanText(r.value,20),date:validDate(r.date)?r.date:today(),note:cleanText(r.note,160),createdAt:r.createdAt||nowIso()}}).filter(Boolean);
   const classes=(Array.isArray(d.classes)?d.classes:[]).slice(0,MAX_CLASSES);
