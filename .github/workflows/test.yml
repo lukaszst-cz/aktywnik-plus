@@ -44,6 +44,10 @@ jobs:
           ! grep -q "Universal 0.4.0" o-projekcie.html
           ! grep -q "Universal 0.4.0" faq.html
           ! grep -q "Nie ma jeszcze centralnego konta ani synchronizacji" faq.html
+          grep -q "school-cloud.html" index.html
+          grep -q "school-cloud.html" dla-nauczyciela.html
+          grep -q "school-cloud.html" faq.html
+          ! grep -q "pełny lifecycle klasy jest nadal rozwijany" index.html
           node --check api/v1/school-years.js
           node --check api/v1/sync.js
           python3 - <<'PY'
