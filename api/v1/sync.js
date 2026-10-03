@@ -3,6 +3,7 @@
 const {noStore,requireCloud}=require('../_lib/backend');
 
 const MAX_SYNC_ENTRIES=5000;
+const SYNC_PROTOCOL_VERSION=1;
 const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function bearer(req){
@@ -44,6 +45,17 @@ async function authenticatedUser(auth){
 
 function validDate(value){
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value||''));
+}
+
+function requireSyncProtocol(value){
+  const version=value==null||value===''?SYNC_PROTOCOL_VERSION:Number(value);
+  if(!Number.isInteger(version)||version<1){
+    throw Object.assign(new Error('Invalid sync protocol version.'),{status:400,code:'invalid_sync_protocol'});
+  }
+  if(version>SYNC_PROTOCOL_VERSION){
+    throw Object.assign(new Error('This client uses a newer sync protocol. Update Aktywnik+ before synchronizing.'),{status:409,code:'sync_protocol_too_new'});
+  }
+  return version;
 }
 
 function toRow(entry,ownerId,fallbackUpdatedAt){
@@ -231,6 +243,9 @@ module.exports = async function handler(req,res){
   if(!auth)return res.status(401).json({ok:false,error:'missing_bearer_token'});
 
   try{
+    const protocolVersion=requireSyncProtocol(
+      req.method==='GET'?req.query?.protocolVersion:req.body?.protocolVersion
+    );
     const user=await authenticatedUser(auth);
 
     if(req.method==='GET'){
@@ -238,6 +253,7 @@ module.exports = async function handler(req,res){
       return res.status(200).json({
         ok:true,
         mode:'self',
+        protocolVersion,
         entries,
         deletes,
         deletesSupported:true
@@ -248,6 +264,7 @@ module.exports = async function handler(req,res){
     return res.status(200).json({
       ok:true,
       mode:'self',
+      protocolVersion,
       synced:result.synced,
       deleted:result.deleted,
       suppressed:result.suppressed,
