@@ -33,7 +33,7 @@ module.exports = function handler(req,res){
       classLifecycleApi:cloud.enabled,
       classInviteWorkflow:cloud.enabled,
       classJoinDecisionWorkflow:cloud.enabled,
-      classLifecycleUi:false,
+      classLifecycleUi:true,
       auditEventsIntegrated:'personal_and_class_lifecycle',
       serverBackupRestoreVerified:false
     }
