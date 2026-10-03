@@ -37,6 +37,7 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.4**.
 - [x] `/api/health` na produkcji raportuje `0.5.0-beta.4`
 - [x] produkcja 0.5.0-beta.4 potwierdza chmurę, Auth i RLS
 - [x] production smoke beta.4 z `require_cloud=true`: PASS
+- [x] produkcyjny family UI smoke: PASS — onboarding rodzinny, wpis aktywności, Zmęczenie 4/5, granica widoku dziecko/rodzic, PIN
 - [x] deployment Vercel beta.4: `READY`
 - [x] podstawowe endpointy produkcyjne beta.4 przechodzą production smoke bez błędów
 - [x] bieżący `main` różni się od ostatniego udanego deploymentu wyłącznie workflow CI; runtime aplikacji jest zgodny
