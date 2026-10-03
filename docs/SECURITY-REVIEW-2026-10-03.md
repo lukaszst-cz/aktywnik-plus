@@ -25,6 +25,7 @@ Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - class lifecycle po migracji 020 (`SECURITY INVOKER` wrappers): PASS;
 - family onboarding po migracji 020: PASS;
 - family activity sync / migracja 022: pre-deploy RLS regression PASS; po wdrożeniu potwierdzono kolumny, indeksy, `tenant_id IS NULL` w family policies oraz pełny security preflight PASS;
+- School Cloud idempotency / migracja 023: retry-regression + rozszerzony security preflight PASS w transakcji z rollbackiem; ledger pozostaje w `app_private` bez bezpośrednich grantów klienta; migracja nie jest jeszcze live;
 - Security Advisor po migracji 020: 0 aktywnych lintów.
 
 Repo zawiera `backend/tests/security_preflight.sql`, który ma być uruchamiany po zmianach schematu/RLS i kontroluje również powierzchnię `SECURITY DEFINER`.
