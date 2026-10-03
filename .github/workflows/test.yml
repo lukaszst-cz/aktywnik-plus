@@ -96,6 +96,7 @@ jobs:
           ! grep -q "pełny lifecycle klasy jest nadal rozwijany" index.html
           python3 tests/security-static.py
           python3 tests/performance-static.py
+          python3 tests/release-consistency.py
           python3 - <<'PY'
           import json, os, re
           with open("manifest.webmanifest", encoding="utf-8") as f:
