@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — SECURITY DEFINER surface guard
+
+- live Supabase Security Advisor ma 4 kontrolowane WARN dla publicznych RPC `SECURITY DEFINER`;
+- `backend/tests/security_preflight.sql` ma dokładną allowlistę tych 4 funkcji i blokuje wzrost powierzchni;
+- preflight sprawdza brak EXECUTE dla `anon`/`PUBLIC`, pusty `search_path`, `auth.uid()` oraz oczekiwany grant dla `authenticated`;
+- GitHub Actions uruchamia dodatkowy statyczny test migracji bez dostępu do sekretów bazy;
+- dokumentacja bezpieczeństwa i warunki pilota zostały wyrównane z live Supabase;
+- docelowy refaktor przed School production jest śledzony w issue #43.
+
+
 ## Unreleased — backup identity isolation
 
 - aktualne kopie v6 wymagają unikalnych identyfikatorów profili i wpisów;
