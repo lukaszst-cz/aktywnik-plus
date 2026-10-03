@@ -109,7 +109,7 @@
   }
   function statusText(){
     const q=read();
-    if(currentProfileMode()==='family')return t('sync.familyLocal','rodzina · dane lokalne');
+    if(currentProfileMode()==='family')return window.AktywnikFamilySync?.statusText?.()||t('sync.familyLocal','rodzina · dane lokalne');
     const session=window.AktywnikAuth?.readSession?.();
     if(!session)return t('sync.localOptional','lokalnie · konto opcjonalne');
     if(cloudEnabled===false)return t('sync.disabled','konto · sync beta wyłączony');

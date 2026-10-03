@@ -19,7 +19,7 @@ Na tym etapie:
 - zmiana aktywnego profilu dziecka na urządzeniu wymaga odblokowanej strefy rodzica;
 - nie potrzeba własnego serwera;
 - dane nadal zapisują się lokalnie jako pierwsze;
-- w 0.5 beta istnieje bezpieczny fundament Magic Link i synchronizacji trybu osobistego;
+- w 0.5 beta działa Magic Link, pełny sync trybu osobistego oraz family activity sync beta dla jawnie powiązanych profili;
 - rodzina może wybrać aplikację, tryb hybrydowy albo papier.
 
 Przed formalnym wdrożeniem szkolnym należy przejść do wersji z backendem, kontami, uprawnieniami i uzgodnionym modelem ochrony danych.
@@ -169,15 +169,15 @@ Szczegóły: [Logowanie bez tarcia](docs/LOGOWANIE-BEZ-TARCIA.md).
 Backendowy fundament jest już połączony z projektem Supabase:
 - `/api/health` i `/api/capabilities`;
 - `/api/v1/sync` — beta synchronizacji trybu osobistego;
-- migracje `001–020` zastosowane live; migracja `021` z indeksami FK przygotowana do osobnego wdrożenia;
+- migracje `001–022` zastosowane live;
 - wszystkie tabele publiczne mają RLS;
 - osobna tabela `personal_activities` dla trybu **Dla siebie**;
-- local-first sync queue po stronie PWA tylko dla trybu osobistego;
+- oddzielne minimalne sync queue dla trybu osobistego i family activity sync beta;
 - synchronizacja usunięć w trybie osobistym przez tombstones;
 - Magic Link i sesja konta;
 - nowy model kluczy Supabase: publishable po stronie klienta, secret wyłącznie po stronie serwera.
 
-Chmura nadal jest domyślnie wyłączona przez bezpieczniki `AKTYWNIK_CLOUD_SYNC` i `AKTYWNIK_RLS_VERIFIED`. Włączenie nastąpi dopiero po testach wielu kont, konfliktów offline i synchronizacji usunięć.
+Chmura pozostaje fail-closed przez `AKTYWNIK_CLOUD_SYNC` i `AKTYWNIK_RLS_VERIFIED`: bez poprawnej konfiguracji endpointy odmawiają pracy. Produkcyjne funkcje są włączane tylko po przejściu RLS/preflight.
 
 ## Wersja produkcyjna
 
@@ -191,4 +191,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.5.0-beta.2 Pull & Merge` — tryb osobisty ma dwukierunkową synchronizację push/pull z regułą „nowszy timestamp wygrywa” oraz propagację usunięć przez tombstones. Brakujące wpisy z innego urządzenia są scalane lokalnie, a nowsza wersja lokalna nie jest nadpisywana. Tryb rodzinny pozostaje local-only do czasu osobnego, bezpiecznego family sync. Local-first pozostaje zasadą.
+`0.5.0-beta.2 Pull & Merge` — tryb osobisty ma dwukierunkową synchronizację push/pull z regułą „nowszy timestamp wygrywa” oraz propagację usunięć przez tombstones. Brakujące wpisy z innego urządzenia są scalane lokalnie, a nowsza wersja lokalna nie jest nadpisywana. Tryb rodzinny ma teraz osobny family activity sync beta dla jawnie powiązanych `cloudChildId`; rodzinne delete/tombstones i pełna historia decyzji nie są jeszcze synchronizowane. Local-first pozostaje zasadą.

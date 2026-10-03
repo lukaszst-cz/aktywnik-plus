@@ -27,6 +27,7 @@ jobs:
           node --check auth-config.js
           node --check auth.js
           node --check sync-client.js
+          node --check family-sync-client.js
           node --check school-cloud.js
           grep -q "AbortController" school-cloud.js
           grep -q "request_timeout" school-cloud.js
@@ -46,6 +47,12 @@ jobs:
           node --check api/v1/me.js
           node --check api/v1/school-years.js
           node --check api/v1/sync.js
+          node --check api/v1/family-sync.js
+          test -f backend/migrations/022_family_activity_sync.sql
+          test -f backend/tests/family_activity_sync.sql
+          grep -q "familySyncBeta:cloud.enabled" api/capabilities.js
+          grep -q "family-sync-client.js" app.html
+          grep -q "./family-sync-client.js" sw.js
           test -f backend/tests/application_restore_drill.sql
           grep -q "^rollback;" backend/tests/application_restore_drill.sql
           grep -q "applicationRestoreDrillVerified:true" api/capabilities.js
@@ -111,6 +118,8 @@ jobs:
               auth_config=f.read()
           with open("sync-client.js", encoding="utf-8") as f:
               sync_client=f.read()
+          with open("family-sync-client.js", encoding="utf-8") as f:
+              family_sync_client=f.read()
           with open("vercel.json", encoding="utf-8") as f:
               vercel=json.load(f)
           assert 'auth-config.js' in account and 'auth.js' in account, "account auth scripts missing"
@@ -119,6 +128,8 @@ jobs:
           assert 'schoolCreateChildBtn' in school_cloud and 'schoolNewChildName' in school_cloud, "School Cloud child onboarding controls missing"
           assert 'SUPABASE_SERVICE_ROLE_KEY' not in auth and 'SUPABASE_SECRET_KEY' not in auth, "server key leaked to client auth"
           assert 'SUPABASE_SECRET_KEY' not in sync_client and 'SUPABASE_SERVICE_ROLE_KEY' not in sync_client, "server key leaked to sync client"
+          assert 'SUPABASE_SECRET_KEY' not in family_sync_client and 'SUPABASE_SERVICE_ROLE_KEY' not in family_sync_client, "server key leaked to family sync client"
+          assert '/api/v1/family-sync' in family_sync_client and 'minimalFamilySnapshot' in family_sync_client, "family sync client foundation missing"
           assert 'sb_publishable_' in auth_config, "publishable key missing"
           assert "markDirty" in sync_client and "/api/v1/sync" in sync_client, "sync queue client missing"
           csp=next(h["value"] for x in vercel["headers"] if x["source"]=="/(.*)" for h in x["headers"] if h["key"]=="Content-Security-Policy")
@@ -222,6 +233,8 @@ jobs:
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.applicationRestoreDrillVerified!==true) throw new Error('application restore capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.profileRoleEscalationBlocked!==true) throw new Error('profile role hardening capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudLinkReady!==true) throw new Error('family cloud link readiness missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncBeta!==false) throw new Error('family sync beta must fail closed when cloud is off');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySync!==false) throw new Error('full family sync must remain false until deletes/history ship');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolAuditCoverageVerified!==true) throw new Error('school audit capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionMechanismReady!==true) throw new Error('school retention mechanism capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionPolicyConfigured!==false) throw new Error('school retention policy must remain externally configurable');
@@ -242,6 +255,7 @@ jobs:
           const schoolYears=require('./api/v1/school-years.js');
           const me=require('./api/v1/me.js');
           const sync=require('./api/v1/sync.js');
+          const familySync=require('./api/v1/family-sync.js');
           for (const [handler,req] of [
             [classes,{method:'GET'}],
             [familyChildren,{method:'POST',body:{displayName:'Test'}}],
@@ -249,7 +263,8 @@ jobs:
             [classJoin,{method:'GET',query:{}}],
             [schoolYears,{method:'GET',query:{}}],
             [me,{method:'GET'}],
-            [sync,{method:'GET'}]
+            [sync,{method:'GET'}],
+            [familySync,{method:'GET',query:{childId:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'}}]
           ]){
             const res=mock();
             await handler(req,res);
@@ -298,6 +313,28 @@ jobs:
             }
             if(String(url).includes('/rest/v1/memberships')){
               return {ok:true,status:200,text:async()=>JSON.stringify([{tenant_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',role:'guardian',active:true}])};
+            }
+            if(String(url).includes('/rest/v1/guardians')){
+              const allowed=String(url).includes('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee');
+              return {ok:true,status:200,text:async()=>JSON.stringify(allowed?[{child_id:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'}]:[])};
+            }
+            if(String(url).includes('/rest/v1/activities')){
+              const method=String(options.method||'GET').toUpperCase();
+              if(method==='POST')return {ok:true,status:201,text:async()=>''};
+              return {ok:true,status:200,text:async()=>JSON.stringify([{
+                client_entry_id:'56565656-5656-4565-8565-565656565656',
+                activity_date:'2026-10-02',
+                activity_type:'Spacer',
+                minutes:35,
+                effort:2,
+                note:'family cloud',
+                status:'approved',
+                source:'manual',
+                rejection_reason:null,
+                approved_at:'2026-10-02T20:06:00.000Z',
+                client_updated_at:'2026-10-02T20:06:00.000Z',
+                updated_at:'2026-10-02T20:06:00.000Z'
+              }])};
             }
             if(String(url).includes('/rest/v1/children')){
               return {ok:true,status:200,text:async()=>JSON.stringify([{id:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',display_name:'Dziecko Test'}])};
@@ -370,6 +407,59 @@ jobs:
           if(!Array.isArray(pullRes.out.body?.deletes)||pullRes.out.body?.deletesSupported!==true) throw new Error('personal pull tombstones');
           if(pullRes.out.body.entries[0]?.activity_type!=='Rower') throw new Error('personal pull payload');
           if(!calls.some(x=>x.url.includes('/rest/v1/personal_activities')&&String(x.options?.method||'GET').toUpperCase()==='GET')) throw new Error('personal sync read missing');
+
+          const familyPushRes=mock();
+          await familySync({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{
+              protocolVersion:1,
+              childId:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+              updatedAt:'2026-10-03T08:00:00.000Z',
+              entries:[{
+                id:'45454545-4545-4454-8454-454545454545',
+                date:'2026-10-03',
+                activity:'Spacer',
+                minutes:30,
+                effort:2,
+                note:'family test',
+                status:'pending',
+                source:'manual',
+                createdAt:'2026-10-03T08:00:00.000Z',
+                updatedAt:'2026-10-03T08:00:00.000Z'
+              }]
+            }
+          },familyPushRes);
+          if(familyPushRes.out.statusCode!==200||familyPushRes.out.body?.synced!==1) throw new Error('family sync push failed');
+          if(familyPushRes.out.body?.protocolVersion!==1||familyPushRes.out.body?.deletesSupported!==false) throw new Error('family sync push contract');
+          if(!calls.some(x=>x.url.includes('/rest/v1/guardians'))) throw new Error('family guardian verification missing');
+          if(!calls.some(x=>x.url.includes('/rest/v1/activities')&&String(x.options?.method||'GET').toUpperCase()==='POST')) throw new Error('family activity write missing');
+
+          const familyPullRes=mock();
+          await familySync({
+            method:'GET',
+            headers:{authorization:'Bearer test-token'},
+            query:{protocolVersion:'1',childId:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'}
+          },familyPullRes);
+          if(familyPullRes.out.statusCode!==200||familyPullRes.out.body?.entries?.length!==1) throw new Error('family sync pull failed');
+          if(familyPullRes.out.body.entries[0]?.status!=='approved') throw new Error('family pull status payload');
+          if(familyPullRes.out.body?.childId!=='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee') throw new Error('family pull child context');
+
+          const familyForbidden=mock();
+          await familySync({
+            method:'GET',
+            headers:{authorization:'Bearer test-token'},
+            query:{protocolVersion:'1',childId:'ffffffff-ffff-4fff-8fff-fffffffffff1'}
+          },familyForbidden);
+          if(familyForbidden.out.statusCode!==403||familyForbidden.out.body?.error!=='family_child_forbidden') throw new Error('unlinked family child was not rejected');
+
+          const familyTooNew=mock();
+          await familySync({
+            method:'GET',
+            headers:{authorization:'Bearer test-token'},
+            query:{protocolVersion:'99',childId:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'}
+          },familyTooNew);
+          if(familyTooNew.out.statusCode!==409||familyTooNew.out.body?.error!=='sync_protocol_too_new') throw new Error('newer family sync protocol was not rejected');
 
           const tooNewRes=mock();
           await syncEnabled({

@@ -14,6 +14,8 @@ const DRAFT_KEY='aktywnik-plus-entry-draft-v1';
 const SYNC_KEY='aktywnik-plus-sync-outbox-v1';
 const DELETE_KEY='aktywnik-plus-personal-deletes-v1';
 const LAST_SYNC_KEY='aktywnik-plus-last-cloud-sync-v1';
+const FAMILY_SYNC_KEY='aktywnik-plus-family-sync-outbox-v1';
+const FAMILY_LAST_SYNC_KEY='aktywnik-plus-last-family-cloud-sync-v1';
 const CLOUD_SESSION_KEY='aktywnik-plus-cloud-session-v1';
 const SESSION_KEY='aktywnik-plus-parent-unlocked-until';
 const PIN_FAIL_KEY='aktywnik-plus-parent-pin-fails';
@@ -43,7 +45,7 @@ async function loadApp(label){
 }
 async function run(){
   try{
-    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);sessionStorage.clear();
+    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);localStorage.removeItem(FAMILY_SYNC_KEY);localStorage.removeItem(FAMILY_LAST_SYNC_KEY);sessionStorage.clear();
     let ctx=await loadApp('initial'),w=ctx.w,d=ctx.d;
     if(d.getElementById('pilotSetupCard').classList.contains('hidden'))throw new Error('initial universal setup missing');
     if(d.getElementById('childModeBtn')||d.getElementById('parentModeBtn')||d.getElementById('schoolModeBtn'))throw new Error('legacy role switch still visible');
@@ -311,6 +313,40 @@ async function run(){
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.children.find(x=>x.id===childB.id)?.cloudChildId!==cloudB)throw new Error('family cloud child B link not persisted');
 
+    if(!w.AktywnikFamilySync?.minimalFamilySnapshot)throw new Error('family sync client missing');
+    const familySnapshot=w.AktywnikFamilySync.minimalFamilySnapshot(saved);
+    if(familySnapshot?.profileMode!=='family'||familySnapshot?.groups?.length!==2)throw new Error('family sync snapshot missing linked children');
+    const groupA=familySnapshot.groups.find(g=>g.localChildId==='child-a'&&g.cloudChildId===cloudA);
+    const groupB=familySnapshot.groups.find(g=>g.localChildId===childB.id&&g.cloudChildId===cloudB);
+    if(!groupA||!groupB)throw new Error('family sync child mapping mismatch');
+    if(groupA.entries?.length!==1||groupB.entries?.length!==0)throw new Error('family sync included wrong child entries');
+    const familySnapshotText=JSON.stringify(familySnapshot);
+    for(const forbidden of ['parentAuth','pinHash','classes','school','approvalEvents','rewards','paperImports']){
+      if(familySnapshotText.includes(forbidden))throw new Error('family sync snapshot leaked local-only field: '+forbidden);
+    }
+    w.AktywnikFamilySync.markDirty(saved);
+    const familyOutbox=JSON.parse(localStorage.getItem(FAMILY_SYNC_KEY)||'null');
+    if(!familyOutbox?.dirty||familyOutbox.snapshot?.groups?.length!==2)throw new Error('family sync outbox not queued');
+
+    const localFamilyEntry=saved.entries.find(x=>x.childId==='child-a');
+    if(!localFamilyEntry)throw new Error('family sync local entry missing');
+    const olderFamilyMerge=w.AktywnikCloudBridge.mergeFamilyCloudEntries('child-a',[{
+      client_entry_id:localFamilyEntry.id,
+      activity_date:localFamilyEntry.date,
+      activity_type:localFamilyEntry.activity,
+      minutes:5,
+      effort:1,
+      note:'older remote',
+      status:'approved',
+      source:'manual',
+      rejection_reason:null,
+      approved_at:'2000-01-01T00:00:00.000Z',
+      client_updated_at:'2000-01-01T00:00:00.000Z',
+      updated_at:'2000-01-01T00:00:00.000Z'
+    }]);
+    if(olderFamilyMerge.localNewer!==1)throw new Error('older family cloud entry did not preserve local version');
+    w.AktywnikFamilySync.clear();
+
     const linkBackup=w.makeBackupPayload(saved);
     const linkRestored=w.backupStateFromPayload(linkBackup);
     if(linkRestored.children.find(x=>x.id==='child-a')?.cloudChildId!==cloudA||linkRestored.children.find(x=>x.id===childB.id)?.cloudChildId!==cloudB)throw new Error('family cloud links not preserved in backup');
@@ -416,13 +452,15 @@ async function run(){
     localStorage.setItem(SYNC_KEY,JSON.stringify({dirty:true,snapshot:{profileMode:'self'}}));
     localStorage.setItem(DELETE_KEY,JSON.stringify({'11111111-1111-4111-8111-111111111111':new Date().toISOString()}));
     localStorage.setItem(LAST_SYNC_KEY,new Date().toISOString());
+    localStorage.setItem(FAMILY_SYNC_KEY,JSON.stringify({dirty:true,snapshot:{profileMode:'family',groups:[]}}));
+    localStorage.setItem(FAMILY_LAST_SYNC_KEY,new Date().toISOString());
     localStorage.setItem(CLOUD_SESSION_KEY,JSON.stringify({access_token:'keep-local-session'}));
     localStorage.setItem(LANG_KEY,'pl');
     sessionStorage.setItem(SESSION_KEY,String(Date.now()+600000));
     sessionStorage.setItem(PIN_FAIL_KEY,'4');
     sessionStorage.setItem(PIN_LOCK_KEY,String(Date.now()+600000));
     w.applyBackupCandidate(restored);
-    if(localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null)throw new Error('restore left stale sync transient state');
+    if(localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_SYNC_KEY)!==null||localStorage.getItem(FAMILY_LAST_SYNC_KEY)!==null)throw new Error('restore left stale sync transient state');
     if(!localStorage.getItem(CLOUD_SESSION_KEY))throw new Error('restore unexpectedly removed account session');
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('restore left parent transient state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('restore removed language preference');
@@ -443,6 +481,8 @@ async function run(){
     localStorage.setItem(SYNC_KEY,JSON.stringify({dirty:true}));
     localStorage.setItem(DELETE_KEY,JSON.stringify({x:new Date().toISOString()}));
     localStorage.setItem(LAST_SYNC_KEY,new Date().toISOString());
+    localStorage.setItem(FAMILY_SYNC_KEY,JSON.stringify({dirty:true}));
+    localStorage.setItem(FAMILY_LAST_SYNC_KEY,new Date().toISOString());
     localStorage.setItem(CLOUD_SESSION_KEY,JSON.stringify({access_token:'remove-me'}));
     localStorage.setItem(DRAFT_KEY+':wipe-test',JSON.stringify({note:'remove-me'}));
     localStorage.setItem(LANG_KEY,'pl');
@@ -450,12 +490,12 @@ async function run(){
     sessionStorage.setItem(PIN_FAIL_KEY,'3');
     sessionStorage.setItem(PIN_LOCK_KEY,String(Date.now()+600000));
     w.clearAllLocalUserData();
-    if(localStorage.getItem(KEY)!==null||localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(CLOUD_SESSION_KEY)!==null)throw new Error('full local wipe left user data');
+    if(localStorage.getItem(KEY)!==null||localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_SYNC_KEY)!==null||localStorage.getItem(FAMILY_LAST_SYNC_KEY)!==null||localStorage.getItem(CLOUD_SESSION_KEY)!==null)throw new Error('full local wipe left user data');
     if(Object.keys(localStorage).some(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')))throw new Error('full local wipe left entry draft');
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('full local wipe left parent session state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('full local wipe removed language preference');
 
-    pass('beta2 cloud pull/merge/delete tombstones, minimal personal sync payload, per-profile drafts, legacy draft migration, smart duration, quick start, data controls, complete local wipe, family PIN roles, multi-child isolation, reports, audit, backup round-trip/version/identity guards and PWA');
+    pass('beta2 personal + family beta sync foundations, explicit cloud child links, minimal sync payloads, per-profile drafts, smart duration, data controls, complete local wipe, family PIN roles, multi-child isolation, reports, audit, backup guards and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
