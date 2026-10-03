@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — local backup/restore hardening
+
+- eksport kopii lokalnej nie uruchamia niepotrzebnego cloud sync;
+- import sprawdza format i zgodność wersji kopii;
+- kopia z przyszłej, nieobsługiwanej wersji jest blokowana przed przycięciem danych;
+- legacy raw-state backup pozostaje obsługiwany;
+- browser smoke wykonuje syntetyczny backup round-trip i testuje guardy wersji/formatu;
+- dokumentacja backup/restore i README zostały wyrównane z bieżącym stanem 0.5 beta.
+
+
 ## Unreleased — personal/family sync boundary
 
 - tryb rodzinny nie tworzy kolejki personal cloud sync;
