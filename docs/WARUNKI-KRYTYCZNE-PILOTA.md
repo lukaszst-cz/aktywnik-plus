@@ -41,10 +41,12 @@ Zrobione:
 - merge wpisów z różnych urządzeń na podstawie timestampów;
 - usuwanie wpisów w trybie osobistym: tombstones + propagacja między urządzeniami;
 - RLS ogranicza dane do właściciela;
-- tryb rodzinny jest jawnie local-only po stronie klienta i nie trafia do personal sync.
+- tryb rodzinny jest jawnie odseparowany od personal sync;
+- rodzic może jawnie powiązać lokalny profil dziecka z jednym profilem `children.id` widocznym przez `/api/v1/me`;
+- aplikacja nie dopasowuje dzieci automatycznie po nazwie i blokuje użycie jednego `cloudChildId` dla dwóch lokalnych profili.
 
 Pozostaje:
-- tryb rodzinny nie ma jeszcze pełnej synchronizacji chmurowej;
+- warstwa bezpiecznego linkowania lokalny profil → cloud child jest gotowa, ale tryb rodzinny nie ma jeszcze transferu aktywności push/pull;
 - synchronizacja nie zastępuje jeszcze zweryfikowanego backup/restore backendu.
 
 ## 3. Minimum danych o dziecku — ✅
@@ -142,6 +144,11 @@ Gotowe w UI:
 - wybór dziecka widocznego opiekunowi przez RLS;
 - wysłanie zgłoszenia oraz akceptacja/odrzucenie przez staff.
 
+Gotowe dodatkowo po stronie klienta:
+- jawne powiązanie lokalnego profilu dziecka z profilem chmurowym;
+- trwałość linku w kopii v6 oraz walidacja UUID/duplikatów;
+- brak automatycznego matchowania dzieci po nazwie.
+
 Pozostaje:
 - pełna synchronizacja aktywności trybu rodzinnego do chmury;
 - E2E przez publiczne API z realnymi kontami testowymi przed School production.
@@ -151,6 +158,8 @@ Pozostaje:
 | Warunek | Stan |
 | --- | --- |
 | backend API + personal sync | ✅ |
+| family cloud link | ✅ jawne local child → cloud child; bez auto-matchowania |
+| family activity sync | 🟡 link foundation gotowy; push/pull jeszcze wyłączony |
 | uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
 | role/uprawnienia w DB | ✅ RLS + migracja 018 live; `profile_type` nie jest samodzielnie edytowalne przez użytkownika |
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
@@ -219,7 +228,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 
 1. family onboarding — ✅ rodzic może utworzyć profil dziecka w School Cloud bez e-maila/hasła dziecka;
 2. migracja 018 / profile role hardening — ✅ live + security preflight PASS;
-3. synchronizacja trybu rodzinnego;
+3. synchronizacja trybu rodzinnego — 🟡 jawne mapowanie lokalny profil → cloud child gotowe; transfer aktywności push/pull nadal do wdrożenia;
 4. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
 5. backend restore drill — ✅ dane aplikacji; platformowy backup/restore Supabase nadal otwarty;
 6. School audit + mechanizm retencji — ✅ technicznie; okres/częstotliwość retencji nadal do zatwierdzenia przez szkołę/IOD;
