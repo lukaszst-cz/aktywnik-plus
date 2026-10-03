@@ -34,18 +34,32 @@ module.exports = async function handler(req,res){
     const tenantId=String(req.body?.tenantId||'');
     const schoolYearId=String(req.body?.schoolYearId||'');
     const name=String(req.body?.name||'').trim();
+    const operationId=String(req.body?.operationId||'');
     if(!UUID_RE.test(tenantId)||!UUID_RE.test(schoolYearId)||!name||name.length>80){
       return res.status(400).json({ok:false,error:'invalid_class_payload'});
     }
+    if(operationId&&!UUID_RE.test(operationId)){
+      return res.status(400).json({ok:false,error:'invalid_operation_id'});
+    }
 
-    const response=await supabaseUserFetch(token,'/rest/v1/rpc/create_school_class',{
-      method:'POST',
-      body:JSON.stringify({
-        target_tenant:tenantId,
-        target_school_year:schoolYearId,
-        class_name:name
-      })
-    });
+    const idempotent=Boolean(operationId);
+    const response=await supabaseUserFetch(
+      token,
+      idempotent?'/rest/v1/rpc/create_school_class_idempotent':'/rest/v1/rpc/create_school_class',
+      {
+        method:'POST',
+        body:JSON.stringify(idempotent?{
+          target_tenant:tenantId,
+          target_school_year:schoolYearId,
+          class_name:name,
+          operation_key:operationId
+        }:{
+          target_tenant:tenantId,
+          target_school_year:schoolYearId,
+          class_name:name
+        })
+      }
+    );
     const data=await jsonOrNull(response);
 
     if(response.status===401)return res.status(401).json({ok:false,error:'invalid_session'});
