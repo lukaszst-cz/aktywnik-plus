@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — public RPC privilege refactor
+
+- migracja 020 przenosi uprzywilejowaną logikę lifecycle do nieeksponowanego `app_private`;
+- publiczne `create_class_invite`, `create_guardian_child`, `create_school_class`, `decide_class_join` i `request_class_join` są teraz `SECURITY INVOKER`;
+- prywatne helpery zachowują dotychczasowe kontrole `auth.uid()`, roli i relacji;
+- `PUBLIC` i `anon` nie mają `EXECUTE` do helperów ani wrapperów; `authenticated` ma tylko jawnie wymagane wywołania;
+- class lifecycle po migracji: PASS;
+- family onboarding po migracji: PASS;
+- database security preflight: PASS;
+- Supabase Security Advisor: **0 aktywnych lintów**.
+
 ## Unreleased — School audit and retention controls
 
 - migracja 019 rozszerza automatyczny audit trail na kluczowe operacje School;
@@ -16,7 +27,7 @@
 - self-escalation `profile_type: child → adult` jest zablokowana;
 - live regression test: PASS;
 - database security preflight po wdrożeniu: PASS;
-- Security Advisor nadal raportuje wyłącznie 5 wcześniej kontrolowanych RPC `SECURITY DEFINER`.
+- pięć wcześniejszych ostrzeżeń RPC zostało później usuniętych migracją 020.
 
 
 ## Unreleased — application restore drill
@@ -52,7 +63,7 @@
 - profil dziecka jest od razu powiązany z opiekunem jako `manager`;
 - School Cloud UI pozwala utworzyć profil i następnie wysłać zgłoszenie do klasy;
 - live test transakcyjny onboardingu: PASS; security preflight: PASS;
-- Security Advisor ma obecnie 5 kontrolowanych WARN `SECURITY DEFINER`, śledzonych przed School production.
+- na tym etapie Advisor raportował 5 kontrolowanych WARN; zostały później usunięte migracją 020.
 
 
 ## Unreleased — personal sync data minimization
@@ -94,12 +105,12 @@
 
 ## Unreleased — SECURITY DEFINER surface guard
 
-- live Supabase Security Advisor ma 5 kontrolowanych WARN dla publicznych RPC `SECURITY DEFINER`;
+- przed migracją 020 live Supabase Security Advisor raportował 5 kontrolowanych WARN dla publicznych RPC `SECURITY DEFINER`;
 - `backend/tests/security_preflight.sql` ma dokładną allowlistę tych 5 funkcji i blokuje wzrost powierzchni;
 - preflight sprawdza brak EXECUTE dla `anon`/`PUBLIC`, pusty `search_path`, `auth.uid()` oraz oczekiwany grant dla `authenticated`;
 - GitHub Actions uruchamia dodatkowy statyczny test migracji bez dostępu do sekretów bazy;
 - dokumentacja bezpieczeństwa i warunki pilota zostały wyrównane z live Supabase;
-- docelowy refaktor przed School production jest śledzony w issue #43.
+- docelowy refaktor został zrealizowany w migracji 020; Security Advisor po wdrożeniu: 0 aktywnych lintów.
 
 
 ## Unreleased — backup identity isolation

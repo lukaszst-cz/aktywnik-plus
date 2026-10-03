@@ -50,6 +50,11 @@ jobs:
           grep -q "profile_update_columns" backend/tests/security_preflight.sql
           test -f backend/migrations/019_school_audit_retention.sql
           test -f backend/tests/school_audit_retention.sql
+          test -f backend/migrations/020_public_rpc_invoker_wrappers.sql
+          grep -q "security invoker" backend/migrations/020_public_rpc_invoker_wrappers.sql
+          grep -q "app_private.create_class_invite_secure" backend/migrations/020_public_rpc_invoker_wrappers.sql
+          grep -q "app_private.create_guardian_child_secure" backend/migrations/020_public_rpc_invoker_wrappers.sql
+          grep -q "publicSecurityDefinerRpcSurface:false" api/capabilities.js
           grep -q "create or replace function app_private.audit_school_change" backend/migrations/019_school_audit_retention.sql
           grep -q "create or replace function app_private.prune_audit_events" backend/migrations/019_school_audit_retention.sql
           grep -q "school_audit_trigger_count" backend/tests/security_preflight.sql
@@ -213,6 +218,8 @@ jobs:
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolAuditCoverageVerified!==true) throw new Error('school audit capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionMechanismReady!==true) throw new Error('school retention mechanism capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionPolicyConfigured!==false) throw new Error('school retention policy must remain externally configurable');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.publicSecurityDefinerRpcSurface!==false) throw new Error('public SECURITY DEFINER surface must stay disabled');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolLifecycleRpcPrivilegeModel!=='public_invoker_private_definer') throw new Error('school lifecycle RPC privilege model mismatch');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudOnboarding!==false) throw new Error('family onboarding capability must fail closed when cloud is off');
           }
           const health=require('./api/health.js');

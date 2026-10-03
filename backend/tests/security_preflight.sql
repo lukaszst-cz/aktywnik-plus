@@ -8,9 +8,10 @@ declare
   anon_grants text;
   missing_policy text;
   personal_policy_count integer;
-  allowed_definer_count integer;
-  unexpected_authenticated_definer text;
-  unsafe_allowlisted_definer text;
+  public_authenticated_definer text;
+  invoker_wrapper_count integer;
+  private_lifecycle_helper_count integer;
+  unsafe_auth_helper text;
   profile_update_columns text;
   school_audit_trigger_count integer;
   retention_auth_exec boolean;
@@ -79,9 +80,24 @@ begin
       coalesce(profile_update_columns,'none');
   end if;
 
-  -- Public SECURITY DEFINER RPCs are a temporary, reviewed exception for the
-  -- school lifecycle. Keep the allowlist exact and fail closed if the surface grows.
-  with allowed(name,args) as (
+  -- Public API RPCs must not run with SECURITY DEFINER privileges.
+  select string_agg(
+           p.proname||'('||pg_get_function_identity_arguments(p.oid)||')',
+           ', ' order by p.proname
+         )
+    into public_authenticated_definer
+  from pg_proc p
+  join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public'
+    and p.prosecdef
+    and has_function_privilege('authenticated',p.oid,'EXECUTE');
+
+  if public_authenticated_definer is not null then
+    raise exception 'SECURITY PREFLIGHT FAIL: public authenticated SECURITY DEFINER RPC(s): %',
+      public_authenticated_definer;
+  end if;
+
+  with expected(name,args) as (
     values
       ('create_class_invite','target_class uuid, valid_days integer'),
       ('create_guardian_child','child_name text'),
@@ -90,79 +106,68 @@ begin
       ('request_class_join','invite_token uuid, target_child uuid')
   )
   select count(*)
-    into allowed_definer_count
+    into invoker_wrapper_count
   from pg_proc p
   join pg_namespace n on n.oid=p.pronamespace
-  join allowed a
-    on a.name=p.proname
-   and a.args=pg_get_function_identity_arguments(p.oid)
-  where n.nspname='public';
+  join expected e
+    on e.name=p.proname
+   and e.args=pg_get_function_identity_arguments(p.oid)
+  where n.nspname='public'
+    and not p.prosecdef
+    and has_function_privilege('authenticated',p.oid,'EXECUTE')
+    and not has_function_privilege('anon',p.oid,'EXECUTE')
+    and not has_function_privilege('public',p.oid,'EXECUTE')
+    and coalesce(p.proconfig @> array['search_path=""']::text[],false)
+    and position('app_private.' in pg_get_functiondef(p.oid))>0;
 
-  if allowed_definer_count <> 5 then
-    raise exception 'SECURITY PREFLIGHT FAIL: reviewed SECURITY DEFINER RPC allowlist mismatch (%)', allowed_definer_count;
+  if invoker_wrapper_count <> 5 then
+    raise exception 'SECURITY PREFLIGHT FAIL: public SECURITY INVOKER wrapper set mismatch (%)',
+      invoker_wrapper_count;
   end if;
 
-  with allowed(name,args) as (
+  with expected(name,args) as (
     values
-      ('create_class_invite','target_class uuid, valid_days integer'),
-      ('create_guardian_child','child_name text'),
-      ('create_school_class','target_tenant uuid, target_school_year uuid, class_name text'),
-      ('decide_class_join','target_request uuid, decision text'),
-      ('request_class_join','invite_token uuid, target_child uuid')
+      ('create_class_invite_secure','target_class uuid, valid_days integer'),
+      ('create_guardian_child_secure','child_name text'),
+      ('create_school_class_secure','target_tenant uuid, target_school_year uuid, class_name text'),
+      ('decide_class_join_secure','target_request uuid, decision text'),
+      ('request_class_join_secure','invite_token uuid, target_child uuid')
   )
-  select string_agg(
-           p.proname||'('||pg_get_function_identity_arguments(p.oid)||')',
-           ', ' order by p.proname
-         )
-    into unexpected_authenticated_definer
+  select count(*)
+    into private_lifecycle_helper_count
   from pg_proc p
   join pg_namespace n on n.oid=p.pronamespace
-  where n.nspname='public'
+  join expected e
+    on e.name=p.proname
+   and e.args=pg_get_function_identity_arguments(p.oid)
+  where n.nspname='app_private'
     and p.prosecdef
     and has_function_privilege('authenticated',p.oid,'EXECUTE')
-    and not exists (
-      select 1
-      from allowed a
-      where a.name=p.proname
-        and a.args=pg_get_function_identity_arguments(p.oid)
-    );
+    and not has_function_privilege('anon',p.oid,'EXECUTE')
+    and not has_function_privilege('public',p.oid,'EXECUTE')
+    and coalesce(p.proconfig @> array['search_path=""']::text[],false)
+    and position('auth.uid()' in pg_get_functiondef(p.oid))>0;
 
-  if unexpected_authenticated_definer is not null then
-    raise exception 'SECURITY PREFLIGHT FAIL: unreviewed authenticated SECURITY DEFINER RPC(s): %',
-      unexpected_authenticated_definer;
+  if private_lifecycle_helper_count <> 5 then
+    raise exception 'SECURITY PREFLIGHT FAIL: private lifecycle helper set mismatch (%)',
+      private_lifecycle_helper_count;
   end if;
 
-  with allowed(name,args) as (
-    values
-      ('create_class_invite','target_class uuid, valid_days integer'),
-      ('create_guardian_child','child_name text'),
-      ('create_school_class','target_tenant uuid, target_school_year uuid, class_name text'),
-      ('decide_class_join','target_request uuid, decision text'),
-      ('request_class_join','invite_token uuid, target_child uuid')
-  )
-  select string_agg(
-           p.proname||'('||pg_get_function_identity_arguments(p.oid)||')',
-           ', ' order by p.proname
-         )
-    into unsafe_allowlisted_definer
+  select string_agg(p.proname, ', ' order by p.proname)
+    into unsafe_auth_helper
   from pg_proc p
   join pg_namespace n on n.oid=p.pronamespace
-  join allowed a
-    on a.name=p.proname
-   and a.args=pg_get_function_identity_arguments(p.oid)
-  where n.nspname='public'
+  where n.nspname='app_private'
+    and p.proname in ('is_class_teacher','is_guardian_of','is_school_admin')
     and (
-      not p.prosecdef
-      or not has_function_privilege('authenticated',p.oid,'EXECUTE')
+      not has_function_privilege('authenticated',p.oid,'EXECUTE')
       or has_function_privilege('anon',p.oid,'EXECUTE')
       or has_function_privilege('public',p.oid,'EXECUTE')
-      or not coalesce(p.proconfig @> array['search_path=""']::text[],false)
-      or position('auth.uid()' in pg_get_functiondef(p.oid))=0
     );
 
-  if unsafe_allowlisted_definer is not null then
-    raise exception 'SECURITY PREFLIGHT FAIL: reviewed SECURITY DEFINER RPC hardening changed: %',
-      unsafe_allowlisted_definer;
+  if unsafe_auth_helper is not null then
+    raise exception 'SECURITY PREFLIGHT FAIL: private authorization helper grants changed: %',
+      unsafe_auth_helper;
   end if;
 
   if not exists (
@@ -236,4 +241,4 @@ end $$;
 select
   'PASS' as status,
   (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r') as public_tables,
-  'RLS enabled; anon blocked; profile role protected; personal+School audit present; private retention guarded; SECURITY DEFINER surface allowlisted' as check_summary;
+  'RLS enabled; anon blocked; profile role protected; public RPCs are invoker-only; private lifecycle helpers guarded; personal+School audit present; private retention guarded' as check_summary;
