@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — sync timestamp validation
+
+- backend wymaga prawdziwej daty kalendarzowej wpisu zamiast akceptować tylko wzór `YYYY-MM-DD`;
+- timestamp wpisu i tombstone'a może wyprzedzać zegar serwera maksymalnie o 15 minut;
+- daleko przyszłe timestampy są odrzucane zamiast brać udział w regule konfliktu „nowszy wygrywa”;
+- backend smoke obejmuje niemożliwą datę, przyszły wpis i przyszły tombstone.
+
+
 ## Unreleased — personal sync protocol guard
 
 - personal sync ma jawny `protocolVersion=1` niezależny od schematu lokalnego backupu;

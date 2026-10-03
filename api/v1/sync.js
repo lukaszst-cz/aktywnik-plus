@@ -4,6 +4,7 @@ const {noStore,requireCloud}=require('../_lib/backend');
 
 const MAX_SYNC_ENTRIES=5000;
 const SYNC_PROTOCOL_VERSION=1;
+const MAX_FUTURE_SKEW_MS=15*60*1000;
 const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function bearer(req){
@@ -44,7 +45,17 @@ async function authenticatedUser(auth){
 }
 
 function validDate(value){
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(value||''));
+  const raw=String(value||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(raw))return false;
+  const parsed=new Date(raw+'T00:00:00.000Z');
+  return !Number.isNaN(parsed.getTime())&&parsed.toISOString().slice(0,10)===raw;
+}
+
+function safeClientTime(value,fallback=Date.now()){
+  const parsed=new Date(value??fallback);
+  const time=parsed.getTime();
+  if(Number.isNaN(time)||time>Date.now()+MAX_FUTURE_SKEW_MS)return null;
+  return parsed;
 }
 
 function requireSyncProtocol(value){
@@ -69,7 +80,8 @@ function toRow(entry,ownerId,fallbackUpdatedAt){
   if(effort!=null&&(!Number.isFinite(effort)||effort<1||effort>5))return null;
   const note=String(entry.note||'').trim().slice(0,120)||null;
   const source=entry.source==='timer'?'timer':'manual';
-  const clientUpdatedAt=new Date(entry.updatedAt||entry.createdAt||fallbackUpdatedAt||Date.now());
+  const clientUpdatedAt=safeClientTime(entry.updatedAt||entry.createdAt||fallbackUpdatedAt);
+  if(!clientUpdatedAt)return null;
   return {
     owner_id:ownerId,
     client_entry_id:entry.id,
@@ -79,7 +91,7 @@ function toRow(entry,ownerId,fallbackUpdatedAt){
     effort,
     note,
     source,
-    client_updated_at:Number.isNaN(clientUpdatedAt.getTime())?new Date().toISOString():clientUpdatedAt.toISOString()
+    client_updated_at:clientUpdatedAt.toISOString()
   };
 }
 
@@ -129,8 +141,8 @@ async function pushPersonal(auth,userId,body){
 
   const deleteRows=deletes.map(item=>{
     if(!item||!UUID_RE.test(String(item.id||'')))return null;
-    const deletedAt=new Date(item.deletedAt||Date.now());
-    if(Number.isNaN(deletedAt.getTime()))return null;
+    const deletedAt=safeClientTime(item.deletedAt);
+    if(!deletedAt)return null;
     return {owner_id:userId,client_entry_id:String(item.id),deleted_at:deletedAt.toISOString()};
   }).filter(Boolean);
   if(deletes.length&&deleteRows.length!==deletes.length){

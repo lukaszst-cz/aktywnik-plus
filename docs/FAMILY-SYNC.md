@@ -69,6 +69,8 @@ Docelowo:
 Beta synchronizacja trybu osobistego używa jawnego `protocolVersion=1`.
 Brak numeru jest chwilowo traktowany jako v1 dla zgodności podczas rolling deploy, ale klient/serwer odrzucają przyszłą, nieobsługiwaną wersję zamiast synchronizować dane „na ślepo”. Numer protokołu jest niezależny od `schemaVersion` lokalnego backupu.
 
+Backend dodatkowo waliduje rzeczywistą datę kalendarzową wpisu oraz timestamp klienta. Timestamp może wyprzedzać zegar serwera najwyżej o 15 minut; większy skew jest odrzucany, żeby błędny zegar urządzenia nie „zamroził” konfliktów regułą nowszy-wygrywa.
+
 Przepływ wpisu:
 
 ```
