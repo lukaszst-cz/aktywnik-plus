@@ -8,7 +8,11 @@
 - nie trafia do CSV, PDF/A4, School Cloud, personal sync ani family sync;
 - dodano test release-consistency blokujący przypadkowy wyciek tej informacji do eksportów lub synchronizacji;
 - podniesiono numer wersji, production smoke i cache PWA do beta.4;
-- backend, RLS oraz protokół family sync pozostają zgodne z beta.3.
+- backend, RLS oraz protokół family sync pozostają zgodne z beta.3;
+- dodano panel **Diagnostyka pilota** w strefie rodzica: online/offline, PWA, powiązania chmurowe, kolejka sync, ostatnia synchronizacja i trwała pamięć;
+- raport diagnostyczny jest zanonimizowany i nie zawiera nazw dzieci, PIN-u, identyfikatorów chmurowych ani tokenów;
+- production smoke sprawdza teraz **dokładny SHA wdrożonego commita**, a nie tylko numer beta.4, eliminując fałszywie zielony wynik na starszym buildzie tej samej wersji;
+- dodano produkcyjny family UI smoke oraz test prywatności diagnostyki.
 
 ## 0.5.0-beta.3 — Full Family Sync Pilot — 2026-10-03
 
