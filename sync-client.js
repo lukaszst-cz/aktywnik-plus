@@ -5,6 +5,7 @@
   const LAST_SYNC_KEY='aktywnik-plus-last-cloud-sync-v1';
   const DELETES_KEY='aktywnik-plus-personal-deletes-v1';
   const STATE_KEY='aktywnik-plus-data-v1';
+  const SYNC_PROTOCOL_VERSION=1;
   let syncTimer=null;
   let cycleRunning=false;
   let pushing=false;
@@ -47,6 +48,12 @@
   }
   function recordSync(){
     try{localStorage.setItem(LAST_SYNC_KEY,new Date().toISOString())}catch{}
+  }
+  function assertServerProtocol(data){
+    const version=data?.protocolVersion==null?SYNC_PROTOCOL_VERSION:Number(data.protocolVersion);
+    if(!Number.isInteger(version)||version<1)throw new Error('invalid_sync_protocol');
+    if(version>SYNC_PROTOCOL_VERSION)throw new Error('sync_protocol_too_new');
+    return version;
   }
   function markDirty(state){
     if(!state||typeof state!=='object'||state.profileMode!=='self')return;
@@ -111,6 +118,7 @@
           'Authorization':'Bearer '+ctx.session.access_token
         },
         body:JSON.stringify({
+          protocolVersion:SYNC_PROTOCOL_VERSION,
           schemaVersion:q.snapshot?.schemaVersion||null,
           updatedAt:q.updatedAt,
           state:q.snapshot,
@@ -119,6 +127,7 @@
       });
       const data=await res.json().catch(()=>null);
       if(!res.ok)throw new Error(data?.message||data?.error||('HTTP '+res.status));
+      assertServerProtocol(data);
       write(null);
       writeDeletes(null);
       recordSync();
@@ -138,13 +147,14 @@
 
     pulling=true;
     try{
-      const res=await fetch('/api/v1/sync',{
+      const res=await fetch('/api/v1/sync?protocolVersion='+SYNC_PROTOCOL_VERSION,{
         method:'GET',
         cache:'no-store',
         headers:{'Authorization':'Bearer '+ctx.session.access_token}
       });
       const data=await res.json().catch(()=>null);
       if(!res.ok)throw new Error(data?.message||data?.error||('HTTP '+res.status));
+      assertServerProtocol(data);
       const result=bridge.mergePersonalCloudState
         ? bridge.mergePersonalCloudState(Array.isArray(data?.entries)?data.entries:[],Array.isArray(data?.deletes)?data.deletes:[])
         : bridge.mergePersonalEntries(Array.isArray(data?.entries)?data.entries:[]);
@@ -182,5 +192,5 @@
   });
   document.addEventListener('DOMContentLoaded',()=>{renderStatus();schedule()});
 
-  window.AktywnikSync={markDirty,markDeleted,flush,pull,syncNow,read,readDeletes,renderStatus};
+  window.AktywnikSync={protocolVersion:SYNC_PROTOCOL_VERSION,markDirty,markDeleted,flush,pull,syncNow,read,readDeletes,renderStatus};
 })();
