@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — sync batch identity guard
+
+- personal sync odrzuca duplikat `entry_id` w jednym batchu;
+- odrzuca duplikat tombstone dla tego samego ID;
+- odrzuca jednoczesną aktualizację i usunięcie tego samego ID;
+- zamiast niejasnego błędu upsertu klient dostaje deterministyczny błąd `400`;
+- backend smoke obejmuje wszystkie trzy scenariusze.
+
+
 ## Unreleased — sync timestamp validation
 
 - backend wymaga prawdziwej daty kalendarzowej wpisu zamiast akceptować tylko wzór `YYYY-MM-DD`;
