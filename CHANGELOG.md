@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — local data wipe hardening
+
+- „Usuń wszystkie lokalne dane” czyści stan aplikacji, szkice, outbox sync, tombstones, znacznik ostatniego sync i lokalny token sesji konta;
+- stan sesji/PIN-u rodzica jest czyszczony razem z lokalnymi danymi;
+- import kopii usuwa stare kolejki sync/tombstones i sesyjny stan rodzica przed zastosowaniem restore;
+- import kopii nie wylogowuje konta, dzięki czemu restore może pozostać w tej samej sesji;
+- preferencja języka pozostaje na urządzeniu;
+- browser smoke obejmuje restore cleanup i pełny local wipe.
+
+
 ## Unreleased — local backup/restore hardening
 
 - eksport kopii lokalnej nie uruchamia niepotrzebnego cloud sync;
