@@ -24,6 +24,7 @@ module.exports = function handler(req,res){
       authenticationConfigured:cloud.authConfigured,
       rowLevelSecurityVerified:cloud.rlsVerified,
       personalSyncBeta:true,
+      personalSyncProtocolVersion:1,
       personalSyncPull:true,
       personalSyncConflictRule:'newer_timestamp_wins',
       personalSyncDeletes:true,
