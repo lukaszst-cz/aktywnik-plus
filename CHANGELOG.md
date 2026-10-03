@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — family cloud onboarding
+
+- migracja 017: opiekun może utworzyć profil dziecka w chmurze bez konta/e-maila dziecka;
+- automatyczna relacja `guardian_role=manager`;
+- audit event `family_child_created`;
+- endpoint `POST /api/v1/family-children`;
+- School Cloud UI do tworzenia profilu dziecka przed dołączeniem do klasy;
+- live SQL test: PASS;
+- security preflight: PASS z dokładną allowlistą 5 reviewed `SECURITY DEFINER` RPC.
+
 ## Unreleased — personal sync data minimization
 
 - personal sync outbox nie zapisuje już całego lokalnego stanu aplikacji;
