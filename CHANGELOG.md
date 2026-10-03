@@ -17,6 +17,8 @@
 - zdjęcie OCR nie jest zapisywane w stanie aplikacji ani wysyłane do family sync / School Cloud; limit obrazu 12 MB;
 - brak wsparcia `TextDetector` nie blokuje importu — pozostają DocPilot, CSV/JSON/TXT i ręczne wklejenie tekstu;
 - browser smoke testuje rekonstrukcję tabeli OCR ze skalą `Zmęczenie 1–5`.
+- PWA pokazuje nienarzucający się komunikat, gdy nowy service worker jest gotowy; użytkownik sam wybiera „Odśwież teraz” albo „Później”, dzięki czemu aktualizacja nie przerywa wpisu;
+- usunięto podwójną rejestrację service workera i dodano test bannera aktualizacji.
 
 ## 0.5.0-beta.3 — Full Family Sync Pilot — 2026-10-03
 
