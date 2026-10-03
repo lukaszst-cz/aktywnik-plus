@@ -938,7 +938,7 @@ function parseDurationValue(value){
 function normalizeImportRow(row){
   if(Array.isArray(row))row={date:row[0],activity:row[1],minutes:row[2],effort:row[3],note:row[4]};
   if(!row||typeof row!=='object')return null;const map={};Object.entries(row).forEach(([k,v])=>map[String(k).toLowerCase().trim()]=v);
-  const date=cleanText(map.date??map.data??map['data aktywności'],20),activity=cleanText(map.activity??map.aktywnosc??map['aktywność']??map['rodzaj aktywności']??map.rodzaj,80),minutes=parseDurationValue(map.minutes??map.minuty??map.czas??map['czas trwania']),effort=clampInt(map.effort??map.wysilek??map['wysiłek']??map['poziom zmęczenia'],1,5,2),note=cleanText(map.note??map.uwagi??map['uwaga']??map['podpis / uwagi opiekuna'],160);
+  const date=cleanText(map.date??map.data??map['data aktywności'],20),activity=cleanText(map.activity??map.aktywnosc??map['aktywność']??map['rodzaj aktywności']??map.rodzaj,80),minutes=parseDurationValue(map.minutes??map.minuty??map.czas??map['czas trwania']),effort=clampInt(map.effort??map.wysilek??map['wysiłek']??map.zmeczenie??map['zmęczenie']??map['poziom zmęczenia'],1,5,2),note=cleanText(map.note??map.uwagi??map['uwaga']??map['podpis / uwagi opiekuna'],160);
   if(!allowedActivityDate(date)||!activity||!minutes)return null;return {date,activity,minutes,effort,note};
 }
 function parseDelimitedImport(text){
@@ -956,8 +956,8 @@ async function loadPaperImportFile(file){
 }
 function renderPaperImportPreview(){
   if(!guardParent())return;pendingPaperImportRows=parseImportText($('#ocrPaste').value);const box=$('#paperImportPreview');
-  if(!pendingPaperImportRows.length){box.innerHTML='<p class="status-pending">Nie znaleziono poprawnych wierszy. Użyj CSV/JSON lub formatu: data; aktywność; czas; wysiłek; uwagi.</p>';$('#savePaperImportBtn').disabled=true;return}
-  box.innerHTML='<div class="import-table"><div class="import-head">Data</div><div class="import-head">Aktywność</div><div class="import-head">Min</div><div class="import-head">Wysiłek</div><div class="import-head">Uwagi</div>'+pendingPaperImportRows.map((r,i)=>'<input data-import-field="date" data-import-row="'+i+'" value="'+escapeAttr(r.date)+'"><input data-import-field="activity" data-import-row="'+i+'" value="'+escapeAttr(r.activity)+'"><input data-import-field="minutes" data-import-row="'+i+'" type="number" min="1" max="600" value="'+r.minutes+'"><input data-import-field="effort" data-import-row="'+i+'" type="number" min="1" max="5" value="'+r.effort+'"><input data-import-field="note" data-import-row="'+i+'" value="'+escapeAttr(r.note)+'">').join('')+'</div>';
+  if(!pendingPaperImportRows.length){box.innerHTML='<p class="status-pending">Nie znaleziono poprawnych wierszy. Użyj CSV/JSON lub formatu: data; aktywność; czas; zmęczenie; uwagi.</p>';$('#savePaperImportBtn').disabled=true;return}
+  box.innerHTML='<div class="import-table"><div class="import-head">Data</div><div class="import-head">Aktywność</div><div class="import-head">Min</div><div class="import-head">Zmęczenie 1–5</div><div class="import-head">Uwagi</div>'+pendingPaperImportRows.map((r,i)=>'<input data-import-field="date" data-import-row="'+i+'" value="'+escapeAttr(r.date)+'"><input data-import-field="activity" data-import-row="'+i+'" value="'+escapeAttr(r.activity)+'"><input data-import-field="minutes" data-import-row="'+i+'" type="number" min="1" max="600" value="'+r.minutes+'"><input data-import-field="effort" data-import-row="'+i+'" type="number" min="1" max="5" value="'+r.effort+'"><input data-import-field="note" data-import-row="'+i+'" value="'+escapeAttr(r.note)+'">').join('')+'</div>';
   $('#savePaperImportBtn').disabled=false;$('#paperImportStatus').innerHTML='<p class="status-approved">Rozpoznano '+pendingPaperImportRows.length+' wierszy. Możesz je poprawić przed zapisem.</p>';
 }
 function collectPaperImportPreview(){
