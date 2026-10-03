@@ -169,10 +169,11 @@ Szczegóły: [Logowanie bez tarcia](docs/LOGOWANIE-BEZ-TARCIA.md).
 Backendowy fundament jest już połączony z projektem Supabase:
 - `/api/health` i `/api/capabilities`;
 - `/api/v1/sync` — beta synchronizacji trybu osobistego;
-- migracje `001–012`;
+- migracje `001–016`;
 - wszystkie tabele publiczne mają RLS;
 - osobna tabela `personal_activities` dla trybu **Dla siebie**;
-- local-first sync queue po stronie PWA;
+- local-first sync queue po stronie PWA tylko dla trybu osobistego;
+- synchronizacja usunięć w trybie osobistym przez tombstones;
 - Magic Link i sesja konta;
 - nowy model kluczy Supabase: publishable po stronie klienta, secret wyłącznie po stronie serwera.
 
@@ -190,4 +191,4 @@ Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + re
 
 ## Status
 
-`0.5.0-beta.2 Pull & Merge` — tryb osobisty ma przygotowaną dwukierunkową synchronizację push/pull z regułą „nowszy timestamp wygrywa”. Brakujące wpisy z innego urządzenia są scalane lokalnie, a nowsza wersja lokalna nie jest nadpisywana. Synchronizacja usunięć nadal jest celowo wyłączona. Local-first pozostaje zasadą.
+`0.5.0-beta.2 Pull & Merge` — tryb osobisty ma dwukierunkową synchronizację push/pull z regułą „nowszy timestamp wygrywa” oraz propagację usunięć przez tombstones. Brakujące wpisy z innego urządzenia są scalane lokalnie, a nowsza wersja lokalna nie jest nadpisywana. Tryb rodzinny pozostaje local-only do czasu osobnego, bezpiecznego family sync. Local-first pozostaje zasadą.

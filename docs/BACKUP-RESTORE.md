@@ -6,7 +6,11 @@
 - eksport JSON;
 - import JSON;
 - eksport CSV/PDF;
-- możliwość żądania trwałej pamięci przeglądarki.
+- możliwość żądania trwałej pamięci przeglądarki;
+- walidacja formatu i wersji kopii przed restore;
+- starszy format lokalny nadal jest migrowany;
+- kopia z nowszej, nieobsługiwanej wersji jest blokowana zamiast być cicho przycinana;
+- CI wykonuje syntetyczny round-trip backup → walidacja → restore stanu.
 
 ### Dane chmurowe
 Tryb osobisty beta synchronizuje wpisy z Supabase, ale synchronizacja **nie jest jeszcze traktowana jako pełny system backup/restore**.

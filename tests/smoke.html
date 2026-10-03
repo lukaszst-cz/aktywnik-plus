@@ -261,10 +261,24 @@ async function run(){
     d.getElementById('schoolExitBtn').click();d.getElementById('lockParentBtn').click();await sleep(50);w.switchMode('school');await sleep(50);
     if(!d.getElementById('schoolPanel').classList.contains('hidden'))throw new Error('school accessible after relock');
 
-    const migrated=w.safeBackupState({pilot:{started:true,childDisplayName:'Stare dziecko'},favorites:['Spacer'],entries:[{id:'legacy',date:'2026-10-01',activity:'Spacer',minutes:20,effort:2,status:'approved'}]});
+    const migrated=w.backupStateFromPayload({pilot:{started:true,childDisplayName:'Stare dziecko'},favorites:['Spacer'],entries:[{id:'legacy',date:'2026-10-01',activity:'Spacer',minutes:20,effort:2,status:'approved'}]});
     if(migrated.children.length!==1||migrated.entries[0].childId!==migrated.children[0].id)throw new Error('legacy migration failed');
-    const restored=w.safeBackupState({format:'aktywnik-plus-backup',version:6,data:{...saved,meta:{lastBackupAt:'2026-10-02T10:00:00.000Z',lastWriteAt:'2026-10-02T10:05:00.000Z'}}});if(restored.children.length!==2)throw new Error('multi-child backup failed');
+
+    const backupSource={...saved,meta:{lastBackupAt:'2026-10-02T10:00:00.000Z',lastWriteAt:'2026-10-02T10:05:00.000Z'}};
+    const backupEnvelope=w.makeBackupPayload(backupSource);
+    if(backupEnvelope.format!=='aktywnik-plus-backup'||backupEnvelope.version!==6||backupEnvelope.data!==backupSource)throw new Error('backup envelope failed');
+    const restored=w.backupStateFromPayload(backupEnvelope);
+    if(restored.children.length!==backupSource.children.length||restored.entries.length!==backupSource.entries.length)throw new Error('backup round-trip counts failed');
+    if(restored.approvalEvents.length!==backupSource.approvalEvents.length)throw new Error('backup round-trip audit failed');
     if(restored.schemaVersion!==6||restored.profileMode!=='family'||!restored.meta.lastBackupAt||!restored.meta.lastWriteAt)throw new Error('backup metadata migration failed');
+
+    let futureBlocked=false;
+    try{w.backupStateFromPayload({format:'aktywnik-plus-backup',version:999,data:backupSource})}catch(err){futureBlocked=/nowszej wersji/i.test(String(err?.message||err))}
+    if(!futureBlocked)throw new Error('future backup version was not blocked');
+
+    let foreignBlocked=false;
+    try{w.backupStateFromPayload({format:'inna-aplikacja',version:1,data:backupSource})}catch(err){foreignBlocked=String(err?.message||err).includes('To nie jest kopia Aktywnik+')}
+    if(!foreignBlocked)throw new Error('foreign backup format was not blocked');
 
     const purgeState=JSON.parse(localStorage.getItem(KEY)||'{}');
     purgeState.classes=[{id:'class-purge',name:'TEST',children:[{id:'row',familyChildId:'purge-child',name:'Purge'}]}];
@@ -279,7 +293,7 @@ async function run(){
     w.clearPinFailures();
     if(w.pinLockRemainingMs()>0)throw new Error('PIN lockout reset failed');
 
-    pass('beta2 cloud pull/merge/delete tombstones, per-profile drafts, legacy draft migration, smart duration, quick start, data controls, family PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
+    pass('beta2 cloud pull/merge/delete tombstones, per-profile drafts, legacy draft migration, smart duration, quick start, data controls, family PIN roles, multi-child isolation, reports, audit, backup round-trip/version guard and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();

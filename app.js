@@ -5,6 +5,7 @@ const KEY='aktywnik-plus-data-v1';
 const ENTRY_DRAFT_KEY='aktywnik-plus-entry-draft-v1';
 const ENTRY_DRAFT_MAX_AGE_MS=7*24*60*60*1000;
 const MAX_BACKUP_BYTES=2*1024*1024;
+const BACKUP_VERSION=6;
 const MAX_ENTRIES=5000;
 const MAX_CLASSES=100;
 const MAX_JOIN_REQUESTS=1000;
@@ -721,6 +722,19 @@ function renderPilot(){
   $('#childPanel').classList.toggle('hidden',!ready||currentMode!=='child');
   if(!ready||isSelfMode()){$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(isSelfMode())currentMode='child'}
 }
+function backupStateFromPayload(raw){
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Nieprawidłowy plik kopii.');
+  if(raw.format!=null&&raw.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');
+  if(raw.format==='aktywnik-plus-backup'&&raw.version!=null){
+    const version=Number(raw.version);
+    if(!Number.isInteger(version)||version<1)throw new Error('Nieprawidłowa wersja kopii Aktywnik+.');
+    if(version>BACKUP_VERSION)throw new Error('Ta kopia pochodzi z nowszej wersji Aktywnik+. Najpierw zaktualizuj aplikację.');
+  }
+  return safeBackupState(raw);
+}
+function makeBackupPayload(source=state){
+  return {format:'aktywnik-plus-backup',version:BACKUP_VERSION,exportedAt:nowIso(),data:source};
+}
 function safeBackupState(raw){
   const base=structuredClone(defaultState);
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Nieprawidłowy plik kopii.');
@@ -760,13 +774,13 @@ function canManageLocalData(){return isSelfMode()||guardParent()}
 function setStorageMessage(message){const parentEl=$('#storageStatus'),selfEl=$('#selfStorageStatus');if(parentEl)parentEl.textContent=message;if(selfEl)selfEl.textContent=message}
 function exportBackup(){
   if(!canManageLocalData())return;
-  state.meta={...(state.meta||{}),lastBackupAt:nowIso()};persist();
-  const payload={format:'aktywnik-plus-backup',version:6,exportedAt:nowIso(),data:state},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  state.meta={...(state.meta||{}),lastBackupAt:nowIso()};persist({skipSync:true});
+  const payload=makeBackupPayload(state),blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='aktywnik-plus-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);const badge=$('#backupStatus');if(badge)badge.textContent='dziś';
 }
 async function importBackup(file){
   if(!canManageLocalData()||!file)return;
-  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());if(parsed.format&&parsed.format!=='aktywnik-plus-backup')throw new Error('To nie jest kopia Aktywnik+.');const candidate=safeBackupState(parsed),summary='Kopia zawiera '+candidate.children.length+' profili i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne?';if(!confirm(summary))return;clearAllEntryDrafts();state=candidate;localStorage.setItem(KEY,JSON.stringify(state));sessionStorage.removeItem(PARENT_SESSION_KEY);alert(isSelfMode()?'Kopia została przywrócona.':'Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{const a=$('#importBackupInput'),b=$('#selfImportBackupInput');if(a)a.value='';if(b)b.value=''}
+  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());const candidate=backupStateFromPayload(parsed),summary='Kopia zawiera '+candidate.children.length+' profili i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne?';if(!confirm(summary))return;clearAllEntryDrafts();state=candidate;localStorage.setItem(KEY,JSON.stringify(state));sessionStorage.removeItem(PARENT_SESSION_KEY);alert(isSelfMode()?'Kopia została przywrócona.':'Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{const a=$('#importBackupInput'),b=$('#selfImportBackupInput');if(a)a.value='';if(b)b.value=''}
 }
 async function requestPersistentStorage(){if(!canManageLocalData())return;try{const ok=await navigator.storage?.persist?.();setStorageMessage(ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.')}catch{setStorageMessage('Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.')}}
 async function renderStorageStatus(){if(!isSelfMode()&&!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();setStorageMessage(persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.')}catch{setStorageMessage('Dane są zapisane lokalnie w tej przeglądarce.')}}
