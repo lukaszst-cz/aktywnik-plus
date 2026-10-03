@@ -169,7 +169,7 @@ Szczegóły: [Logowanie bez tarcia](docs/LOGOWANIE-BEZ-TARCIA.md).
 Backendowy fundament jest już połączony z projektem Supabase:
 - `/api/health` i `/api/capabilities`;
 - `/api/v1/sync` — beta synchronizacji trybu osobistego;
-- migracje `001–017`;
+- migracje `001–020` zastosowane live; migracja `021` z indeksami FK przygotowana do osobnego wdrożenia;
 - wszystkie tabele publiczne mają RLS;
 - osobna tabela `personal_activities` dla trybu **Dla siebie**;
 - local-first sync queue po stronie PWA tylko dla trybu osobistego;
