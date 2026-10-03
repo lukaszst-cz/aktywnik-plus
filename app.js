@@ -97,7 +97,28 @@ function mergePersonalCloudEntries(rows){
   if(localNewer)window.AktywnikSync?.markDirty?.(state);
   return {added,updated,localNewer,ignored};
 }
-window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries};
+function applyPersonalCloudDeletes(rows){
+  if(!isSelfMode()||!Array.isArray(rows))return {deleted:0,ignored:0};
+  const child=activeChild();if(!child)return {deleted:0,ignored:0};
+  let deleted=0,ignored=0;
+  for(const row of rows.slice(0,MAX_ENTRIES)){
+    const id=String(row?.client_entry_id||''),deletedAt=new Date(row?.deleted_at||'').getTime();
+    if(!id||!Number.isFinite(deletedAt)){ignored++;continue}
+    const idx=state.entries.findIndex(e=>e.id===id&&e.childId===child.id);
+    if(idx<0)continue;
+    const local=state.entries[idx],localTime=personalEntrySyncTime(local);
+    if(deletedAt>=localTime){state.entries.splice(idx,1);deleted++}
+    else window.AktywnikSync?.markDirty?.(state);
+  }
+  if(deleted)persist({skipSync:true});
+  return {deleted,ignored};
+}
+function mergePersonalCloudState(entries,deletes){
+  const merged=mergePersonalCloudEntries(entries);
+  const removed=applyPersonalCloudDeletes(deletes);
+  return {...merged,...removed};
+}
+window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries,mergePersonalCloudState};
 function parentChild(){return getChild(parentSelectedChildId)||activeChild()}
 function childEntries(childId){return state.entries.filter(e=>e.childId===childId)}
 function childRewards(childId){return state.rewards.filter(r=>r.childId===childId)}
@@ -318,6 +339,15 @@ function saveEntry(){
   }
   cancelEntry();persist();
 }
+function deleteSelfEntry(id){
+  if(!isSelfMode())return;
+  const child=activeChild(),entry=state.entries.find(e=>e.id===id&&e.childId===child?.id);if(!entry)return;
+  if(!confirm('Usunąć ten wpis? Usunięcie zostanie zsynchronizowane z innymi urządzeniami.'))return;
+  const deletedAt=nowIso();
+  state.entries=state.entries.filter(e=>!(e.id===id&&e.childId===child.id));
+  window.AktywnikSync?.markDeleted?.(id,deletedAt);
+  persist();
+}
 function statusLabel(e){
   if(e.status==='approved')return isSelfMode()?'✅ zapisane':'✅ zatwierdzone';
   if(e.status==='rejected')return '↩️ do poprawy'+(e.rejectionReason?': '+e.rejectionReason:'');
@@ -326,8 +356,17 @@ function statusLabel(e){
 function renderChildEntries(){
   const child=activeChild(),box=$('#childEntries');box.innerHTML='';if(!child)return;
   const entries=childEntries(child.id).slice(0,20);
-  entries.forEach(e=>{const el=document.createElement('div');el.className='entry';const canEdit=['pending','rejected'].includes(e.status);el.innerHTML='<div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+' · wysiłek '+e.effort+'/5 · '+(e.source==='timer'?'⏱ Start/Stop':'✍️ wpis ręczny')+(e.note?' · '+escapeHtml(e.note):'')+'<br>'+escapeHtml(statusLabel(e))+'</small></div>'+(canEdit?'<div class="entry-actions"><button class="ghost" data-child-edit="'+escapeAttr(e.id)+'">'+(e.status==='rejected'?'Popraw i wyślij':'Edytuj')+'</button></div>':'');box.append(el)});
-  if(!entries.length)box.innerHTML='<small>Jeszcze nie ma wpisów.</small>';$$('[data-child-edit]').forEach(b=>b.onclick=()=>editChildEntry(b.dataset.childEdit));
+  entries.forEach(e=>{
+    const el=document.createElement('div');el.className='entry';const canEdit=['pending','rejected'].includes(e.status);
+    const actions=[];
+    if(canEdit)actions.push('<button class="ghost" data-child-edit="'+escapeAttr(e.id)+'">'+(e.status==='rejected'?'Popraw i wyślij':'Edytuj')+'</button>');
+    if(isSelfMode())actions.push('<button class="danger" data-self-delete="'+escapeAttr(e.id)+'">Usuń</button>');
+    el.innerHTML='<div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+' · wysiłek '+e.effort+'/5 · '+(e.source==='timer'?'⏱ Start/Stop':'✍️ wpis ręczny')+(e.note?' · '+escapeHtml(e.note):'')+'<br>'+escapeHtml(statusLabel(e))+'</small></div>'+(actions.length?'<div class="entry-actions">'+actions.join('')+'</div>':'');
+    box.append(el)
+  });
+  if(!entries.length)box.innerHTML='<small>Jeszcze nie ma wpisów.</small>';
+  $$('[data-child-edit]').forEach(b=>b.onclick=()=>editChildEntry(b.dataset.childEdit));
+  $$('[data-self-delete]').forEach(b=>b.onclick=()=>deleteSelfEntry(b.dataset.selfDelete));
   const pending=childEntries(child.id).filter(e=>e.status==='pending').length;$('#pendingChildBadge').textContent=pending?pending+' do zatwierdzenia':'';$('#todayMinutes').textContent=childEntries(child.id).filter(e=>e.date===today()).reduce((sum,e)=>sum+e.minutes,0);
 }
 function renderChildRewards(){
