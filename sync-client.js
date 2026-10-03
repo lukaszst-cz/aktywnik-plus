@@ -4,6 +4,7 @@
   const KEY='aktywnik-plus-sync-outbox-v1';
   const LAST_SYNC_KEY='aktywnik-plus-last-cloud-sync-v1';
   const DELETES_KEY='aktywnik-plus-personal-deletes-v1';
+  const STATE_KEY='aktywnik-plus-data-v1';
   let syncTimer=null;
   let cycleRunning=false;
   let pushing=false;
@@ -17,6 +18,9 @@
   }
   function read(){
     try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}
+  }
+  function currentProfileMode(){
+    try{return JSON.parse(localStorage.getItem(STATE_KEY)||'{}')?.profileMode||null}catch{return null}
   }
   function write(value){
     if(value)localStorage.setItem(KEY,JSON.stringify(value));
@@ -32,7 +36,7 @@
     }catch{}
   }
   function markDeleted(id,deletedAt=new Date().toISOString()){
-    if(!id)return;
+    if(!id||currentProfileMode()!=='self')return;
     const current=readDeletes();
     current[id]=deletedAt;
     writeDeletes(current);
@@ -45,7 +49,7 @@
     try{localStorage.setItem(LAST_SYNC_KEY,new Date().toISOString())}catch{}
   }
   function markDirty(state){
-    if(!state||typeof state!=='object')return;
+    if(!state||typeof state!=='object'||state.profileMode!=='self')return;
     const current=read()||{};
     write({
       dirty:true,
@@ -58,6 +62,7 @@
   }
   function statusText(){
     const q=read();
+    if(currentProfileMode()==='family')return t('sync.familyLocal','rodzina · dane lokalne');
     const session=window.AktywnikAuth?.readSession?.();
     if(!session)return t('sync.localOptional','lokalnie · konto opcjonalne');
     if(cloudEnabled===false)return t('sync.disabled','konto · sync beta wyłączony');
@@ -83,6 +88,7 @@
     }
   }
   async function context(){
+    if(currentProfileMode()!=='self'){renderStatus();return null}
     const auth=window.AktywnikAuth;if(!auth)return null;
     const session=await auth.validSession();if(!session){cloudEnabled=null;renderStatus();return null}
     const caps=await capabilities();
@@ -92,6 +98,7 @@
   async function flush(prepared){
     if(pushing)return false;
     const q=read();if(!q?.dirty)return true;
+    if(q.snapshot?.profileMode!=='self'){write(null);renderStatus();return true}
     const ctx=prepared||await context();if(!ctx)return false;
 
     pushing=true;
@@ -124,7 +131,7 @@
     }finally{pushing=false}
   }
   async function pull(prepared){
-    if(pulling)return false;
+    if(pulling||currentProfileMode()!=='self')return false;
     const ctx=prepared||await context();if(!ctx)return false;
     const bridge=window.AktywnikCloudBridge;
     if(!bridge?.mergePersonalEntries)return false;
@@ -150,7 +157,7 @@
     }finally{pulling=false}
   }
   async function syncNow(){
-    if(cycleRunning||navigator.onLine===false)return false;
+    if(cycleRunning||navigator.onLine===false||currentProfileMode()!=='self')return false;
     cycleRunning=true;
     try{
       const ctx=await context();if(!ctx)return false;

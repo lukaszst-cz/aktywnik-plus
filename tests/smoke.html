@@ -11,6 +11,8 @@
 <script>
 const KEY='aktywnik-plus-data-v1';
 const DRAFT_KEY='aktywnik-plus-entry-draft-v1';
+const SYNC_KEY='aktywnik-plus-sync-outbox-v1';
+const DELETE_KEY='aktywnik-plus-personal-deletes-v1';
 const SESSION_KEY='aktywnik-plus-parent-unlocked-until';
 const result=document.getElementById('result');
 function fail(msg){result.className='fail';result.textContent='FAIL: '+msg;document.body.dataset.test='fail'}
@@ -126,7 +128,7 @@ async function run(){
     }]);
     if(staleDelete.deleted!==0)throw new Error('stale tombstone deleted newer local entry');
 
-    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);sessionStorage.clear();
+    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);localStorage.removeItem(SYNC_KEY);localStorage.removeItem(DELETE_KEY);sessionStorage.clear();
     const childA={id:'child-a',displayName:'Dziecko A',favorites:['Spacer','Rower'],requireParentApproval:true,createdAt:new Date().toISOString()};
     const seeded={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:true},parentAuth:{pinSalt:'test-salt',pinHash:'test-hash',iterations:120000,autoLockMinutes:5},children:[childA],activeChildId:childA.id,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
     localStorage.setItem(KEY,JSON.stringify(seeded));
@@ -136,9 +138,19 @@ async function run(){
     if(d.getElementById('entryCard').classList.contains('hidden')||d.getElementById('activityDuration').value!=='22')throw new Error('legacy entry draft was not restored');
     if(localStorage.getItem(DRAFT_KEY)!==null||!localStorage.getItem(DRAFT_KEY+':child-a'))throw new Error('legacy entry draft migration failed');
     d.getElementById('cancelEntryBtn').click();await sleep(30);
+    if(!w.AktywnikSync)throw new Error('sync client missing');
+    const familySyncStatus=d.getElementById('cloudSyncBadge').textContent.toLowerCase();
+    if(!familySyncStatus.includes('rodzina')&&!familySyncStatus.includes('family'))throw new Error('family local-only sync status missing');
+    w.AktywnikSync.markDirty(seeded);
+    if(localStorage.getItem(SYNC_KEY)!==null)throw new Error('family state entered personal sync outbox');
+    w.AktywnikSync.markDeleted('44444444-4444-4444-8444-444444444444');
+    if(localStorage.getItem(DELETE_KEY)!==null)throw new Error('family delete entered personal delete queue');
+    localStorage.setItem(SYNC_KEY,JSON.stringify({dirty:true,updatedAt:new Date().toISOString(),attempts:0,lastError:null,snapshot:seeded}));
+    if(await w.AktywnikSync.flush()!==true||localStorage.getItem(SYNC_KEY)!==null)throw new Error('legacy family sync outbox was not cleared safely');
     await w.setParentPin('2468');
     w.persist();
     await sleep(80);
+    if(localStorage.getItem(SYNC_KEY)!==null)throw new Error('family persist recreated personal sync outbox');
     if(!await w.verifyParentPin('2468'))throw new Error('correct PIN verification failed');
     if(await w.verifyParentPin('1111'))throw new Error('wrong PIN verification succeeded');
 
