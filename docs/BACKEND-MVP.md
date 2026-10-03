@@ -1,59 +1,51 @@
-# Backend MVP — plan wykonawczy
+# Backend MVP — stan wykonania
 
-## Co działa już teraz
+## Gotowe
 
 - Vercel Functions;
-- `GET /api/health`;
-- `GET /api/capabilities`;
-- chronione placeholdery `/api/v1/classes` i `/api/v1/sync`;
-- schemat PostgreSQL;
-- migracja core;
-- przygotowane RLS dla Supabase;
-- CI;
-- fail-closed przy braku auth/bazy.
+- Supabase project w EU;
+- migracje 001–012;
+- Supabase Auth / Magic Link;
+- RLS na wszystkich tabelach publicznych;
+- brak grantów `anon`;
+- personal sync push → pull;
+- merge wpisów z różnych urządzeń;
+- `GET /api/v1/me`;
+- `GET /api/v1/classes` przez user JWT + RLS;
+- CI, PWA/UI/backend smoke;
+- database security preflight;
+- fail-closed przy braku wymaganej konfiguracji.
 
-## Następny etap po podłączeniu Supabase
+## Następny etap techniczny
 
-### 1. Projekt i baza
-- utworzyć projekt;
-- zastosować `001_core.sql`;
-- zastosować `002_supabase_rls.sql`;
-- sprawdzić, czy wszystkie tabele mają RLS.
-
-### 2. Auth
-- magic link / passkey dla rodzica;
-- Google/Microsoft SSO lub magic link dla nauczyciela;
-- brak własnego e-maila dziecka.
-
-### 3. Testy RLS
-Na danych syntetycznych:
-- rodzic A nie widzi dziecka rodzica B;
-- nauczyciel A nie widzi klasy nauczyciela B;
-- nauczyciel widzi tylko własne klasy;
-- admin szkoły nie widzi innego tenant;
-- niezalogowany użytkownik nie widzi danych.
-
-### 4. Pierwsze funkcje chmurowe
-- utworzenie klasy;
-- jednorazowy/rotowany link lub kod dołączenia;
+### 1. Lifecycle klasy
+- tworzenie klasy przez uprawnioną rolę;
+- bezpieczny kod/link dołączenia;
 - zgłoszenie rodzica;
-- akceptacja nauczyciela;
-- przesłanie raportu;
-- status raportu.
+- akceptacja;
+- powiązanie family child ↔ school child.
 
-### 5. Migracja lokalnego pilota
-Nie wysyłamy wszystkiego automatycznie.
-Rodzic świadomie wybiera:
-**„Włącz synchronizację dla tego profilu”**.
+### 2. Synchronizacja rodzinna
+- osobne ownership/guardian rules;
+- konflikt offline;
+- świadome włączenie profilu do chmury.
 
-Dopiero po potwierdzeniu lokalne dane mogą zostać przesłane do przypisanego konta.
+### 3. Usuwanie
+- tombstones;
+- propagacja delete między urządzeniami;
+- kontrola retencji.
 
-## Kryterium włączenia cloud sync
+### 4. Operacyjność
+- audit_events w krytycznych akcjach;
+- backend backup/restore drill;
+- test wielu kont i tenant escape;
+- niezależny review bezpieczeństwa przed Aktywnik+ School.
 
-`AKTYWNIK_CLOUD_SYNC=true` dopiero gdy:
-- baza działa;
-- auth działa;
-- RLS przeszedł testy;
-- backup/restore jest sprawdzony;
-- privacy notice jest zaktualizowany;
-- środowisko produkcyjne ma właściwe sekrety.
+## Warunek rozszerzenia chmury
+
+Każdy nowy zakres jest włączany dopiero po:
+- testach RLS;
+- aktualizacji `backend/tests/security_preflight.sql`;
+- zielonym CI;
+- testach E2E na danych syntetycznych;
+- aktualizacji dokumentacji prywatności i retencji, jeśli zakres danych się zmienia.
