@@ -64,6 +64,11 @@ Docelowo:
 
 ## Synchronizacja
 
+### Protokół personal sync
+
+Beta synchronizacja trybu osobistego używa jawnego `protocolVersion=1`.
+Brak numeru jest chwilowo traktowany jako v1 dla zgodności podczas rolling deploy, ale klient/serwer odrzucają przyszłą, nieobsługiwaną wersję zamiast synchronizować dane „na ślepo”. Numer protokołu jest niezależny od `schemaVersion` lokalnego backupu.
+
 Przepływ wpisu:
 
 ```

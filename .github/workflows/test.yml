@@ -191,6 +191,7 @@ jobs:
             handler({method:'GET'},res);
             if(res.out.statusCode!==200) throw new Error(file+' status');
             if(!res.out.body) throw new Error(file+' no body');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.personalSyncProtocolVersion!==1) throw new Error('sync protocol capability missing');
           }
           const health=require('./api/health.js');
           const denied=mock();
@@ -293,6 +294,7 @@ jobs:
             method:'POST',
             headers:{authorization:'Bearer test-token'},
             body:{
+              protocolVersion:1,
               updatedAt:'2026-10-02T20:00:00.000Z',
               state:{
                 profileMode:'self',
@@ -313,18 +315,28 @@ jobs:
             }
           },syncRes);
           if(syncRes.out.statusCode!==200) throw new Error('personal sync status');
+          if(syncRes.out.body?.protocolVersion!==1) throw new Error('personal sync protocol response');
           if(syncRes.out.body?.synced!==1) throw new Error('personal sync count');
           if(syncRes.out.body?.deleted!==1||syncRes.out.body?.deletesSupported!==true) throw new Error('personal delete sync count');
           if(!calls.some(x=>x.url.includes('/auth/v1/user'))) throw new Error('auth verification missing');
           if(!calls.some(x=>x.url.includes('/rest/v1/personal_activities')&&String(x.options?.method||'GET').toUpperCase()==='POST')) throw new Error('personal sync write missing');
 
           const pullRes=mock();
-          await syncEnabled({method:'GET',headers:{authorization:'Bearer test-token'}},pullRes);
+          await syncEnabled({method:'GET',headers:{authorization:'Bearer test-token'},query:{protocolVersion:'1'}},pullRes);
           if(pullRes.out.statusCode!==200) throw new Error('personal pull status');
+          if(pullRes.out.body?.protocolVersion!==1) throw new Error('personal pull protocol response');
           if(pullRes.out.body?.entries?.length!==1) throw new Error('personal pull entries');
           if(!Array.isArray(pullRes.out.body?.deletes)||pullRes.out.body?.deletesSupported!==true) throw new Error('personal pull tombstones');
           if(pullRes.out.body.entries[0]?.activity_type!=='Rower') throw new Error('personal pull payload');
           if(!calls.some(x=>x.url.includes('/rest/v1/personal_activities')&&String(x.options?.method||'GET').toUpperCase()==='GET')) throw new Error('personal sync read missing');
+
+          const tooNewRes=mock();
+          await syncEnabled({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{protocolVersion:99,state:{profileMode:'self',entries:[]},deletes:[]}
+          },tooNewRes);
+          if(tooNewRes.out.statusCode!==409||tooNewRes.out.body?.error!=='sync_protocol_too_new') throw new Error('newer sync protocol was not rejected');
 
           const meRes=mock();
           await me({method:'GET',headers:{authorization:'Bearer test-token'}},meRes);

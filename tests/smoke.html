@@ -144,6 +144,7 @@ async function run(){
     if(localStorage.getItem(DRAFT_KEY)!==null||!localStorage.getItem(DRAFT_KEY+':child-a'))throw new Error('legacy entry draft migration failed');
     d.getElementById('cancelEntryBtn').click();await sleep(30);
     if(!w.AktywnikSync)throw new Error('sync client missing');
+    if(w.AktywnikSync.protocolVersion!==1)throw new Error('sync protocol version missing');
     const familySyncStatus=d.getElementById('cloudSyncBadge').textContent.toLowerCase();
     if(!familySyncStatus.includes('rodzina')&&!familySyncStatus.includes('family'))throw new Error('family local-only sync status missing');
     w.AktywnikSync.markDirty(seeded);
