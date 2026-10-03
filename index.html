@@ -4,12 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="Aktywnik+ 0.5 beta — bezpłatna, local-first PWA do mierzenia i zapisywania aktywności. Tryb osobisty, rodzinny, opcjonalne konto i synchronizacja trybu osobistego oraz rozwijany moduł School." />
+  <meta name="description" content="Aktywnik+ 0.5 beta — bezpłatna, local-first PWA do mierzenia i zapisywania aktywności. Tryb osobisty, rodzinny, opcjonalne konto i synchronizacja trybu osobistego i rodzinnego dla jawnie powiązanych profili oraz rozwijany moduł School." />
   <meta name="application-name" content="Aktywnik+" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta property="og:title" content="Aktywnik+ — aktywność zapisana prosto" />
-  <meta property="og:description" content="Aktywnik+ 0.5 beta: local-first, tryb osobisty i rodzinny, konto opcjonalne, synchronizacja osobista i rozwijany moduł School." />
+  <meta property="og:description" content="Aktywnik+ 0.5 beta: local-first, tryb osobisty i rodzinny, konto opcjonalne, synchronizacja osobista i rodzinna dla jawnie powiązanych profili oraz rozwijany moduł School." />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -36,7 +36,7 @@
   <main>
     <section class="hero">
       <div>
-        <span class="pill" data-i18n="landing.pill">Bezpłatny tracker aktywności • 0.5.0 beta.2</span>
+        <span class="pill" data-i18n="landing.pill">Bezpłatny tracker aktywności • 0.5.0 beta.3</span>
         <h1 data-i18n="landing.title">Aktywność zapisana prosto.</h1>
         <p data-i18n="landing.intro">Aktywnik+ pozwala mierzyć czas Start/Stop albo dodać wpis ręcznie. Działa local-first bez konta, a w trybie osobistym można opcjonalnie włączyć konto i synchronizację między urządzeniami.</p>
         <div class="cta">
@@ -46,7 +46,7 @@
           <a class="secondary" href="konto.html" data-i18n="landing.account">Konto / Sync — beta</a>
           <a class="secondary" href="paper.html" data-i18n="landing.paper">Pobierz wersję papierową</a>
         </div>
-        <small><strong>Konto jest opcjonalne.</strong> Tryb lokalny działa bez logowania. W 0.5 beta działa Magic Link i dwukierunkowa synchronizacja trybu osobistego, w tym propagacja usunięć przez tombstones. Tryb rodzinny pozostaje local-first.</small>
+        <small><strong>Konto jest opcjonalne.</strong> Tryb lokalny działa bez logowania. W 0.5 beta działa Magic Link oraz dwukierunkowa synchronizacja trybu osobistego i rodzinnego. Family sync obejmuje wpisy, statusy, usunięcia/tombstones i historię decyzji rodzica dla jawnie powiązanych profili; local-first pozostaje zasadą.</small>
       </div>
       <div class="hero-card">
         <strong>3 proste sposoby korzystania</strong>
@@ -66,7 +66,7 @@
       <h2>Co działa w 0.5 beta?</h2>
       <div class="cards">
         <article><h3>💾 Local-first</h3><p>Bez konta możesz używać trybu osobistego i rodzinnego. Dane zapisują się lokalnie, działa backup JSON, CSV/PDF oraz autozapis niedokończonych wpisów.</p></article>
-        <article><h3>☁️ Sync osobisty</h3><p>Opcjonalne konto Magic Link umożliwia push/pull wpisów osobistych. Nowsza wersja wygrywa według timestampu, a usunięcia są synchronizowane przez tombstones.</p></article>
+        <article><h3>☁️ Sync osobisty i rodzinny</h3><p>Opcjonalne konto Magic Link umożliwia synchronizację między urządzeniami. Tryb rodzinny działa wyłącznie dla jawnie powiązanych profili dziecka i obejmuje wpisy, statusy, usunięcia oraz historię decyzji rodzica.</p></article>
         <article><h3>🔒 Bezpieczeństwo</h3><p>Supabase Auth, RLS na wszystkich publicznych tabelach, brak dostępu anon do danych, test izolacji tenantów i automatyczny audyt create/update/delete dla wpisów osobistych.</p></article>
         <article><h3>🏫 School Cloud — beta</h3><p>Działa lifecycle klasy: tworzenie klasy, zaproszenie, zgłoszenie opiekuna i akceptacja/odrzucenie. Dostęp kontrolują role i RLS.</p><p><a href="school-cloud.html">Otwórz School Cloud →</a></p></article>
         <article><h3>📴 Offline</h3><p>PWA działa po pierwszym uruchomieniu także bez stałego internetu. Zmiany mogą czekać lokalnie i zostać zsynchronizowane po odzyskaniu połączenia.</p></article>
@@ -100,7 +100,7 @@
     <section id="dla-kogo" class="section alt">
       <h2>Jedna aplikacja, różne sposoby udziału</h2>
       <div class="cards">
-        <article><h3>Cyfrowo</h3><p>Tryb osobisty może synchronizować się między urządzeniami. Rodzina działa local-first, a School Cloud beta ma już bezpieczny lifecycle klas oparty o Auth, role i RLS.</p></article>
+        <article><h3>Cyfrowo</h3><p>Tryb osobisty i rodzinny mogą synchronizować się między urządzeniami po zalogowaniu. Rodzina nadal działa local-first, a School Cloud beta ma bezpieczny lifecycle klas oparty o Auth, role i RLS.</p></article>
         <article><h3>Hybrydowo</h3><p>Aplikacja u rodziny, a do szkoły trafia PDF lub wydruk.</p></article>
         <article><h3>Papierowo</h3><p>Rodzina bez aplikacji korzysta z formularza papierowego na równych zasadach.</p></article>
       </div>
@@ -108,7 +108,7 @@
 
     <section class="section action">
       <h2>Dla użytkownika, rodziny, nauczyciela i szkoły</h2>
-      <p>W pilocie nauczyciel może korzystać z raportów PDF/CSV oraz School Cloud beta. Działa Auth, RLS, role, tworzenie klas, tokeny zaproszeń, zgłoszenia opiekunów i decyzje szkoły. Do produkcji pozostają m.in. family sync, formalne wdrożenie szkoły/IOD i dalsze testy.</p>
+      <p>W pilocie nauczyciel może korzystać z raportów PDF/CSV oraz School Cloud beta. Działa Auth, RLS, role, tworzenie klas, tokeny zaproszeń, zgłoszenia opiekunów i decyzje szkoły. Family sync jest gotowy technicznie. Do produkcyjnego School pozostają formalne wdrożenie szkoły/IOD, platformowy backup/restore, niezależny security review i dalsze testy E2E.</p>
       <div class="cta">
         <a class="primary" href="app.html">Otwórz Aktywnik+</a>
         <a class="secondary" href="school-cloud.html">School Cloud — beta</a>
