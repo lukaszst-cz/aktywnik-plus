@@ -115,6 +115,66 @@ for public_name, private_name in TARGETS.items():
             f"SECURITY STATIC FAIL: app_private.{private_name} EXECUTE grants are not hardened"
         )
 
+migration_023 = Path("backend/migrations/023_school_cloud_idempotency.sql")
+if not migration_023.exists():
+    raise SystemExit("SECURITY STATIC FAIL: migration 023 missing")
+sql023 = migration_023.read_text(encoding="utf-8")
+lower023 = sql023.lower()
+
+idempotent_targets = {
+    "create_guardian_child_idempotent": "create_guardian_child_idempotent_secure",
+    "create_school_class_idempotent": "create_school_class_idempotent_secure",
+    "create_class_invite_idempotent": "create_class_invite_idempotent_secure",
+}
+
+for public_name, private_name in idempotent_targets.items():
+    item = latest_public.get(public_name)
+    if not item:
+        raise SystemExit(f"SECURITY STATIC FAIL: public.{public_name} missing")
+    _, definition = item
+    lower = definition.lower()
+    if "security invoker" not in lower:
+        raise SystemExit(
+            f"SECURITY STATIC FAIL: public.{public_name} must be SECURITY INVOKER"
+        )
+    if "set search_path = ''" not in lower:
+        raise SystemExit(
+            f"SECURITY STATIC FAIL: public.{public_name} must set empty search_path"
+        )
+    if f"app_private.{private_name}" not in lower:
+        raise SystemExit(
+            f"SECURITY STATIC FAIL: public.{public_name} must delegate to app_private.{private_name}"
+        )
+
+    private_re = re.compile(
+        rf"create\s+or\s+replace\s+function\s+app_private\.{re.escape(private_name)}\s*"
+        rf"\((.*?)\)\s*returns\b.*?\bsecurity\s+definer\b.*?"
+        rf"\bset\s+search_path\s*=\s*''.*?\bas\s+\$\$(.*?)\$\$;",
+        re.IGNORECASE | re.DOTALL,
+    )
+    private_match = private_re.search(sql023)
+    if not private_match:
+        raise SystemExit(
+            f"SECURITY STATIC FAIL: hardened idempotent helper app_private.{private_name} missing"
+        )
+    body = private_match.group(2).lower()
+    if "idempotency_begin" not in body or "idempotency_finish" not in body:
+        raise SystemExit(
+            f"SECURITY STATIC FAIL: app_private.{private_name} must use the idempotency ledger"
+        )
+
+if "revoke all on table app_private.idempotency_keys from public, anon, authenticated" not in lower023:
+    raise SystemExit("SECURITY STATIC FAIL: idempotency ledger direct grants not revoked")
+
+for helper in (
+    "idempotency_begin(text,uuid,text)",
+    "idempotency_finish(text,uuid,uuid)",
+):
+    if f"revoke execute on function app_private.{helper} from public, anon, authenticated" not in lower023:
+        raise SystemExit(
+            f"SECURITY STATIC FAIL: app_private.{helper} client EXECUTE revoke missing"
+        )
+
 role_hardening = Path(
     "backend/migrations/018_profile_type_role_hardening.sql"
 ).read_text(encoding="utf-8").lower()
