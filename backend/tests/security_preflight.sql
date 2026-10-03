@@ -11,6 +11,9 @@ declare
   public_authenticated_definer text;
   invoker_wrapper_count integer;
   private_lifecycle_helper_count integer;
+  idempotent_invoker_count integer;
+  idempotent_private_count integer;
+  idempotency_direct_grants text;
   unsafe_auth_helper text;
   profile_update_columns text;
   school_audit_trigger_count integer;
@@ -153,6 +156,71 @@ begin
       private_lifecycle_helper_count;
   end if;
 
+  with expected(name,args) as (
+    values
+      ('create_class_invite_idempotent','target_class uuid, operation_key uuid, valid_days integer'),
+      ('create_guardian_child_idempotent','child_name text, operation_key uuid'),
+      ('create_school_class_idempotent','target_tenant uuid, target_school_year uuid, class_name text, operation_key uuid')
+  )
+  select count(*)
+    into idempotent_invoker_count
+  from pg_proc p
+  join pg_namespace n on n.oid=p.pronamespace
+  join expected e
+    on e.name=p.proname
+   and e.args=pg_get_function_identity_arguments(p.oid)
+  where n.nspname='public'
+    and not p.prosecdef
+    and has_function_privilege('authenticated',p.oid,'EXECUTE')
+    and not has_function_privilege('anon',p.oid,'EXECUTE')
+    and not has_function_privilege('public',p.oid,'EXECUTE')
+    and coalesce(p.proconfig @> array['search_path=""']::text[],false)
+    and position('app_private.' in pg_get_functiondef(p.oid))>0;
+
+  if idempotent_invoker_count <> 3 then
+    raise exception 'SECURITY PREFLIGHT FAIL: idempotent public wrapper set mismatch (%)',
+      idempotent_invoker_count;
+  end if;
+
+  with expected(name,args) as (
+    values
+      ('create_class_invite_idempotent_secure','target_class uuid, operation_key uuid, valid_days integer'),
+      ('create_guardian_child_idempotent_secure','child_name text, operation_key uuid'),
+      ('create_school_class_idempotent_secure','target_tenant uuid, target_school_year uuid, class_name text, operation_key uuid')
+  )
+  select count(*)
+    into idempotent_private_count
+  from pg_proc p
+  join pg_namespace n on n.oid=p.pronamespace
+  join expected e
+    on e.name=p.proname
+   and e.args=pg_get_function_identity_arguments(p.oid)
+  where n.nspname='app_private'
+    and p.prosecdef
+    and has_function_privilege('authenticated',p.oid,'EXECUTE')
+    and not has_function_privilege('anon',p.oid,'EXECUTE')
+    and not has_function_privilege('public',p.oid,'EXECUTE')
+    and coalesce(p.proconfig @> array['search_path=""']::text[],false)
+    and position('idempotency_begin' in pg_get_functiondef(p.oid))>0
+    and position('idempotency_finish' in pg_get_functiondef(p.oid))>0;
+
+  if idempotent_private_count <> 3 then
+    raise exception 'SECURITY PREFLIGHT FAIL: idempotent private helper set mismatch (%)',
+      idempotent_private_count;
+  end if;
+
+  select string_agg(grantee||':'||privilege_type, ', ' order by grantee,privilege_type)
+    into idempotency_direct_grants
+  from information_schema.role_table_grants
+  where table_schema='app_private'
+    and table_name='idempotency_keys'
+    and grantee in ('PUBLIC','anon','authenticated');
+
+  if idempotency_direct_grants is not null then
+    raise exception 'SECURITY PREFLIGHT FAIL: idempotency ledger direct grants remain: %',
+      idempotency_direct_grants;
+  end if;
+
   select string_agg(p.proname, ', ' order by p.proname)
     into unsafe_auth_helper
   from pg_proc p
@@ -241,4 +309,4 @@ end $$;
 select
   'PASS' as status,
   (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r') as public_tables,
-  'RLS enabled; anon blocked; profile role protected; public RPCs are invoker-only; private lifecycle helpers guarded; personal+School audit present; private retention guarded' as check_summary;
+  'RLS enabled; anon blocked; profile role protected; public RPCs are invoker-only; idempotency ledger private; lifecycle helpers guarded; personal+School audit present; private retention guarded' as check_summary;
