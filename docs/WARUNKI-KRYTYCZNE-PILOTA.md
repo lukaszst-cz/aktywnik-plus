@@ -140,7 +140,7 @@ Pozostaje:
 | HTTPS | ✅ |
 | kopie zapasowe lokalne | ✅ eksport/import |
 | backend backup/restore | 🟡 runbook gotowy; brak potwierdzonego restore drill |
-| audyt administracyjny | 🟡 schema jest; pełna integracja zdarzeń jeszcze nie |
+| audyt administracyjny | 🟡 wpisy osobiste create/update/delete audytowane automatycznie; pełny audyt School jeszcze do rozszerzenia |
 | retencja/usuwanie lokalne | ✅ |
 | usuwanie/synchronizacja w chmurze | ✅ tombstones + propagacja delete w trybie osobistym |
 | eksport danych | ✅ JSON / CSV / PDF |
@@ -160,7 +160,7 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`013`: zastosowane;
+- migracje `001`–`014`: zastosowane;
 - tabele `public`: 20;
 - RLS: 20/20;
 - granty dla `anon`: 0;
@@ -194,7 +194,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 2. synchronizacja trybu rodzinnego;
 3. bezpieczna synchronizacja usunięć / tombstones — ✅ tryb osobisty;
 4. zweryfikowany backend backup/restore drill;
-5. pełna integracja `audit_events` i retencji;
+5. pełna integracja `audit_events` i retencji — audyt trybu osobistego ✅, School nadal do rozszerzenia;
 6. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
 7. formalna decyzja szkoły/IOD oraz DPIA;
 8. niezależny security review/pentest przed produkcyjnym School.
