@@ -1,47 +1,45 @@
 # Backend Aktywnik+
 
-## Stan
+## Stan 0.5.0-beta.2
 
-Backend jest wdrażany etapami. Publiczny pilot nadal działa lokalnie i bez logowania.
+Backend działa etapami i pozostaje **fail-closed**. Tryb lokalny nie wymaga konta.
 
-Aktualnie uruchamiane są tylko bezpieczne endpointy diagnostyczne:
-- `/api/health`
-- `/api/capabilities`
+Aktualne endpointy:
+- `GET /api/health`;
+- `GET /api/capabilities`;
+- `GET/POST /api/v1/sync` — synchronizacja trybu osobistego;
+- `GET /api/v1/me` — profil i membership użytkownika;
+- `GET /api/v1/classes` — odczyt klas ograniczony przez RLS.
 
-Chronione funkcje szkolne pozostają wyłączone do czasu:
-1. podłączenia bazy PostgreSQL/Supabase;
-2. skonfigurowania logowania dorosłych;
-3. uruchomienia RLS;
-4. przejścia testów dostępu;
-5. ustawienia `AKTYWNIK_CLOUD_SYNC=true`.
+## Model bezpieczeństwa
 
-## Zasada fail-closed
+Zwykłe endpointy użytkownika:
+1. wymagają `AKTYWNIK_CLOUD_SYNC=true`;
+2. wymagają `AKTYWNIK_RLS_VERIFIED=true`;
+3. wymagają `AUTH_MODE=supabase`;
+4. używają `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY`;
+5. przekazują Bearer JWT zalogowanego użytkownika;
+6. polegają na RLS do autoryzacji wierszy.
 
-Brak konfiguracji bazy lub autoryzacji **nie włącza trybu chmurowego**.
+Service-role/secret key nie jest potrzebny w zwykłym przepływie użytkownika.
 
-Frontend może nadal pracować lokalnie.
+## Baza
 
-## Pliki
+Na środowisku Supabase zastosowano migracje `001`–`012`.
 
-- `schema.sql` — model bazowy;
-- `migrations/001_core.sql` — pierwszy schemat migracyjny;
-- `migrations/002_supabase_rls.sql` — bazowe RLS dla wariantu Supabase;
-- `migrations/003_family_roles.sql` — wiele dzieci, konta dziecka, historia decyzji i kody parowania;
-- `migrations/004_family_rls.sql` — RLS dla kont dziecka i parowania;
-- `../.env.example` — wymagane zmienne środowiskowe.
+Weryfikacja 2026-10-03:
+- 20/20 tabel publicznych z RLS;
+- 0 grantów dla `anon`;
+- 0 tabel bez polityk;
+- Security Advisor: 0 aktywnych problemów;
+- `backend/tests/security_preflight.sql`: PASS.
 
-## Kolejność uruchomienia prawdziwego backendu
+## Nadal wyłączone / nieukończone
 
-1. Utworzyć projekt Supabase/PostgreSQL.
-2. Ustawić `DATABASE_URL` lub `SUPABASE_URL`.
-3. Wykonać migrację `001_core.sql`.
-4. Dla Supabase wykonać `002_supabase_rls.sql`.
-5. Wykonać `003_family_roles.sql`.
-6. Wykonać `004_family_rls.sql`.
-7. Włączyć dostawcę logowania.
-8. Uruchomić testy polityk dostępu: guardian / child / teacher / school_admin / tenant escape.
-9. Dopiero wtedy ustawić `AKTYWNIK_CLOUD_SYNC=true`.
-
-## Dane produkcyjne
+- cloud delete/tombstones;
+- pełny sync rodzinny;
+- tworzenie i dołączanie do klas;
+- pełna integracja audit_events;
+- produkcyjny restore drill.
 
 Nie używać prawdziwych danych dzieci w środowisku dev/test.
