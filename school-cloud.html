@@ -74,7 +74,18 @@
     </section>
 
     <section id="schoolGuardianPanel" class="section action hidden">
-      <h2>Dołącz dziecko do klasy</h2>
+      <h2>Rodzina w School Cloud</h2>
+      <p>Najpierw utwórz profil dziecka w chmurze, jeśli jeszcze go tu nie ma. Profil nie wymaga własnego e-maila ani hasła dziecka.</p>
+      <div class="cards">
+        <label>Imię / nazwa profilu dziecka
+          <input id="schoolNewChildName" maxlength="60" placeholder="np. Daniel">
+        </label>
+      </div>
+      <div class="cta">
+        <button id="schoolCreateChildBtn" class="secondary" type="button">Utwórz profil dziecka</button>
+      </div>
+
+      <h3>Dołącz dziecko do klasy</h3>
       <p>Wklej token zaproszenia otrzymany od szkoły. Token nie ujawnia publicznej listy klas.</p>
       <label>Dziecko
         <select id="schoolGuardianChildSelect"></select>
