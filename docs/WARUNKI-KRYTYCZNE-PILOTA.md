@@ -74,7 +74,8 @@ Gotowe:
 - `docs/DPIA-SCREENING.md`;
 - `docs/PROCEDURA-INCYDENTOW.md`;
 - `docs/SECURITY-REVIEW-2026-10-03.md`;
-- `docs/BACKUP-RESTORE.md`.
+- `docs/BACKUP-RESTORE.md`
+- `backend/tests/application_restore_drill.sql`.
 
 Pozostaje po stronie szkoły/administratora danych:
 - podstawa prawna;
@@ -155,7 +156,7 @@ Pozostaje:
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
 | HTTPS | ✅ |
 | kopie zapasowe lokalne | ✅ eksport/import |
-| backend backup/restore | 🟡 runbook gotowy; brak potwierdzonego restore drill |
+| backend backup/restore | 🟡 restore danych aplikacji ✅ PASS; platformowy backup/restore Supabase nadal do próby |
 | audyt administracyjny | 🟡 wpisy osobiste create/update/delete audytowane automatycznie; pełny audyt School jeszcze do rozszerzenia |
 | retencja/usuwanie lokalne | ✅ |
 | usuwanie/synchronizacja w chmurze | ✅ tombstones + propagacja delete w trybie osobistym |
@@ -213,7 +214,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 1. family onboarding — ✅ rodzic może utworzyć profil dziecka w School Cloud bez e-maila/hasła dziecka;
 2. synchronizacja trybu rodzinnego;
 3. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
-4. zweryfikowany backend backup/restore drill;
+4. backend restore drill — ✅ dane aplikacji; platformowy backup/restore Supabase nadal otwarty;
 5. pełna integracja `audit_events` i retencji — audyt trybu osobistego ✅, School nadal do rozszerzenia;
 6. E2E wielu kont/tenantów — ✅ test RLS PASS na danych syntetycznych;
 7. formalna decyzja szkoły/IOD oraz DPIA;
