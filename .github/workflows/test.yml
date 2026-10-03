@@ -192,9 +192,15 @@ jobs:
           const classJoin=require('./api/v1/class-join.js');
           const me=require('./api/v1/me.js');
           const sync=require('./api/v1/sync.js');
-          for (const handler of [classes,classInvites,classJoin,me,sync]){
+          for (const [handler,req] of [
+            [classes,{method:'GET'}],
+            [classInvites,{method:'POST',body:{}}],
+            [classJoin,{method:'GET',query:{}}],
+            [me,{method:'GET'}],
+            [sync,{method:'GET'}]
+          ]){
             const res=mock();
-            handler({method:'GET'},res);
+            await handler(req,res);
             if(res.out.statusCode!==503) throw new Error('cloud endpoint must fail closed');
             if(res.out.body?.error!=='cloud_sync_disabled') throw new Error('cloud endpoint guard missing');
           }
