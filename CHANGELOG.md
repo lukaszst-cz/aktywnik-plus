@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — full family sync live
+## 0.5.0-beta.3 — Full Family Sync Pilot — 2026-10-03
 
 - migracje 023, 024 i 025 są trwale zastosowane na live Supabase;
 - School Cloud idempotency retry test: PASS;
