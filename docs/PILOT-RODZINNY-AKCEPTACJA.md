@@ -1,6 +1,6 @@
 # Pilot rodzinny Aktywnik+ — test akceptacyjny
 
-Wersja bazowa: **0.5.0-beta.3**.
+Wersja bazowa: **0.5.0-beta.4**.
 
 Celem jest sprawdzenie zachowania na prawdziwych urządzeniach. To nie jest test nowych funkcji — sprawdzamy, czy wdrożone mechanizmy zachowują się poprawnie w codziennym użyciu.
 
@@ -11,6 +11,10 @@ Celem jest sprawdzenie zachowania na prawdziwych urządzeniach. To nie jest test
 3. Na urządzeniu B otwórz tę samą produkcję/PWA i użyj właściwego profilu dziecka.
 4. Nie używaj prawdziwych wrażliwych danych w testowych notatkach.
 
+## Co już sprawdza CI
+
+Automatycznie sprawdzamy już m.in. zachowanie kolejki family sync offline, zachowanie zmian lokalnych przy braku sieci, synchronizację statusów, tombstones/usunięcia, historię decyzji rodzica, izolację rodzeństwa, restart PWA oraz raporty. Test automatyczny nie zastępuje jednak próby na dwóch fizycznych urządzeniach.
+
 ## Scenariusze krytyczne
 
 | Test | Czynność | Oczekiwany wynik |
@@ -20,7 +24,7 @@ Celem jest sprawdzenie zachowania na prawdziwych urządzeniach. To nie jest test
 | Korekta | Rodzic zmienia czas wpisu | Nowy czas synchronizuje się i jest oznaczony jako korekta |
 | Odrzucenie | Rodzic odrzuca wpis z powodem | Drugie urządzenie widzi odrzucenie i powód |
 | Usunięcie | Usuń wpis na jednym urządzeniu | Wpis nie wraca po synchronizacji na drugim urządzeniu |
-| Offline | Dodaj wpis bez sieci, potem włącz sieć | Lokalny wpis pozostaje i synchronizuje się po powrocie online |
+| Offline | Dodaj wpis bez sieci, potem włącz sieć | Lokalny wpis pozostaje i synchronizuje się po powrocie online; zachowanie kolejki offline jest dodatkowo chronione testem CI |
 | Rodzeństwo | Dodaj wpis tylko dla dziecka A | Dziecko B nie widzi danych dziecka A |
 | Restart PWA | Zamknij i uruchom zainstalowaną PWA | Dane lokalne i właściwy profil nadal są dostępne |
 | Raport | Wygeneruj raport miesięczny | PDF/druk zawiera właściwe dziecko, daty i czasy |
@@ -58,4 +62,4 @@ Pilot rodzinny można uznać za zaakceptowany, jeśli przez 3–7 dni:
 - decyzje rodzica i usunięcia są spójne na dwóch urządzeniach;
 - PWA uruchamia się ponownie bez utraty stanu.
 
-Po pilocie beta.4 powinna zawierać wyłącznie poprawki wynikające z realnych obserwacji, bez dokładania zakresu „na zapas”.
+Po pilocie kolejna wersja powinna zawierać wyłącznie poprawki wynikające z realnych obserwacji, bez dokładania zakresu „na zapas”.
