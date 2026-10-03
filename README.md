@@ -22,7 +22,7 @@ Na tym etapie:
 - w 0.5 beta działa Magic Link, pełny sync trybu osobistego oraz pełny family sync dla jawnie powiązanych profili: wpisy, tombstones/usunięcia i historia decyzji rodzica;
 - rodzina może wybrać aplikację, tryb hybrydowy albo papier.
 
-Przed formalnym wdrożeniem szkolnym należy przejść do wersji z backendem, kontami, uprawnieniami i uzgodnionym modelem ochrony danych.
+Backend, konta dorosłych, role i RLS są już uruchomione w pilocie. Przed formalnym wdrożeniem szkolnym pozostają przede wszystkim testy E2E na kontrolowanych kontach, niezależny review bezpieczeństwa oraz uzgodnienia szkoły/IOD dotyczące podstawy prawnej, retencji i ewentualnej DPIA.
 
 ## ☕ Dobrowolne wsparcie
 
@@ -138,13 +138,13 @@ Obecna PWA ma:
 - eksport kopii lokalnych danych do pliku JSON;
 - przywracanie kopii z pliku;
 - możliwość poproszenia przeglądarki o trwałą pamięć;
-- jasne oznaczenie funkcji klas jako **demo lokalne** do czasu uruchomienia backendu.
+- działający backend klas i School Cloud z tworzeniem klasy, zaproszeniami, zgłoszeniami oraz decyzjami staff; formalne wdrożenie szkolne nadal wymaga osobnej akceptacji szkoły/IOD.
 
 Przed czyszczeniem danych przeglądarki, zmianą telefonu lub ważnym raportem warto wykonać eksport kopii.
 
-## Prototyp
+## Local-first i chmura
 
-Obecny prototyp zapisuje dane lokalnie w przeglądarce (`localStorage`). To pozwala testować interfejs bez zakładania konta i bez wysyłania danych na serwer.
+Aktywnik+ nadal zapisuje dane lokalnie w przeglądarce jako pierwsze (`localStorage`), więc podstawowe użycie działa bez konta. Po zalogowaniu dorosłego można opcjonalnie korzystać z synchronizacji chmurowej: personal sync oraz family sync dla jawnie powiązanych profili dzieci.
 
 Uruchom lokalnie:
 
@@ -183,9 +183,9 @@ Backendowy fundament jest już połączony z projektem Supabase:
 
 Chmura pozostaje fail-closed przez `AKTYWNIK_CLOUD_SYNC` i `AKTYWNIK_RLS_VERIFIED`: bez poprawnej konfiguracji endpointy odmawiają pracy. Produkcyjne funkcje są włączane tylko po przejściu RLS/preflight.
 
-## Wersja produkcyjna
+## Kierunek do 1.0
 
-Docelowo: PWA + konta rodzic/dziecko + synchronizacja między urządzeniami + reguły dostępu po stronie backendu. Planowany stos: Next.js / TypeScript / Supabase. Powiadomienie końca dnia będzie korzystać z Web Push.
+Obecny pilot ma PWA, konta dorosłych, synchronizację między urządzeniami, rodzinny model danych i reguły dostępu po stronie Supabase/RLS. Do wersji 1.0 priorytetem jest stabilizacja na realnych urządzeniach, domknięcie formalnego modelu School oraz dalsze utwardzanie bezpieczeństwa i obserwowalności; większa migracja technologiczna nie jest warunkiem pilota.
 
 ## Demo i pobieranie
 
