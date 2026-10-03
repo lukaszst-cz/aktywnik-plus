@@ -1395,5 +1395,4 @@ setInterval(renderTimer,1000);
 setInterval(()=>{if((currentMode==='parent'||currentMode==='school')&&!parentUnlocked())lockParent()},10000);
 ['pointerdown','keydown','touchstart'].forEach(evt=>document.addEventListener(evt,()=>{if((currentMode==='parent'||currentMode==='school')&&parentUnlocked())touchParentSession()},{passive:true}));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderTimer();if((currentMode==='parent'||currentMode==='school')&&!parentUnlocked())lockParent()}});
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 renderAll();restoreEntryDraft();
