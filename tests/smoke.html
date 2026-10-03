@@ -70,6 +70,14 @@ async function run(){
     if(localStorage.getItem(selfDraftKey)!==null)throw new Error('entry draft not cleared after save');
     selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(selfSaved.entries?.[0]?.activity!=='Prace w ogrodzie'||selfSaved.entries?.[0]?.status!=='approved')throw new Error('self custom activity failed');
+    const localDeleteId=selfSaved.entries[0].id;
+    const deleteBtn=d.querySelector('[data-self-delete="'+localDeleteId+'"]');
+    if(!deleteBtn)throw new Error('self delete action missing');
+    w.confirm=()=>true;deleteBtn.click();await sleep(60);
+    selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(selfSaved.entries?.some(e=>e.id===localDeleteId))throw new Error('self delete did not remove local entry');
+    const queuedDeletes=JSON.parse(localStorage.getItem('aktywnik-plus-personal-deletes-v1')||'{}');
+    if(!queuedDeletes[localDeleteId])throw new Error('self delete tombstone not queued');
 
     const cloudBridge=w.AktywnikCloudBridge;
     if(!cloudBridge?.mergePersonalEntries)throw new Error('personal cloud merge bridge missing');
@@ -98,6 +106,25 @@ async function run(){
     if(mergeResult.updated!==1)throw new Error('newer cloud version did not update local entry');
     mergedState=JSON.parse(localStorage.getItem(KEY)||'{}');mergedEntry=mergedState.entries?.find(e=>e.id===remoteId);
     if(mergedEntry?.minutes!==50||mergedEntry?.effort!==4)throw new Error('newer cloud merge mismatch');
+
+    const deleteResult=cloudBridge.mergePersonalCloudState([], [{
+      client_entry_id:remoteId,
+      deleted_at:new Date(syncBase+4000).toISOString()
+    }]);
+    if(deleteResult.deleted!==1)throw new Error('cloud tombstone did not delete local entry');
+    mergedState=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(mergedState.entries?.some(e=>e.id===remoteId))throw new Error('cloud-deleted entry still present locally');
+
+    mergeResult=cloudBridge.mergePersonalEntries([{
+      client_entry_id:remoteId,activity_date:syncDay,activity_type:'Rower',minutes:55,effort:5,note:'newer than delete',
+      source:'manual',client_updated_at:new Date(syncBase+6000).toISOString(),updated_at:new Date(syncBase+6000).toISOString()
+    }]);
+    if(mergeResult.added!==1)throw new Error('newer post-delete cloud entry did not restore');
+    const staleDelete=cloudBridge.mergePersonalCloudState([], [{
+      client_entry_id:remoteId,
+      deleted_at:new Date(syncBase+5000).toISOString()
+    }]);
+    if(staleDelete.deleted!==0)throw new Error('stale tombstone deleted newer local entry');
 
     Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);sessionStorage.clear();
     const childA={id:'child-a',displayName:'Dziecko A',favorites:['Spacer','Rower'],requireParentApproval:true,createdAt:new Date().toISOString()};
@@ -240,7 +267,7 @@ async function run(){
     w.clearPinFailures();
     if(w.pinLockRemainingMs()>0)throw new Error('PIN lockout reset failed');
 
-    pass('beta2 cloud pull/merge, per-profile drafts, legacy draft migration, smart duration, quick start, data controls, family PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
+    pass('beta2 cloud pull/merge/delete tombstones, per-profile drafts, legacy draft migration, smart duration, quick start, data controls, family PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
