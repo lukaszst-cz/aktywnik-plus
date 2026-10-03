@@ -13,6 +13,7 @@ assert "full-family-sync-pilot" in health, "health backend stage is stale"
 
 readme = (ROOT / "README.md").read_text(encoding="utf-8")
 landing = (ROOT / "index.html").read_text(encoding="utf-8")
+app_html = (ROOT / "app.html").read_text(encoding="utf-8")
 i18n = (ROOT / "i18n.js").read_text(encoding="utf-8")
 release = ROOT / "docs" / f"RELEASE-{version}.md"
 app = (ROOT / "app.js").read_text(encoding="utf-8")
@@ -32,6 +33,9 @@ assert "parentMovementLoad" not in export_section, "parent movement load leaked 
 assert version in readme, "README does not expose current version"
 assert "0.5.0 beta.4" in landing, "landing does not expose beta.4"
 assert "0.5.0 beta.4" in i18n, "i18n does not expose beta.4"
+assert "0.5.0 beta.4" in app_html, "app version badge does not expose beta.4"
+assert "Zmęczenie 1–5" in app_html, "fatigue scale is not aligned with the paper journal"
+assert "activityEffortValue" in app_html, "fatigue scale selected value is not visible"
 assert release.exists(), f"missing release notes: {release.name}"
 
 stale = [
@@ -39,7 +43,11 @@ stale = [
     "Full family activity sync across devices is a later stage.",
     "Do produkcji pozostają m.in. family sync",
 ]
+stale += [
+    "Synchronizacja rodzic–nauczyciel między różnymi telefonami będzie dostępna dopiero po uruchomieniu backendu.",
+    "Prawdziwe klasy między urządzeniami uruchomimy dopiero z backendem i kontami.",
+]
 for phrase in stale:
-    assert phrase not in landing + i18n, f"stale family-sync copy remains: {phrase}"
+    assert phrase not in landing + i18n + app_html, f"stale product copy remains: {phrase}"
 
 print(f"release consistency OK: {version}")
