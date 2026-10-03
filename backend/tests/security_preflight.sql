@@ -231,7 +231,7 @@ begin
     raise exception 'SECURITY PREFLIGHT FAIL: audit retention privileges invalid auth=% anon=% service=%',
       retention_auth_exec,retention_anon_exec,retention_service_exec;
   end if;
-end $;
+end $$;
 
 select
   'PASS' as status,
