@@ -10,12 +10,13 @@ Techniczny przegląd bieżącego środowiska Aktywnik+ przed rozszerzaniem funkc
 
 Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - projekt aktywny w regionie EU (`eu-central-1`);
-- migracje `001`–`013` są zastosowane;
+- migracje `001`–`014` są zastosowane;
 - 20/20 tabel w schemacie `public` ma włączone RLS;
 - brak tabel publicznych bez polityki RLS;
 - brak grantów tabel dla roli `anon`;
 - `personal_activities` ma polityki SELECT / INSERT / UPDATE / DELETE ograniczone do `owner_id = auth.uid()`;
-- Supabase Security Advisor: 0 aktywnych problemów bezpieczeństwa.
+- Supabase Security Advisor: 0 aktywnych problemów bezpieczeństwa;
+- audit triggers dla personal activity create/update/delete: PASS.
 
 Repo zawiera również `backend/tests/security_preflight.sql`, który ma być uruchamiany po zmianach schematu/RLS.
 

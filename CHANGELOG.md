@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — personal activity audit
+
+- migracja 014 dodaje automatyczne `audit_events` dla utworzenia i edycji wpisu osobistego oraz tombstone delete;
+- actor pochodzi z `auth.uid()`;
+- audyt działa w triggerze PostgreSQL i nie wymaga uprzywilejowanego endpointu;
+- security preflight sprawdza obecność triggerów;
+- test transakcyjny create/update/delete: PASS.
+
 ## Unreleased — personal delete sync
 
 - migracja 013: `personal_activity_tombstones` z RLS per właściciel;

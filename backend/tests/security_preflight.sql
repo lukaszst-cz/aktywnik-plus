@@ -57,7 +57,21 @@ begin
   if personal_policy_count < 4 then
     raise exception 'SECURITY PREFLIGHT FAIL: personal_activities policies incomplete (%)', personal_policy_count;
   end if;
-end $$;
+
+  if not exists (
+    select 1 from pg_trigger
+    where tgname='audit_personal_activity_insert_update' and not tgisinternal
+  ) then
+    raise exception 'SECURITY PREFLIGHT FAIL: personal activity audit trigger missing';
+  end if;
+
+  if not exists (
+    select 1 from pg_trigger
+    where tgname='audit_personal_activity_tombstone' and not tgisinternal
+  ) then
+    raise exception 'SECURITY PREFLIGHT FAIL: personal delete audit trigger missing';
+  end if;
+end $;
 
 select
   'PASS' as status,
