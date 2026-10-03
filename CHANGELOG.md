@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — personal sync protocol guard
+
+- personal sync ma jawny `protocolVersion=1` niezależny od schematu lokalnego backupu;
+- klient wysyła wersję przy push/pull i sprawdza wersję odpowiedzi;
+- backend zachowuje zgodność z brakującym numerem jako v1 podczas rolling deploy;
+- przyszła nieobsługiwana wersja protokołu jest odrzucana kodem `409 sync_protocol_too_new`;
+- `/api/capabilities` ujawnia bieżącą wersję protokołu;
+- backend i browser smoke testują guard kompatybilności.
+
+
 ## Unreleased — SECURITY DEFINER surface guard
 
 - live Supabase Security Advisor ma 4 kontrolowane WARN dla publicznych RPC `SECURITY DEFINER`;
