@@ -1,6 +1,7 @@
 const base=(process.env.AKTYWNIK_BASE_URL || 'https://aktywnik-plus.vercel.app').replace(/\/$/,'');
 const expected=process.env.AKTYWNIK_EXPECTED_VERSION || '0.5.0-beta.4';
 const requireCloud=String(process.env.AKTYWNIK_REQUIRE_CLOUD || 'true').toLowerCase()==='true';
+const expectedCommit=String(process.env.AKTYWNIK_EXPECTED_COMMIT || '').trim();
 
 async function request(path,options={}){
   const res=await fetch(base+path,{
@@ -65,6 +66,7 @@ requireHeader(healthRaw.res,'cache-control','no-store');
 requireHeader(healthRaw.res,'x-robots-tag','noindex');
 const health=JSON.parse(healthRaw.text);
 if(health.version!==expected) throw new Error(`production version ${health.version} != expected ${expected}`);
+if(expectedCommit&&health.commit!==expectedCommit) throw new Error(`production commit ${health.commit||'missing'} != expected ${expectedCommit}`);
 if(health.backend!=='full-family-sync-pilot') throw new Error(`unexpected backend stage: ${health.backend}`);
 
 const capsRaw=await get('/api/capabilities');
@@ -104,6 +106,7 @@ console.log(JSON.stringify({
   ok:true,
   base,
   version:health.version,
+  commit:health.commit||null,
   backend:health.backend,
   cloudEnabled:caps?.cloud?.enabled===true,
   familySync:caps?.cloud?.familySync===true,
