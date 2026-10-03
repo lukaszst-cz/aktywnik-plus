@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — backup identity isolation
+
+- aktualne kopie v6 wymagają unikalnych identyfikatorów profili i wpisów;
+- wpisy, historia akceptacji, nagrody/oceny i aktywny pomiar muszą wskazywać istniejący profil;
+- uszkodzona kopia nie przepina już niejednoznacznych danych do pierwszego dziecka;
+- starsze kopie legacy nadal korzystają z dotychczasowej ścieżki migracji;
+- browser smoke testuje duplikat profilu, duplikat wpisu i osierocony wpis.
+
+
 ## Unreleased — local data wipe hardening
 
 - „Usuń wszystkie lokalne dane” czyści stan aplikacji, szkice, outbox sync, tombstones, znacznik ostatniego sync i lokalny token sesji konta;
