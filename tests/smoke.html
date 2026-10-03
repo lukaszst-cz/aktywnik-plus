@@ -36,7 +36,7 @@ async function loadApp(label){
 }
 async function run(){
   try{
-    localStorage.removeItem(KEY);sessionStorage.clear();
+    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);sessionStorage.clear();
     let ctx=await loadApp('initial'),w=ctx.w,d=ctx.d;
     if(d.getElementById('pilotSetupCard').classList.contains('hidden'))throw new Error('initial universal setup missing');
     if(d.getElementById('childModeBtn')||d.getElementById('parentModeBtn')||d.getElementById('schoolModeBtn'))throw new Error('legacy role switch still visible');
@@ -50,6 +50,7 @@ async function run(){
     d.getElementById('startPilotBtn').click();
     await sleep(120);
     let selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    const selfDraftKey=DRAFT_KEY+':'+selfSaved.children?.[0]?.id;
     if(selfSaved.profileMode!=='self'||selfSaved.children?.[0]?.requireParentApproval!==false)throw new Error('self mode setup failed');
     if(!d.getElementById('parentAccessBtn').classList.contains('hidden'))throw new Error('parent access visible in self mode');
     if(d.getElementById('selfDataCard').classList.contains('hidden'))throw new Error('self data card missing');
@@ -60,13 +61,13 @@ async function run(){
     d.getElementById('activityNote').value='draft test';
     for(const id of ['customActivityName','activityDuration','activityNote'])d.getElementById(id).dispatchEvent(new w.Event('input',{bubbles:true}));
     await sleep(50);
-    const draftBeforeReload=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');
+    const draftBeforeReload=JSON.parse(localStorage.getItem(selfDraftKey)||'null');
     if(!draftBeforeReload||draftBeforeReload.customName!=='Prace w ogrodzie'||draftBeforeReload.minutes!==12||draftBeforeReload.note!=='draft test')throw new Error('entry draft autosave failed');
     ctx=await loadApp('draft-restore');w=ctx.w;d=ctx.d;await sleep(100);
     if(d.getElementById('entryCard').classList.contains('hidden'))throw new Error('entry draft was not restored');
     if(d.getElementById('customActivityName').value!=='Prace w ogrodzie'||d.getElementById('activityDuration').value!=='12'||d.getElementById('activityNote').value!=='draft test')throw new Error('restored entry draft values mismatch');
     d.getElementById('saveEntryBtn').click();await sleep(80);
-    if(localStorage.getItem(DRAFT_KEY)!==null)throw new Error('entry draft not cleared after save');
+    if(localStorage.getItem(selfDraftKey)!==null)throw new Error('entry draft not cleared after save');
     selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(selfSaved.entries?.[0]?.activity!=='Prace w ogrodzie'||selfSaved.entries?.[0]?.status!=='approved')throw new Error('self custom activity failed');
 
@@ -98,11 +99,16 @@ async function run(){
     mergedState=JSON.parse(localStorage.getItem(KEY)||'{}');mergedEntry=mergedState.entries?.find(e=>e.id===remoteId);
     if(mergedEntry?.minutes!==50||mergedEntry?.effort!==4)throw new Error('newer cloud merge mismatch');
 
-    localStorage.removeItem(KEY);sessionStorage.clear();
+    Object.keys(localStorage).filter(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')).forEach(k=>localStorage.removeItem(k));localStorage.removeItem(KEY);sessionStorage.clear();
     const childA={id:'child-a',displayName:'Dziecko A',favorites:['Spacer','Rower'],requireParentApproval:true,createdAt:new Date().toISOString()};
     const seeded={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:true},parentAuth:{pinSalt:'test-salt',pinHash:'test-hash',iterations:120000,autoLockMinutes:5},children:[childA],activeChildId:childA.id,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
     localStorage.setItem(KEY,JSON.stringify(seeded));
+    const testToday=new Date().toISOString().slice(0,10);
+    localStorage.setItem(DRAFT_KEY,JSON.stringify({version:1,savedAt:new Date().toISOString(),childId:'child-a',selected:'Spacer',date:testToday,minutes:22,effort:2,customName:'',note:'legacy draft'}));
     ctx=await loadApp('seeded');w=ctx.w;d=ctx.d;
+    if(d.getElementById('entryCard').classList.contains('hidden')||d.getElementById('activityDuration').value!=='22')throw new Error('legacy entry draft was not restored');
+    if(localStorage.getItem(DRAFT_KEY)!==null||!localStorage.getItem(DRAFT_KEY+':child-a'))throw new Error('legacy entry draft migration failed');
+    d.getElementById('cancelEntryBtn').click();await sleep(30);
     await w.setParentPin('2468');
     w.persist();
     await sleep(80);
@@ -190,11 +196,19 @@ async function run(){
     const printPages=w.buildSchoolPrintPages('child-a',new w.Date('2026-10-15T12:00:00'));
     if(printPages.length!==2||printPages[0].rows[0].entry?.minutes!==35||printPages[0].rows.length!==35)throw new Error('A4 monthly report pagination failed');
 
+    const childADraftKey=DRAFT_KEY+':child-a',childBDraftKey=DRAFT_KEY+':'+childB.id;
+    localStorage.setItem(childADraftKey,JSON.stringify({version:1,savedAt:new Date().toISOString(),childId:'child-a',selected:'Rower',date:testToday,minutes:33,effort:2,customName:'',note:'draft A'}));
+    localStorage.setItem(childBDraftKey,JSON.stringify({version:1,savedAt:new Date().toISOString(),childId:childB.id,selected:'Spacer',date:testToday,minutes:44,effort:3,customName:'',note:'draft B'}));
     d.getElementById('parentChildSelect').value=childB.id;d.getElementById('parentChildSelect').dispatchEvent(new w.Event('change',{bubbles:true}));d.getElementById('setDeviceChildBtn').click();await sleep(70);
     d.getElementById('lockParentBtn').click();await sleep(70);
     if(!d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('parent did not lock');
     if(!d.getElementById('childDisplayName').textContent.includes('Dziecko B'))throw new Error('device child switch failed');
     if(d.getElementById('childEntries').textContent.includes('pierwszy wpis'))throw new Error('sibling data leaked');
+    if(d.getElementById('entryCard').classList.contains('hidden')||d.getElementById('activityDuration').value!=='44'||d.getElementById('activityNote').value!=='draft B')throw new Error('child-specific draft was not restored');
+    if(!localStorage.getItem(childADraftKey))throw new Error('switching profiles removed another child draft');
+    d.getElementById('cancelEntryBtn').click();await sleep(30);
+    if(localStorage.getItem(childBDraftKey)!==null)throw new Error('cancel did not clear active child draft');
+    localStorage.removeItem(childADraftKey);
 
     spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));spacer.click();d.getElementById('activityDuration').value='18';d.getElementById('activityNote').value='do odrzucenia';d.getElementById('saveEntryBtn').click();await sleep(70);
     sessionStorage.setItem(SESSION_KEY,String(Date.now()+600000));w.switchMode('parent',true);await sleep(70);
@@ -226,7 +240,7 @@ async function run(){
     w.clearPinFailures();
     if(w.pinLockRemainingMs()>0)throw new Error('PIN lockout reset failed');
 
-    pass('universal modes, entry draft recovery, smart duration, quick start, data controls, family PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
+    pass('beta2 cloud pull/merge, per-profile drafts, legacy draft migration, smart duration, quick start, data controls, family PIN roles, multi-child isolation, reports, audit, migration, backup and PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
