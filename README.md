@@ -41,8 +41,9 @@ Przeczytaj przed pilotażem:
 
 ## Wersja
 
-**Aktywnik+ 0.5.0-beta.3 — Full Family Sync Pilot**
+**Aktywnik+ 0.5.0-beta.4 — Family Pilot Hardening**
 
+- [Release notes 0.5.0-beta.4](docs/RELEASE-0.5.0-beta.4.md)
 - [Release notes 0.5.0-beta.3](docs/RELEASE-0.5.0-beta.3.md)
 - [Release notes 0.5.0-beta.2](docs/RELEASE-0.5.0-beta.2.md)
 - [Release notes 0.5.0-beta.1](docs/RELEASE-0.5.0-beta.1.md)
@@ -195,4 +196,4 @@ Obecny pilot ma PWA, konta dorosłych, synchronizację między urządzeniami, ro
 
 ## Status
 
-`0.5.0-beta.3 Full Family Sync Pilot` — tryb osobisty i rodzinny mają dwukierunkową synchronizację push/pull z regułą „nowszy timestamp wygrywa”. Family sync działa wyłącznie dla jawnie powiązanych `cloudChildId` i obejmuje wpisy, statusy, tombstones/usunięcia oraz historię decyzji rodzica. Local-first pozostaje zasadą.
+`0.5.0-beta.4 Family Pilot Hardening` — tryb osobisty i rodzinny mają dwukierunkową synchronizację push/pull z regułą „nowszy timestamp wygrywa”. Family sync działa wyłącznie dla jawnie powiązanych `cloudChildId` i obejmuje wpisy, statusy, tombstones/usunięcia oraz historię decyzji rodzica. Local-first pozostaje zasadą.
