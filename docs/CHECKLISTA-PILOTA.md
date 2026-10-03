@@ -50,7 +50,7 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.4**.
 
 ### Vercel — stan bieżący
 
-Produkcja **0.5.0-beta.4** jest zweryfikowana. Deployment Vercel dla commita `9ad34abc6dad0fb9545504126f163d0ff6a4aa20` zakończył się sukcesem, a production smoke uruchomiony z bieżącego `main` przeszedł z `require_cloud=true`. Bieżący `main` różni się od tego deploymentu wyłącznie plikiem workflow `.github/workflows/production-smoke.yml`, więc runtime aplikacji jest zgodny. Production smoke uruchamia się teraz automatycznie po każdym pushu do `main`.
+Produkcja **0.5.0-beta.4** jest zweryfikowana. Deployment Vercel dla commita `9ad34abc6dad0fb9545504126f163d0ff6a4aa20` zakończył się sukcesem, a production smoke uruchomiony z bieżącego `main` przeszedł z `require_cloud=true`. Bieżący `main` różni się od tego deploymentu wyłącznie zmianami CI i dokumentacji; kod runtime aplikacji jest zgodny. Production smoke uruchamia się teraz automatycznie po każdym pushu do `main`.
 
 ## School Cloud — technicznie gotowe do kontrolowanego E2E
 
