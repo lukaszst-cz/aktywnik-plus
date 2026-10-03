@@ -1,6 +1,8 @@
 name: Production smoke
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       expected_version:
@@ -16,9 +18,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: production-smoke-main
+  cancel-in-progress: true
+
 jobs:
   production-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -27,6 +34,17 @@ jobs:
       - name: Verify production deployment
         env:
           AKTYWNIK_BASE_URL: https://aktywnik-plus.vercel.app
-          AKTYWNIK_EXPECTED_VERSION: ${{ inputs.expected_version }}
-          AKTYWNIK_REQUIRE_CLOUD: ${{ inputs.require_cloud }}
-        run: node tests/production-smoke.mjs
+          AKTYWNIK_EXPECTED_VERSION: ${{ inputs.expected_version || '0.5.0-beta.4' }}
+          AKTYWNIK_REQUIRE_CLOUD: ${{ inputs.require_cloud || 'true' }}
+        run: |
+          for attempt in $(seq 1 18); do
+            echo "Production smoke attempt $attempt/18"
+            if node tests/production-smoke.mjs; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 18 ]; then
+              echo "Production did not converge to the expected release."
+              exit 1
+            fi
+            sleep 10
+          done
