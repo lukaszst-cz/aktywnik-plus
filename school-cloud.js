@@ -18,7 +18,8 @@
   function randomOperationId(){
     if(window.crypto?.randomUUID)return window.crypto.randomUUID();
     const bytes=new Uint8Array(16);
-    window.crypto?.getRandomValues?.(bytes);
+    if(window.crypto?.getRandomValues)window.crypto.getRandomValues(bytes);
+    else for(let i=0;i<bytes.length;i++)bytes[i]=Math.floor(Math.random()*256);
     bytes[6]=(bytes[6]&15)|64;
     bytes[8]=(bytes[8]&63)|128;
     const hex=[...bytes].map(v=>v.toString(16).padStart(2,'0')).join('');
