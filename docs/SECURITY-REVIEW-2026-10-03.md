@@ -10,30 +10,32 @@ Techniczny przegląd bieżącego środowiska Aktywnik+ przed rozszerzaniem funkc
 
 Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - projekt aktywny w regionie EU (`eu-central-1`);
-- migracje `001`–`019` są zastosowane;
+- migracje `001`–`020` są zastosowane;
 - 23/23 tabel w schemacie `public` ma włączone RLS;
 - brak tabel publicznych bez polityki RLS;
 - brak grantów tabel dla roli `anon`;
 - `personal_activities` ma polityki SELECT / INSERT / UPDATE / DELETE ograniczone do `owner_id = auth.uid()`;
-- Supabase Security Advisor: **1 typ ostrzeżenia / 5 findings** — publiczne funkcje `SECURITY DEFINER` wykonywalne przez `authenticated`: `create_class_invite`, `create_guardian_child`, `create_school_class`, `decide_class_join`, `request_class_join`;
-- te 5 RPC są obecnie kontrolowanym wyjątkiem: `anon` i `PUBLIC` nie mają `EXECUTE`, `authenticated` ma dostęp, każda funkcja ma `search_path=''` i wewnętrzne sprawdzanie `auth.uid()` + roli/relacji;
-- `backend/tests/security_preflight.sql` ma dokładną allowlistę tych 5 RPC i ma kończyć się FAIL, jeśli pojawi się kolejny publiczny `SECURITY DEFINER` dostępny dla `authenticated` albo osłabnie hardening istniejących;
+- Supabase Security Advisor po migracji 020: **0 aktywnych lintów**;
+- 5 publicznych RPC lifecycle działa jako `SECURITY INVOKER` i deleguje do prywatnych helperów `app_private` z zachowanymi kontrolami `auth.uid()` + roli/relacji;
+- `backend/tests/security_preflight.sql` wymaga zera publicznych `SECURITY DEFINER` wykonywalnych przez `authenticated`, dokładnie 5 wrapperów invoker i 5 prywatnych helperów;
 - audit triggers dla personal activity create/update/delete: PASS;
 - School audit: 8 triggerów dla aktywności, raportów, nagród/ocen, klas, nauczycieli, membership i support access: PASS;
 - prywatna retencja audit_events: `authenticated=false`, `anon=false`, `service_role=true`, `dry_run` PASS;
-- class lifecycle test create/invite/request/accept: PASS.
+- class lifecycle test create/invite/request/accept: PASS;
+- class lifecycle po migracji 020 (`SECURITY INVOKER` wrappers): PASS;
+- family onboarding po migracji 020: PASS;
+- Security Advisor po migracji 020: 0 aktywnych lintów.
 
 Repo zawiera `backend/tests/security_preflight.sql`, który ma być uruchamiany po zmianach schematu/RLS i kontroluje również powierzchnię `SECURITY DEFINER`.
 
 ## Zasada
 
-Ten wynik nie zastępuje niezależnego pentestu ani formalnego audytu wdrożenia szkolnego. Potwierdza, że bieżąca konfiguracja bazy spełnia techniczne warunki do ograniczonego beta-sync, ale publiczne RPC `SECURITY DEFINER` powinny zostać usunięte z publicznej powierzchni Data API albo zastąpione równoważnym, bezpiecznym modelem przed produkcyjnym Aktywnik+ School.
+Ten wynik nie zastępuje niezależnego pentestu ani formalnego audytu wdrożenia szkolnego. Potwierdza, że bieżąca konfiguracja bazy spełnia techniczne warunki do ograniczonego beta-sync. Publiczna powierzchnia lifecycle RPC została po migracji 020 sprowadzona do `SECURITY INVOKER`, a uprzywilejowana logika pozostała w prywatnym schemacie.
 
 ## Nadal otwarte
 
 - synchronizacja usunięć / tombstones w trybie osobistym: wdrożona;
 - test izolacji wielu kont/tenantów: PASS na danych syntetycznych;
-- refaktor 5 publicznych RPC `SECURITY DEFINER` do modelu bez ostrzeżenia Security Advisor;
 - application restore drill: PASS; platformowy backup/restore Supabase nadal do zweryfikowania;
 - polityka okresu/częstotliwości retencji School — mechanizm techniczny gotowy, decyzja szkoły/IOD nadal wymagana;
 - testy E2E wielu realnych kont przed produkcją szkolną.
