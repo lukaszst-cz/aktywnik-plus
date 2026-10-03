@@ -3,6 +3,7 @@
 (function(){
   const KEY='aktywnik-plus-sync-outbox-v1';
   const LAST_SYNC_KEY='aktywnik-plus-last-cloud-sync-v1';
+  const DELETES_KEY='aktywnik-plus-personal-deletes-v1';
   let syncTimer=null;
   let cycleRunning=false;
   let pushing=false;
@@ -20,6 +21,22 @@
   function write(value){
     if(value)localStorage.setItem(KEY,JSON.stringify(value));
     else localStorage.removeItem(KEY);
+  }
+  function readDeletes(){
+    try{return JSON.parse(localStorage.getItem(DELETES_KEY)||'{}')}catch{return {}}
+  }
+  function writeDeletes(value){
+    try{
+      if(value&&Object.keys(value).length)localStorage.setItem(DELETES_KEY,JSON.stringify(value));
+      else localStorage.removeItem(DELETES_KEY);
+    }catch{}
+  }
+  function markDeleted(id,deletedAt=new Date().toISOString()){
+    if(!id)return;
+    const current=readDeletes();
+    current[id]=deletedAt;
+    writeDeletes(current);
+    schedule();
   }
   function lastSync(){
     try{return localStorage.getItem(LAST_SYNC_KEY)||null}catch{return null}
@@ -44,7 +61,7 @@
     const session=window.AktywnikAuth?.readSession?.();
     if(!session)return t('sync.localOptional','lokalnie · konto opcjonalne');
     if(cloudEnabled===false)return t('sync.disabled','konto · sync beta wyłączony');
-    if(q?.dirty)return q.lastError?t('sync.waiting','konto · sync oczekuje'):t('sync.pending','konto · zmiany czekają na sync');
+    if(q?.dirty||Object.keys(readDeletes()).length)return q?.lastError?t('sync.waiting','konto · sync oczekuje'):t('sync.pending','konto · zmiany czekają na sync');
     if(lastSync())return t('sync.synced','konto · zsynchronizowano');
     return t('sync.ready','konto · gotowe do sync');
   }
@@ -89,12 +106,14 @@
         body:JSON.stringify({
           schemaVersion:q.snapshot?.schemaVersion||null,
           updatedAt:q.updatedAt,
-          state:q.snapshot
+          state:q.snapshot,
+          deletes:Object.entries(readDeletes()).map(([id,deletedAt])=>({id,deletedAt}))
         })
       });
       const data=await res.json().catch(()=>null);
       if(!res.ok)throw new Error(data?.message||data?.error||('HTTP '+res.status));
       write(null);
+      writeDeletes(null);
       recordSync();
       renderStatus();
       return true;
@@ -119,7 +138,9 @@
       });
       const data=await res.json().catch(()=>null);
       if(!res.ok)throw new Error(data?.message||data?.error||('HTTP '+res.status));
-      const result=bridge.mergePersonalEntries(Array.isArray(data?.entries)?data.entries:[]);
+      const result=bridge.mergePersonalCloudState
+        ? bridge.mergePersonalCloudState(Array.isArray(data?.entries)?data.entries:[],Array.isArray(data?.deletes)?data.deletes:[])
+        : bridge.mergePersonalEntries(Array.isArray(data?.entries)?data.entries:[]);
       recordSync();
       renderStatus();
       return result;
@@ -133,9 +154,9 @@
     cycleRunning=true;
     try{
       const ctx=await context();if(!ctx)return false;
-      if(read()?.dirty){
+      if(read()?.dirty||Object.keys(readDeletes()).length){
         const pushed=await flush(ctx);
-        if(!pushed&&read()?.dirty)return false;
+        if(!pushed&&(read()?.dirty||Object.keys(readDeletes()).length))return false;
       }
       return await pull(ctx);
     }finally{cycleRunning=false}
@@ -154,5 +175,5 @@
   });
   document.addEventListener('DOMContentLoaded',()=>{renderStatus();schedule()});
 
-  window.AktywnikSync={markDirty,flush,pull,syncNow,read,renderStatus};
+  window.AktywnikSync={markDirty,markDeleted,flush,pull,syncNow,read,readDeletes,renderStatus};
 })();
