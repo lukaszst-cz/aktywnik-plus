@@ -12,6 +12,12 @@
 - status ostatniej synchronizacji jest zapamiętywany lokalnie;
 - statusy sync są dostępne po polsku i angielsku.
 
+### Niezawodność szkiców
+- szkice niedokończonych wpisów są rozdzielone między profile;
+- zmiana aktywnego profilu nie przenosi szkicu do innego dziecka;
+- zachowana jest migracja starszego pojedynczego szkicu;
+- import kopii, usuwanie profilu i czyszczenie danych sprzątają nieaktualne szkice.
+
 ### Bezpieczniki
 - usuwanie wpisów nie jest jeszcze synchronizowane między urządzeniami;
 - tryb rodzinny nie jest jeszcze objęty cloud sync;
