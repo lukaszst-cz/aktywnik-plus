@@ -41,6 +41,7 @@ function persist({skipSync=false}={}){
 }
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
 function fmtMin(m){const h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
+function renderFatigueValue(){const input=$('#activityEffort'),out=$('#activityEffortValue');if(input&&out)out.textContent=clampInt(input.value,1,5,2)+'/5'}
 function parentMovementLoad(entry){
   const minutes=clampInt(entry?.minutes,1,600,1),fatigue=clampInt(entry?.effort,1,5,2),score=minutes*(0.65+fatigue*0.22);
   if(score<28)return uiText('parent.loadLight','lekkie');
@@ -371,13 +372,13 @@ function restoreEntryDraft(){
   if(!appReady()||!child||state.activeTimer||!draft)return false;
   if(!ACTIVITIES.some(a=>a[0]===draft.selected)){clearEntryDraft(child.id);return false}
   selected=cleanText(draft.selected,80);editingEntryId=null;
-  $('#selectedActivityTitle').textContent=selected;$('#activityDate').value=allowedActivityDate(draft.date)?draft.date:today();$('#activityDuration').value=String(clampInt(draft.minutes,1,600,30));$('#activityEffort').value=String(clampInt(draft.effort,1,5,2));if($('#customActivityName'))$('#customActivityName').value=cleanText(draft.customName,80);$('#activityNote').value=cleanText(draft.note,120);
+  $('#selectedActivityTitle').textContent=selected;$('#activityDate').value=allowedActivityDate(draft.date)?draft.date:today();$('#activityDuration').value=String(clampInt(draft.minutes,1,600,30));$('#activityEffort').value=String(clampInt(draft.effort,1,5,2));renderFatigueValue();if($('#customActivityName'))$('#customActivityName').value=cleanText(draft.customName,80);$('#activityNote').value=cleanText(draft.note,120);
   $('#saveEntryBtn').textContent='Zapisz ręcznie';showDurationSuggestion(selected);$('#startTimerBtn').classList.remove('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').dataset.restoredDraft='true';setQuickDuration($('#activityDuration').value);return true;
 }
 function pickActivity(name){
   const child=activeChild();if(!child)return;selected=name;editingEntryId=null;
   const previous=latestMatchingActivityEntry(child.id,name),suggestedMinutes=previous?clampInt(previous.minutes,1,600,30):30,suggestedEffort=previous?clampInt(previous.effort,1,5,2):2;
-  $('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#activityDuration').value=String(suggestedMinutes);$('#activityEffort').value=String(suggestedEffort);if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';
+  $('#selectedActivityTitle').textContent=name;$('#activityDate').value=today();$('#activityDuration').value=String(suggestedMinutes);$('#activityEffort').value=String(suggestedEffort);renderFatigueValue();if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';
   $$('[data-duration]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.duration)===Number(suggestedMinutes)));
   showDurationSuggestion(name);
   $('#saveEntryBtn').textContent='Zapisz ręcznie';$('#startTimerBtn').classList.remove('hidden');$('#entryCard').classList.remove('hidden');delete $('#entryCard').dataset.restoredDraft;saveEntryDraft();$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
@@ -405,7 +406,7 @@ function renderChildOverview(){
 }
 function repeatLastActivity(){
   const child=activeChild(),last=child?latestActivityEntry(child.id):null;if(!last)return;
-  pickActivity(last.activity);setQuickDuration(last.minutes);$('#activityEffort').value=String(clampInt(last.effort,1,5,2));$('#activityNote').value='';saveEntryDraft();
+  pickActivity(last.activity);setQuickDuration(last.minutes);$('#activityEffort').value=String(clampInt(last.effort,1,5,2));renderFatigueValue();$('#activityNote').value='';saveEntryDraft();
 }
 function quickStartLastActivity(){
   const child=activeChild(),last=child?latestActivityEntry(child.id):null;
@@ -470,7 +471,7 @@ function cancelActivityTimer(){
 function editChildEntry(id){
   const child=activeChild(),e=state.entries.find(x=>x.id===id&&x.childId===child?.id);if(!e||!['pending','rejected'].includes(e.status))return;
   editingEntryId=e.id;selected=e.activity;const suggestion=$('#durationSuggestionHint');if(suggestion){suggestion.classList.add('hidden');suggestion.textContent=''};$('#selectedActivityTitle').textContent=e.status==='rejected'?'Popraw odrzucony wpis':'Edytuj oczekujący wpis';
-  $('#activityDate').value=e.date;$('#activityDuration').value=e.minutes;$('#activityEffort').value=e.effort;if($('#customActivityName'))$('#customActivityName').value=ACTIVITIES.some(a=>a[0]===e.activity)?'':e.activity;$('#activityNote').value=e.note||'';$('#saveEntryBtn').textContent=e.status==='rejected'?'Popraw i wyślij ponownie':'Zapisz poprawkę';$('#startTimerBtn').classList.add('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
+  $('#activityDate').value=e.date;$('#activityDuration').value=e.minutes;$('#activityEffort').value=e.effort;renderFatigueValue();if($('#customActivityName'))$('#customActivityName').value=ACTIVITIES.some(a=>a[0]===e.activity)?'':e.activity;$('#activityNote').value=e.note||'';$('#saveEntryBtn').textContent=e.status==='rejected'?'Popraw i wyślij ponownie':'Zapisz poprawkę';$('#startTimerBtn').classList.add('hidden');$('#entryCard').classList.remove('hidden');$('#entryCard').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function cancelEntry(){const wasEditing=!!editingEntryId,childId=activeChild()?.id;editingEntryId=null;selected=null;if($('#customActivityName'))$('#customActivityName').value='';$('#activityNote').value='';const suggestion=$('#durationSuggestionHint');if(suggestion){suggestion.classList.add('hidden');suggestion.textContent=''};$('#entryCard').classList.add('hidden');delete $('#entryCard').dataset.restoredDraft;$('#startTimerBtn').classList.remove('hidden');$('#saveEntryBtn').textContent='Zapisz ręcznie';if(wasEditing){restoreEntryDraft();return}clearEntryDraft(childId)}
 function saveEntry(){
@@ -1143,7 +1144,7 @@ function renderAll(){
   renderSaveStatus();renderPilot();
   if(!appReady())return;
   const child=activeChild();if(!child)return;
-  renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();if(isSelfMode())renderStorageStatus();
+  renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();renderFatigueValue();if(isSelfMode())renderStorageStatus();
   if(parentUnlocked()){
     renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();
   }else{
@@ -1154,7 +1155,7 @@ function renderAll(){
   $('#schoolPanel').classList.toggle('hidden',currentMode!=='school');
 }
 $('#activitySearch').oninput=renderActivities;
-['activityDate','activityDuration','activityEffort','customActivityName','activityNote'].forEach(id=>{const el=$('#'+id);if(!el)return;el.addEventListener('input',saveEntryDraft);el.addEventListener('change',saveEntryDraft)});
+['activityDate','activityDuration','activityEffort','customActivityName','activityNote'].forEach(id=>{const el=$('#'+id);if(!el)return;const onEdit=()=>{if(id==='activityEffort')renderFatigueValue();saveEntryDraft()};el.addEventListener('input',onEdit);el.addEventListener('change',onEdit)});
 $('#repeatLastActivityBtn').onclick=repeatLastActivity;
 $('#quickStartLastActivityBtn').onclick=quickStartLastActivity;
 $$('[data-duration]').forEach(b=>b.onclick=()=>setQuickDuration(b.dataset.duration));
