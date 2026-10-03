@@ -33,8 +33,8 @@ module.exports = async function handler(req,res){
 
     const tenantId=String(req.body?.tenantId||'');
     const schoolYearId=String(req.body?.schoolYearId||'');
-    const name=String(req.body?.name||'').trim().slice(0,80);
-    if(!UUID_RE.test(tenantId)||!UUID_RE.test(schoolYearId)||!name){
+    const name=String(req.body?.name||'').trim();
+    if(!UUID_RE.test(tenantId)||!UUID_RE.test(schoolYearId)||!name||name.length>80){
       return res.status(400).json({ok:false,error:'invalid_class_payload'});
     }
 

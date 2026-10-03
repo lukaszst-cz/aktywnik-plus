@@ -93,17 +93,31 @@
     else{years=[];classes=[];renderClasses()}
   }
   async function createClass(){
-    const tenant=selectedTenant(),schoolYearId=$('#schoolYearSelect').value,name=$('#schoolCloudClassName').value.trim();
+    const button=$('#schoolCloudCreateClassBtn'),tenant=selectedTenant(),schoolYearId=$('#schoolYearSelect').value,name=$('#schoolCloudClassName').value.trim();
     if(!tenant||!schoolYearId||!name){status('Wybierz rok i podaj nazwę klasy.','error');return}
-    await api('/api/v1/classes',{method:'POST',body:JSON.stringify({tenantId:tenant,schoolYearId,name})});
-    $('#schoolCloudClassName').value='';
-    status('Klasa została utworzona.','ok');
-    await loadClasses();
+    if(name.length>80){status('Nazwa klasy może mieć maksymalnie 80 znaków.','error');return}
+    if(button?.disabled)return;
+    if(button)button.disabled=true;
+    try{
+      await api('/api/v1/classes',{method:'POST',body:JSON.stringify({tenantId:tenant,schoolYearId,name})});
+      $('#schoolCloudClassName').value='';
+      status('Klasa została utworzona.','ok');
+      await loadClasses();
+    }finally{
+      if(button)button.disabled=false;
+    }
   }
   async function createInvite(classId){
-    const data=await api('/api/v1/class-invites',{method:'POST',body:JSON.stringify({classId,validDays:14})});
-    const out=document.querySelector('[data-invite-result="'+CSS.escape(classId)+'"]');
-    if(out)out.textContent=data.token?'Token (14 dni): '+data.token:'Zaproszenie utworzone.';
+    const button=document.querySelector('[data-create-invite="'+CSS.escape(classId)+'"]');
+    if(button?.disabled)return;
+    if(button)button.disabled=true;
+    try{
+      const data=await api('/api/v1/class-invites',{method:'POST',body:JSON.stringify({classId,validDays:14})});
+      const out=document.querySelector('[data-invite-result="'+CSS.escape(classId)+'"]');
+      if(out)out.textContent=data.token?'Token (14 dni): '+data.token:'Zaproszenie utworzone.';
+    }finally{
+      if(button)button.disabled=false;
+    }
   }
   async function createCloudChild(){
     const input=$('#schoolNewChildName'),button=$('#schoolCreateChildBtn'),displayName=input?.value.trim()||'';
@@ -121,11 +135,17 @@
     }
   }
   async function requestJoin(){
-    const childId=$('#schoolGuardianChildSelect').value,inviteToken=$('#schoolInviteTokenInput').value.trim();
+    const button=$('#schoolRequestJoinBtn'),childId=$('#schoolGuardianChildSelect').value,inviteToken=$('#schoolInviteTokenInput').value.trim();
     if(!childId||!inviteToken){status('Wybierz dziecko i podaj token zaproszenia.','error');return}
-    await api('/api/v1/class-join',{method:'POST',body:JSON.stringify({action:'request',childId,inviteToken})});
-    $('#schoolInviteTokenInput').value='';
-    status('Zgłoszenie zostało wysłane do szkoły.','ok');
+    if(button?.disabled)return;
+    if(button)button.disabled=true;
+    try{
+      await api('/api/v1/class-join',{method:'POST',body:JSON.stringify({action:'request',childId,inviteToken})});
+      $('#schoolInviteTokenInput').value='';
+      status('Zgłoszenie zostało wysłane do szkoły.','ok');
+    }finally{
+      if(button)button.disabled=false;
+    }
   }
   async function loadRequests(){
     const classId=$('#schoolRequestClassSelect').value,box=$('#schoolCloudRequests');
@@ -135,16 +155,23 @@
     box.innerHTML='';
     for(const r of requests){
       const article=document.createElement('article');
-      article.innerHTML='<h3>Zgłoszenie '+esc(r.id.slice(0,8))+'…</h3><p>Dziecko: '+esc(r.child_id.slice(0,8))+'…</p><div class="cta"><button class="primary" type="button" data-decision="accepted">Akceptuj</button><button class="secondary" type="button" data-decision="rejected">Odrzuć</button></div>';
+      article.innerHTML='<h3>Zgłoszenie '+esc(r.id.slice(0,8))+'…</h3><p>Dziecko: '+esc(r.child_id.slice(0,8))+'…</p><div class="cta"><button class="primary" type="button" data-request-id="'+esc(r.id)+'" data-decision="accepted">Akceptuj</button><button class="secondary" type="button" data-request-id="'+esc(r.id)+'" data-decision="rejected">Odrzuć</button></div>';
       article.querySelectorAll('[data-decision]').forEach(btn=>btn.addEventListener('click',()=>decide(r.id,btn.dataset.decision)));
       box.append(article);
     }
     if(!requests.length)box.innerHTML='<p>Brak oczekujących zgłoszeń.</p>';
   }
   async function decide(requestId,decision){
-    await api('/api/v1/class-join',{method:'POST',body:JSON.stringify({action:'decide',requestId,decision})});
-    status(decision==='accepted'?'Zgłoszenie zaakceptowane.':'Zgłoszenie odrzucone.','ok');
-    await loadRequests();
+    const buttons=[...document.querySelectorAll('[data-request-id="'+CSS.escape(requestId)+'"]')];
+    if(buttons.some(button=>button.disabled))return;
+    buttons.forEach(button=>button.disabled=true);
+    try{
+      await api('/api/v1/class-join',{method:'POST',body:JSON.stringify({action:'decide',requestId,decision})});
+      status(decision==='accepted'?'Zgłoszenie zaakceptowane.':'Zgłoszenie odrzucone.','ok');
+      await loadRequests();
+    }finally{
+      buttons.forEach(button=>button.disabled=false);
+    }
   }
   async function init(){
     const s=await session();

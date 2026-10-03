@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — School Cloud submit/input hardening
+
+- API odrzuca nazwę klasy dłuższą niż 80 znaków zamiast cicho ją obcinać;
+- API wymaga całkowitej ważności zaproszenia w zakresie 1–30 dni;
+- UI blokuje ponowne kliknięcie podczas tworzenia klasy, zaproszenia, zgłoszenia i decyzji;
+- backend smoke obejmuje zbyt długą nazwę klasy oraz nieprawidłową ważność zaproszenia;
+- zmiana nie modyfikuje bazy, RLS ani modelu ról.
+
+
 ## Unreleased — FK index performance hardening
 
 - Supabase Performance Advisor wskazał 4 klucze obce bez indeksów pokrywających;
