@@ -50,6 +50,12 @@ function normalizeDelete(item){
   return {id:String(item.id),deletedAt:stamp.toISOString()};
 }
 
+function chunks(items,size=200){
+  const out=[];
+  for(let i=0;i<items.length;i+=size)out.push(items.slice(i,i+size));
+  return out;
+}
+
 function normalizeEntry(entry,childId,fallbackUpdatedAt){
   if(!entry||typeof entry!=='object'||!UUID_RE.test(String(entry.id||'')))return null;
   if(!validDate(entry.date))return null;
@@ -152,26 +158,28 @@ async function pushFamily(token,childId,body){
 
   const allIds=[...new Set([...rows.map(row=>row.client_entry_id),...tombstones.map(item=>item.id)])];
   let currentActivities=[],currentDeletes=[];
-  if(allIds.length){
+  for(const idChunk of chunks(allIds)){
     const activityLookup=new URLSearchParams({
       select:'client_entry_id,client_updated_at',
       child_id:'eq.'+childId,
       tenant_id:'is.null',
-      client_entry_id:'in.('+allIds.join(',')+')'
+      client_entry_id:'in.('+idChunk.join(',')+')'
     });
     const deleteLookup=new URLSearchParams({
       select:'client_entry_id,deleted_at',
       child_id:'eq.'+childId,
-      client_entry_id:'in.('+allIds.join(',')+')'
+      client_entry_id:'in.('+idChunk.join(',')+')'
     });
     const [activityResponse,deleteResponse]=await Promise.all([
       supabaseUserFetch(token,'/rest/v1/activities?'+activityLookup.toString()),
       supabaseUserFetch(token,'/rest/v1/family_activity_tombstones?'+deleteLookup.toString())
     ]);
-    [currentActivities,currentDeletes]=await Promise.all([jsonOrNull(activityResponse),jsonOrNull(deleteResponse)]);
+    const [activityData,deleteData]=await Promise.all([jsonOrNull(activityResponse),jsonOrNull(deleteResponse)]);
     if(!activityResponse.ok||!deleteResponse.ok){
-      throw Object.assign(new Error(currentActivities?.message||currentDeletes?.message||'Family conflict check failed.'),{status:502,code:'family_conflict_check_failed'});
+      throw Object.assign(new Error(activityData?.message||deleteData?.message||'Family conflict check failed.'),{status:502,code:'family_conflict_check_failed'});
     }
+    if(Array.isArray(activityData))currentActivities.push(...activityData);
+    if(Array.isArray(deleteData))currentDeletes.push(...deleteData);
   }
 
   const activityTimes=new Map((Array.isArray(currentActivities)?currentActivities:[]).map(row=>[
@@ -231,11 +239,11 @@ async function pushFamily(token,childId,body){
       return Number.isFinite(activityTime)&&new Date(item.deletedAt).getTime()>=activityTime;
     })
     .map(item=>item.id);
-  if(deletableIds.length){
+  for(const idChunk of chunks(deletableIds)){
     const params=new URLSearchParams({
       child_id:'eq.'+childId,
       tenant_id:'is.null',
-      client_entry_id:'in.('+deletableIds.join(',')+')'
+      client_entry_id:'in.('+idChunk.join(',')+')'
     });
     const response=await supabaseUserFetch(token,'/rest/v1/activities?'+params.toString(),{
       method:'DELETE',
