@@ -40,6 +40,7 @@ jobs:
         env:
           AKTYWNIK_BASE_URL: https://aktywnik-plus.vercel.app
           AKTYWNIK_EXPECTED_VERSION: ${{ inputs.expected_version || '0.5.0-beta.4' }}
+          AKTYWNIK_EXPECTED_COMMIT: ${{ github.sha }}
           AKTYWNIK_REQUIRE_CLOUD: ${{ inputs.require_cloud || 'true' }}
         run: |
           for attempt in $(seq 1 18); do
