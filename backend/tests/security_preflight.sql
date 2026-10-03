@@ -11,6 +11,7 @@ declare
   allowed_definer_count integer;
   unexpected_authenticated_definer text;
   unsafe_allowlisted_definer text;
+  profile_update_columns text;
 begin
   select string_agg(c.relname, ', ' order by c.relname)
     into missing_rls
@@ -59,6 +60,19 @@ begin
 
   if personal_policy_count < 4 then
     raise exception 'SECURITY PREFLIGHT FAIL: personal_activities policies incomplete (%)', personal_policy_count;
+  end if;
+
+  select string_agg(column_name, ',' order by column_name)
+    into profile_update_columns
+  from information_schema.column_privileges
+  where grantee='authenticated'
+    and table_schema='public'
+    and table_name='profiles'
+    and privilege_type='UPDATE';
+
+  if profile_update_columns is distinct from 'display_name' then
+    raise exception 'SECURITY PREFLIGHT FAIL: authenticated profile UPDATE columns must be display_name only (got %)',
+      coalesce(profile_update_columns,'none');
   end if;
 
   -- Public SECURITY DEFINER RPCs are a temporary, reviewed exception for the
@@ -165,4 +179,4 @@ end $$;
 select
   'PASS' as status,
   (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r') as public_tables,
-  'RLS enabled; anon blocked; policies present; SECURITY DEFINER surface allowlisted' as check_summary;
+  'RLS enabled; anon blocked; profile role protected; policies present; SECURITY DEFINER surface allowlisted' as check_summary;

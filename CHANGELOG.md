@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — profile role escalation hardening
+
+- wykryto, że tabelowe `UPDATE profiles` pozwalało kontu `child` zmienić własne `profile_type` na `adult`;
+- migracja 018 odbiera szerokie `UPDATE` i pozostawia `authenticated` tylko `UPDATE(display_name)`;
+- security preflight sprawdza, że jedyną edytowalną kolumną profilu jest `display_name`;
+- dodano syntetyczny test regresyjny child→adult + dozwoloną zmianę display_name;
+- poprawka została zweryfikowana na live schemacie w transakcji zakończonej rollbackiem; trwałe wdrożenie migracji 018 pozostaje osobnym krokiem.
+
+
 ## Unreleased — guardian child cloud onboarding
 
 - dorosły opiekun może utworzyć profil dziecka w School Cloud bez osobnego e-maila i hasła dziecka;
