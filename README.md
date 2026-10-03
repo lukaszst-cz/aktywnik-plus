@@ -171,6 +171,7 @@ Backendowy fundament jest już połączony z projektem Supabase:
 - `/api/v1/sync` — beta synchronizacji trybu osobistego;
 - migracje `001–022` zastosowane live;
 - migracja `023` (School Cloud idempotency po timeout/retry) przygotowana i zweryfikowana w rollbacku; jeszcze nie live;
+- migracja `024` (family delete tombstones) przygotowana i zweryfikowana w rollbacku; jeszcze nie live;
 - wszystkie tabele publiczne mają RLS;
 - osobna tabela `personal_activities` dla trybu **Dla siebie**;
 - oddzielne minimalne sync queue dla trybu osobistego i family activity sync beta;
