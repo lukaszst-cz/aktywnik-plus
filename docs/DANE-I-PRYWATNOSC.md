@@ -78,6 +78,8 @@ Administrator szkoły powinien móc:
 
 W trybie rodzinnym analogiczne uprawnienia ma rodzic.
 
+W PWA polecenie usunięcia wszystkich danych lokalnych czyści stan aplikacji, szkice, lokalne kolejki synchronizacji i tombstones, znacznik ostatniego sync, lokalną sesję konta oraz stan sesji/PIN-u rodzica. Preferencja języka nie jest traktowana jako dane użytkownika i pozostaje na urządzeniu. Przy przywracaniu kopii czyszczony jest wyłącznie stan przejściowy sync/PIN, natomiast zalogowanie konta może pozostać aktywne.
+
 ## Audyt
 
 Rejestrujemy działania administracyjne:
