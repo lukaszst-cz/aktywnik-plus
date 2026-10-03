@@ -32,6 +32,8 @@ Rodzic wybiera w swojej strefie konkretne dziecko. Dla tego profilu widzi listę
 
 Każda decyzja trafia do lokalnej historii. W chronionej strefie rodzic widzi dodatkowo neutralny wskaźnik obciążenia wysiłkiem (lekkie / umiarkowane / wysokie), liczony wyłącznie do podglądu. Nie jest on zapisywany w aktywności ani przekazywany nauczycielowi. Rodzic może wygenerować osobny raport miesięczny, kwartalny, półroczny lub roczny dla każdego dziecka.
 
+W tej samej strefie dostępna jest **Diagnostyka pilota**: pokazuje wersję aplikacji, online/offline, tryb PWA, liczbę połączonych profili, stan konta dorosłego, kolejkę synchronizacji, ostatni sync i trwałą pamięć przeglądarki. Przycisk „Synchronizuj teraz” ułatwia test dwóch urządzeń. Kopiowany raport diagnostyczny jest zanonimizowany — bez nazw dzieci, identyfikatorów chmurowych, PIN-u i tokenów.
+
 Jeśli rodzic nie chce korzystać z aplikacji, może wybrać wersję papierową. Dziecko nadal uczestniczy w programie na tych samych zasadach.
 
 ## Dla nauczyciela
