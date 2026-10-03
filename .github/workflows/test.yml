@@ -20,6 +20,9 @@ jobs:
       - name: Syntax and PWA asset checks
         run: |
           node --check app.js
+          grep -q "familyCloudLinkReady:true" api/capabilities.js
+          grep -q "familyCloudChildSelect" app.html
+          grep -q "cloudChildId" app.js
           node --check i18n.js
           node --check auth-config.js
           node --check auth.js
@@ -218,6 +221,7 @@ jobs:
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.personalSyncProtocolVersion!==1) throw new Error('sync protocol capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.applicationRestoreDrillVerified!==true) throw new Error('application restore capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.profileRoleEscalationBlocked!==true) throw new Error('profile role hardening capability missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudLinkReady!==true) throw new Error('family cloud link readiness missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolAuditCoverageVerified!==true) throw new Error('school audit capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionMechanismReady!==true) throw new Error('school retention mechanism capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionPolicyConfigured!==false) throw new Error('school retention policy must remain externally configurable');
