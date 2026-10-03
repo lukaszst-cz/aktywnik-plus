@@ -1,6 +1,6 @@
 # Checklista pilota Aktywnik+
 
-Stan roboczy: **2026-10-03 — 0.5.0-beta.3**.
+Stan roboczy: **2026-10-03 — 0.5.0-beta.4**.
 
 ## Pilot rodzinny — gotowe technicznie
 
@@ -32,8 +32,8 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.3**.
 
 ## Stan przed szerszym publicznym pilotem
 
-- [x] **Vercel production zaktualizowany do 0.5.0-beta.3**
-- [x] `/api/health` na produkcji raportuje `0.5.0-beta.3`
+- [x] **Vercel production zaktualizowany do 0.5.0-beta.4**
+- [x] `/api/health` na produkcji raportuje `0.5.0-beta.4`
 - [x] `/api/capabilities` potwierdza produkcyjną chmurę, Auth i RLS
 - [x] production smoke z `require_cloud=true`: PASS
 - [x] deployment Vercel: `READY`
@@ -49,7 +49,7 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.3**.
 
 ### Vercel — stan końcowy
 
-Historyczny status GitHub/Vercel przy starszym commicie może nadal wskazywać `build-rate-limit`, ale nie opisuje już aktualnej produkcji. Bieżący alias produkcyjny działa na deploymentcie `READY`, zwraca 0.5.0-beta.3 i przeszedł production smoke.
+Historyczny status GitHub/Vercel przy starszym commicie może nadal wskazywać `build-rate-limit`, ale nie opisuje już aktualnej produkcji. Bieżący alias produkcyjny działa na deploymentcie `READY`, zwraca 0.5.0-beta.4 i przeszedł production smoke.
 
 ## School Cloud — technicznie gotowe do kontrolowanego E2E
 
