@@ -52,8 +52,8 @@
     $('#schoolAdminCreateBox').classList.toggle('hidden',!isAdmin());
     $('#schoolJoinRequestsPanel').classList.toggle('hidden',!canStaff());
     const children=context?.children||[];
-    $('#schoolGuardianPanel').classList.toggle('hidden',!children.length);
-    $('#schoolGuardianChildSelect').innerHTML=children.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.display_name||'Dziecko')+'</option>').join('');
+    $('#schoolGuardianPanel').classList.toggle('hidden',profile?.profile_type!=='adult');
+    $('#schoolGuardianChildSelect').innerHTML=children.length?children.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.display_name||'Dziecko')+'</option>').join(''):'<option value="">Najpierw utwórz profil dziecka</option>';
   }
   async function loadContext(){
     context=await api('/api/v1/me');
@@ -105,6 +105,14 @@
     const out=document.querySelector('[data-invite-result="'+CSS.escape(classId)+'"]');
     if(out)out.textContent=data.token?'Token (14 dni): '+data.token:'Zaproszenie utworzone.';
   }
+  async function createCloudChild(){
+    const input=$('#schoolNewChildName'),displayName=input?.value.trim()||'';
+    if(!displayName){status('Podaj nazwę profilu dziecka.','error');return}
+    await api('/api/v1/family-children',{method:'POST',body:JSON.stringify({displayName})});
+    if(input)input.value='';
+    status('Profil dziecka został utworzony w School Cloud.','ok');
+    await loadContext();
+  }
   async function requestJoin(){
     const childId=$('#schoolGuardianChildSelect').value,inviteToken=$('#schoolInviteTokenInput').value.trim();
     if(!childId||!inviteToken){status('Wybierz dziecko i podaj token zaproszenia.','error');return}
@@ -151,6 +159,7 @@
     $('#schoolTenantSelect')?.addEventListener('change',()=>loadTenantData().catch(err=>status(err.message,'error')));
     $('#schoolCloudRefreshBtn')?.addEventListener('click',()=>loadContext().catch(err=>status(err.message,'error')));
     $('#schoolCloudCreateClassBtn')?.addEventListener('click',()=>createClass().catch(err=>status(err.message,'error')));
+    $('#schoolCreateChildBtn')?.addEventListener('click',()=>createCloudChild().catch(err=>status(err.message,'error')));
     $('#schoolRequestJoinBtn')?.addEventListener('click',()=>requestJoin().catch(err=>status(err.message,'error')));
     $('#schoolLoadRequestsBtn')?.addEventListener('click',()=>loadRequests().catch(err=>status(err.message,'error')));
     init();
