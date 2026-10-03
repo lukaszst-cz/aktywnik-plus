@@ -6,6 +6,7 @@ import sys
 MIGRATIONS = Path("backend/migrations")
 ALLOWED = {
     "create_class_invite",
+    "create_guardian_child",
     "create_school_class",
     "decide_class_join",
     "request_class_join",
@@ -73,6 +74,6 @@ for match in matches:
         )
 
 print(
-    "security static PASS: exactly 4 reviewed public SECURITY DEFINER RPCs; "
+    f"security static PASS: exactly {len(ALLOWED)} reviewed public SECURITY DEFINER RPCs; "
     "empty search_path, auth.uid() checks and explicit EXECUTE grants verified"
 )

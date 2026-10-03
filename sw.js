@@ -1,4 +1,4 @@
-const CACHE='aktywnik-plus-v38';
+const CACHE='aktywnik-plus-v39';
 const ASSETS=[
   './',
   './index.html',
