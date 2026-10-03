@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — family decision history
+
+- migracja 025 dodaje stabilne `client_event_id` / `client_entry_id` do historii decyzji rodzinnych;
+- historia decyzji nie znika po skasowaniu aktywności: FK `activity_id` przechodzi na `ON DELETE SET NULL`;
+- do synchronizacji chmurowej trafiają tylko decyzje rodzica: `approved`, `rejected`, `corrected`, `deleted`;
+- istniejące RLS pozostaje bez poszerzania: guardian INSERT, rodzina SELECT;
+- klient nie wysyła historii przed `familySyncDecisionHistory=true`, więc rollout kod → migracja jest bezpieczny;
+- wykryty i naprawiony przypadek delete-only: sama kolejka tombstone uruchamia family sync;
+- import kopii / pełny reset czyści również family delete queue;
+- browser smoke sprawdza capability gate, wysyłkę decyzji, merge bez duplikatów i delete-only queue;
+- 023+024+025 + decision-history regression + security preflight: PASS w rollbacku;
+- migracja 025 nie jest jeszcze live, więc capability pozostaje `false`.
+
+
 ## Unreleased — family delete sync
 
 - migracja 024 dodaje `family_activity_tombstones` z RLS per guardian;

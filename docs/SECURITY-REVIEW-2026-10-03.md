@@ -27,6 +27,7 @@ Zweryfikowano na projekcie Supabase `aktywnik-plus`:
 - family activity sync / migracja 022: pre-deploy RLS regression PASS; po wdrożeniu potwierdzono kolumny, indeksy, `tenant_id IS NULL` w family policies oraz pełny security preflight PASS;
 - School Cloud idempotency / migracja 023: retry-regression + rozszerzony security preflight PASS w transakcji z rollbackiem; ledger pozostaje w `app_private` bez bezpośrednich grantów klienta; migracja nie jest jeszcze live;
 - family delete tombstones / migracja 024: guardian-only RLS, school-row isolation i unrelated-adult isolation PASS; 023+024 + pełny security preflight PASS w transakcji z rollbackiem; migracja nie jest jeszcze live;
+- family decision history / migracja 025: istniejące guardian-only INSERT + family SELECT RLS pozostają bez poszerzania grantów; stabilny `client_event_id`, historia zachowana po delete aktywności, unrelated-adult isolation + duplicate regression PASS; 023+024+025 + pełny security preflight PASS w rollbacku; migracja nie jest jeszcze live;
 - Security Advisor po migracji 020: 0 aktywnych lintów.
 
 Repo zawiera `backend/tests/security_preflight.sql`, który ma być uruchamiany po zmianach schematu/RLS i kontroluje również powierzchnię `SECURITY DEFINER`.

@@ -43,6 +43,58 @@ function duplicateIds(items){
   return dupes;
 }
 
+const FAMILY_DECISIONS=new Set(['approved','rejected','corrected','deleted']);
+
+function missingDecisionHistoryColumns(response,data){
+  return (response?.status===400||response?.status===404)&&(
+    data?.code==='PGRST204'||
+    data?.code==='42703'||
+    /client_event_id|client_entry_id/i.test(String(data?.message||''))
+  );
+}
+function safeDecisionState(value){
+  if(!value||typeof value!=='object'||Array.isArray(value))return null;
+  const out={};
+  if(value.date!=null)out.date=String(value.date).slice(0,10);
+  if(value.activity!=null)out.activity=String(value.activity).trim().slice(0,80);
+  if(value.minutes!=null&&Number.isFinite(Number(value.minutes)))out.minutes=Math.round(Number(value.minutes));
+  if(value.effort!=null&&Number.isFinite(Number(value.effort)))out.effort=Math.round(Number(value.effort));
+  if(value.note!=null)out.note=String(value.note).trim().slice(0,120);
+  if(value.status!=null)out.status=String(value.status).slice(0,20);
+  if(value.rejectionReason!=null)out.rejectionReason=String(value.rejectionReason).trim().slice(0,160);
+  if(value.deleted===true)out.deleted=true;
+  return Object.keys(out).length?out:null;
+}
+async function authenticatedUserId(token){
+  const response=await supabaseUserFetch(token,'/auth/v1/user');
+  const data=await jsonOrNull(response);
+  if(!response.ok||!UUID_RE.test(String(data?.id||''))){
+    throw Object.assign(new Error('Invalid or expired session.'),{status:401,code:'invalid_session'});
+  }
+  return String(data.id);
+}
+function normalizeDecision(event,childId,guardianId){
+  if(!event||typeof event!=='object')return null;
+  if(!UUID_RE.test(String(event.id||''))||!UUID_RE.test(String(event.entryId||'')))return null;
+  const action=String(event.action||'');
+  if(!FAMILY_DECISIONS.has(action)||event.actor!=='parent')return null;
+  const decidedAt=safeClientTime(event.at);
+  if(!decidedAt)return null;
+  return {
+    activity_id:null,
+    child_id:childId,
+    guardian_id:guardianId,
+    actor_type:'guardian',
+    decision:action,
+    reason:String(event.note||'').trim().slice(0,240)||null,
+    before_state:safeDecisionState(event.before),
+    after_state:safeDecisionState(event.after),
+    decided_at:decidedAt.toISOString(),
+    client_event_id:String(event.id),
+    client_entry_id:String(event.entryId)
+  };
+}
+
 function missingTombstoneTable(response,data){
   return response?.status===404&&(data?.code==='PGRST205'||data?.code==='42P01');
 }
@@ -120,10 +172,26 @@ async function pullFamilyDeletes(token,childId){
   return {rows:Array.isArray(data)?data:[],supported:true};
 }
 
+async function pullFamilyDecisions(token,childId){
+  const params=new URLSearchParams({
+    select:'client_event_id,client_entry_id,decision,reason,before_state,after_state,decided_at',
+    child_id:'eq.'+childId,
+    client_event_id:'not.is.null',
+    order:'decided_at.asc',
+    limit:String(MAX_SYNC_ENTRIES)
+  });
+  const response=await supabaseUserFetch(token,'/rest/v1/activity_approval_events?'+params.toString());
+  const data=await jsonOrNull(response);
+  if(missingDecisionHistoryColumns(response,data))return {rows:[],supported:false};
+  if(!response.ok)throw Object.assign(new Error(data?.message||'Family decision history read failed.'),{status:502,code:'family_decision_read_failed'});
+  return {rows:Array.isArray(data)?data:[],supported:true};
+}
+
 async function pushFamily(token,childId,body){
   const entries=Array.isArray(body?.entries)?body.entries:[];
   const deletes=Array.isArray(body?.deletes)?body.deletes:[];
-  if(entries.length>MAX_SYNC_ENTRIES||deletes.length>MAX_SYNC_ENTRIES){
+  const decisions=Array.isArray(body?.decisions)?body.decisions:[];
+  if(entries.length>MAX_SYNC_ENTRIES||deletes.length>MAX_SYNC_ENTRIES||decisions.length>MAX_SYNC_ENTRIES){
     throw Object.assign(new Error('Too many family entries in one sync batch.'),{status:413,code:'family_sync_batch_too_large'});
   }
 
@@ -138,6 +206,17 @@ async function pushFamily(token,childId,body){
   if(overlap){
     throw Object.assign(new Error('The same family activity cannot be updated and deleted in one sync batch.'),{status:400,code:'family_sync_entry_delete_conflict'});
   }
+
+  if(duplicateIds(decisions).size){
+    throw Object.assign(new Error('Duplicate family decision ID in sync batch.'),{status:400,code:'duplicate_family_decision'});
+  }
+  const guardianId=decisions.length?await authenticatedUserId(token):null;
+  const decisionRows=decisions.map(event=>normalizeDecision(event,childId,guardianId)).filter(Boolean);
+  if(decisionRows.length!==decisions.length){
+    throw Object.assign(new Error('One or more family decisions are invalid for cloud sync.'),{status:400,code:'invalid_family_decision'});
+  }
+  let decisionsSynced=0;
+  let decisionHistorySupported=true;
 
   const deleteRows=deletes.map(item=>{
     if(!item||!UUID_RE.test(String(item.id||'')))return null;
@@ -311,12 +390,34 @@ async function pushFamily(token,childId,body){
     if(!response.ok)throw Object.assign(new Error(data?.message||'Family cloud write failed.'),{status:502,code:'family_cloud_write_failed'});
   }
 
+  if(decisionRows.length){
+    const response=await supabaseUserFetch(
+      token,
+      '/rest/v1/activity_approval_events?on_conflict=child_id,client_event_id',
+      {
+        method:'POST',
+        headers:{Prefer:'resolution=ignore-duplicates,return=minimal'},
+        body:JSON.stringify(decisionRows)
+      }
+    );
+    const data=await jsonOrNull(response);
+    if(missingDecisionHistoryColumns(response,data)){
+      decisionHistorySupported=false;
+    }else if(!response.ok){
+      throw Object.assign(new Error(data?.message||'Family decision history write failed.'),{status:502,code:'family_decision_write_failed'});
+    }else{
+      decisionsSynced=decisionRows.length;
+    }
+  }
+
   return {
     synced:allowed.length,
     deleted:deletedCount,
     deleteSuppressed,
     suppressed:rows.length-allowed.length,
-    deletesSupported
+    deletesSupported,
+    decisionsSynced,
+    decisionHistorySupported
   };
 }
 
@@ -343,9 +444,10 @@ module.exports=async function handler(req,res){
     await requireGuardian(token,childId);
 
     if(req.method==='GET'){
-      const [entries,deleteResult]=await Promise.all([
+      const [entries,deleteResult,decisionResult]=await Promise.all([
         pullFamily(token,childId),
-        pullFamilyDeletes(token,childId)
+        pullFamilyDeletes(token,childId),
+        pullFamilyDecisions(token,childId)
       ]);
       return res.status(200).json({
         ok:true,
@@ -354,7 +456,9 @@ module.exports=async function handler(req,res){
         childId,
         entries,
         deletes:deleteResult.rows,
-        deletesSupported:deleteResult.supported
+        decisions:decisionResult.rows,
+        deletesSupported:deleteResult.supported,
+        decisionHistorySupported:decisionResult.supported
       });
     }
 
@@ -368,7 +472,9 @@ module.exports=async function handler(req,res){
       deleted:result.deleted,
       deleteSuppressed:result.deleteSuppressed,
       suppressed:result.suppressed,
-      deletesSupported:result.deletesSupported
+      deletesSupported:result.deletesSupported,
+      decisionsSynced:result.decisionsSynced,
+      decisionHistorySupported:result.decisionHistorySupported
     });
   }catch(err){
     const status=Number(err?.status)||500;
