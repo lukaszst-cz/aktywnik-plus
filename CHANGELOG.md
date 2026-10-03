@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — school lifecycle FK indexes
+
+- Supabase Performance Advisor wskazał 4 brakujące indeksy na kluczach obcych workflow klas;
+- migracja 019 dodaje indeksy dla `class_invites.created_by` oraz `class_join_requests.child_id/requested_by/decided_by`;
+- brak zmian w danych, RLS i API;
+- migration 019 + index preflight: PASS w transakcji na live schemacie zakończonej `ROLLBACK`;
+- trwałe wdrożenie live pozostaje osobnym krokiem.
+
+
 ## Unreleased — profile role hardening live
 
 - migracja 018 jest trwale zastosowana na live Supabase;
