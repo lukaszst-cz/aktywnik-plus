@@ -1125,6 +1125,106 @@ function clearAllLocalUserData(){
 }
 function canManageLocalData(){return isSelfMode()||guardParent()}
 function setStorageMessage(message){const parentEl=$('#storageStatus'),selfEl=$('#selfStorageStatus');if(parentEl)parentEl.textContent=message;if(selfEl)selfEl.textContent=message}
+function readLocalJson(key,fallback=null){try{const value=JSON.parse(localStorage.getItem(key)||'null');return value??fallback}catch{return fallback}}
+function pilotDiagnosticsSnapshot(){
+  const queue=readLocalJson(FAMILY_SYNC_OUTBOX_KEY,null),deletes=readLocalJson(FAMILY_SYNC_DELETES_KEY,[]);
+  const groups=Array.isArray(queue?.snapshot?.groups)?queue.snapshot.groups:[];
+  const linkedProfiles=(state.children||[]).filter(child=>validUuid(child?.cloudChildId)).length;
+  const pendingEntries=groups.reduce((sum,group)=>sum+(Array.isArray(group?.entries)?group.entries.length:0),0);
+  const pendingDecisions=groups.reduce((sum,group)=>sum+(Array.isArray(group?.decisions)?group.decisions.length:0),0);
+  const pendingDeletes=Array.isArray(deletes)?deletes.length:0;
+  const lastSync=safeIso(localStorage.getItem(FAMILY_SYNC_LAST_KEY));
+  const pwaStandalone=!!(window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true);
+  const signedIn=!!window.AktywnikAuth?.readSession?.();
+  return {
+    version:cleanText(document.querySelector('.version-badge')?.textContent||'0.5.0 beta.4',40),
+    profileMode:state.profileMode,
+    online:navigator.onLine!==false,
+    pwaStandalone,
+    localSaveOk:lastPersistOk===true,
+    localProfiles:(state.children||[]).length,
+    linkedCloudProfiles:linkedProfiles,
+    signedIn,
+    outboxDirty:queue?.dirty===true,
+    pendingEntries,
+    pendingDecisions,
+    pendingDeletes,
+    lastSync:lastSync||null,
+    lastSyncAttemptFailed:!!queue?.lastError
+  };
+}
+function diagnosticTimeLabel(iso){
+  if(!iso)return uiText('parent.diagNever','jeszcze nie');
+  const date=new Date(iso);if(Number.isNaN(date.getTime()))return uiText('parent.diagNever','jeszcze nie');
+  const lang=(document.documentElement.lang||'pl').toLowerCase().startsWith('en')?'en-GB':'pl-PL';
+  return date.toLocaleString(lang,{dateStyle:'short',timeStyle:'short'});
+}
+async function renderPilotDiagnostics(){
+  const grid=$('#pilotDiagnosticsGrid'),badge=$('#pilotDiagnosticsBadge'),syncBtn=$('#pilotSyncNowBtn');if(!grid||!badge||!parentUnlocked())return;
+  const d=pilotDiagnosticsSnapshot();
+  let persisted=null;try{persisted=await navigator.storage?.persisted?.()}catch{}
+  const queued=d.pendingEntries+d.pendingDecisions+d.pendingDeletes;
+  const ready=d.online&&d.localSaveOk&&d.linkedCloudProfiles>0&&d.signedIn&&!d.lastSyncAttemptFailed&&queued===0;
+  const stateText=!d.online?uiText('parent.diagOffline','offline'):!d.localSaveOk?uiText('parent.diagSaveError','błąd zapisu'):d.lastSyncAttemptFailed?uiText('parent.diagSyncError','błąd synchronizacji'):queued>0?uiText('parent.diagPending','oczekujące zmiany'):d.linkedCloudProfiles===0?uiText('parent.diagUnlinked','brak powiązania'):!d.signedIn?uiText('parent.diagSignedOut','niezalogowano'):uiText('parent.diagReady','gotowe');
+  badge.textContent=stateText;badge.dataset.state=ready?'ok':(!d.localSaveOk||d.lastSyncAttemptFailed?'error':'warn');
+  const yes=uiText('common.yes','tak'),no=uiText('common.no','nie');
+  const queueLabel=queued?[
+    d.pendingEntries?d.pendingEntries+' '+uiText('parent.diagEntries','wpisów'):null,
+    d.pendingDecisions?d.pendingDecisions+' '+uiText('parent.diagDecisions','decyzji'):null,
+    d.pendingDeletes?d.pendingDeletes+' '+uiText('parent.diagDeletes','usunięć'):null
+  ].filter(Boolean).join(' · '):uiText('parent.diagQueueEmpty','pusta');
+  grid.innerHTML=
+    '<div class="snapshot-item"><strong>'+escapeHtml(d.version)+'</strong><small>'+escapeHtml(uiText('parent.diagVersion','wersja'))+'</small></div>'+
+    '<div class="snapshot-item"><strong>'+escapeHtml(d.online?uiText('parent.diagOnline','online'):uiText('parent.diagOffline','offline'))+'</strong><small>'+escapeHtml(uiText('parent.diagNetwork','sieć'))+'</small></div>'+
+    '<div class="snapshot-item"><strong>'+escapeHtml(d.pwaStandalone?uiText('parent.diagInstalled','zainstalowana'):uiText('parent.diagBrowser','przeglądarka'))+'</strong><small>PWA</small></div>'+
+    '<div class="snapshot-item"><strong>'+d.linkedCloudProfiles+'/'+d.localProfiles+'</strong><small>'+escapeHtml(uiText('parent.diagLinked','profile połączone'))+'</small></div>'+
+    '<div class="snapshot-item"><strong>'+escapeHtml(d.signedIn?yes:no)+'</strong><small>'+escapeHtml(uiText('parent.diagAccount','konto dorosłego'))+'</small></div>'+
+    '<div class="snapshot-item"><strong>'+escapeHtml(queueLabel)+'</strong><small>'+escapeHtml(uiText('parent.diagQueue','kolejka sync'))+'</small></div>'+
+    '<div class="snapshot-item"><strong>'+escapeHtml(diagnosticTimeLabel(d.lastSync))+'</strong><small>'+escapeHtml(uiText('parent.diagLastSync','ostatni sync'))+'</small></div>'+
+    '<div class="snapshot-item"><strong>'+escapeHtml(persisted===true?yes:persisted===false?no:'—')+'</strong><small>'+escapeHtml(uiText('parent.diagPersistent','trwała pamięć'))+'</small></div>';
+  if(syncBtn)syncBtn.disabled=!d.online||d.linkedCloudProfiles===0||!d.signedIn;
+  return {...d,persistentStorage:persisted,ready};
+}
+function pilotDiagnosticsReport(){
+  const d=pilotDiagnosticsSnapshot();
+  return {
+    generatedAt:nowIso(),
+    version:d.version,
+    profileMode:d.profileMode,
+    online:d.online,
+    pwaStandalone:d.pwaStandalone,
+    localSaveOk:d.localSaveOk,
+    localProfiles:d.localProfiles,
+    linkedCloudProfiles:d.linkedCloudProfiles,
+    signedIn:d.signedIn,
+    outboxDirty:d.outboxDirty,
+    pendingEntries:d.pendingEntries,
+    pendingDecisions:d.pendingDecisions,
+    pendingDeletes:d.pendingDeletes,
+    lastSync:d.lastSync,
+    lastSyncAttemptFailed:d.lastSyncAttemptFailed
+  };
+}
+async function syncPilotNow(){
+  if(!guardParent())return;
+  const status=$('#pilotDiagnosticsStatus');if(status)status.textContent=uiText('parent.diagSyncing','Synchronizuję…');
+  const result=await window.AktywnikFamilySync?.syncNow?.();
+  await renderPilotDiagnostics();
+  if(status)status.textContent=result===false?uiText('parent.diagSyncNotReady','Synchronizacja nie mogła się teraz zakończyć. Sprawdź konto, sieć i powiązanie profilu.'):uiText('parent.diagSyncDone','Synchronizacja zakończona.');
+}
+async function copyPilotDiagnostics(){
+  if(!guardParent())return;
+  const report=JSON.stringify(pilotDiagnosticsReport(),null,2),status=$('#pilotDiagnosticsStatus');
+  let copied=false;
+  try{await navigator.clipboard?.writeText?.(report);copied=true}catch{}
+  if(!copied){
+    const area=document.createElement('textarea');area.value=report;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();
+    try{copied=document.execCommand('copy')}catch{}finally{area.remove()}
+  }
+  if(status)status.textContent=copied?uiText('parent.diagCopied','Raport diagnostyczny skopiowany — bez nazw dzieci, PIN-u i tokenów.'):uiText('parent.diagCopyFail','Nie udało się skopiować raportu. Spróbuj ponownie.');
+}
+window.AktywnikPilotDiagnostics={snapshot:pilotDiagnosticsSnapshot,report:pilotDiagnosticsReport,render:renderPilotDiagnostics};
+
 function exportBackup(){
   if(!canManageLocalData())return;
   state.meta={...(state.meta||{}),lastBackupAt:nowIso()};persist({skipSync:true});
@@ -1146,7 +1246,7 @@ function renderAll(){
   const child=activeChild();if(!child)return;
   renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();renderFatigueValue();if(isSelfMode())renderStorageStatus();
   if(parentUnlocked()){
-    renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();
+    renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();renderPilotDiagnostics();
   }else{
     $('#approvalList').innerHTML='';$('#approvalHistory').innerHTML='';$('#pendingCount').textContent='0';$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(currentMode!=='child')currentMode='child';
   }
@@ -1180,6 +1280,9 @@ $('#familyCloudLinkBtn').onclick=linkSelectedFamilyCloudChild;
 $('#familyCloudCreateLinkBtn').onclick=()=>createAndLinkFamilyCloudChild();
 $('#familyCloudUnlinkBtn').onclick=unlinkFamilyCloudChild;
 $('#familyCloudChildSelect').onchange=renderFamilyCloudLink;
+$('#pilotSyncNowBtn').onclick=syncPilotNow;
+$('#pilotDiagnosticsRefreshBtn').onclick=()=>renderPilotDiagnostics();
+$('#pilotDiagnosticsCopyBtn').onclick=copyPilotDiagnostics;
 $('#exportBackupBtn').onclick=exportBackup;
 $('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
 $('#requestPersistentStorageBtn').onclick=requestPersistentStorage;
@@ -1215,7 +1318,9 @@ $('#exportCsvBtn').onclick=exportReportCsv;
 $('#printReportBtn').onclick=()=>{if(guardParent())window.print()};
 $('#printSchoolReportBtn').onclick=printSchoolMonthlyReport;
 window.addEventListener('afterprint',()=>document.body.classList.remove('school-print-mode'));
-window.addEventListener('aktywnik:languagechange',()=>{if(selected&&!editingEntryId)showDurationSuggestion(selected);renderFamilyCloudLink()});
+window.addEventListener('aktywnik:languagechange',()=>{if(selected&&!editingEntryId)showDurationSuggestion(selected);renderFamilyCloudLink();renderPilotDiagnostics()});
+window.addEventListener('online',()=>renderPilotDiagnostics());
+window.addEventListener('offline',()=>renderPilotDiagnostics());
 setInterval(renderTimer,1000);
 setInterval(()=>{if((currentMode==='parent'||currentMode==='school')&&!parentUnlocked())lockParent()},10000);
 ['pointerdown','keydown','touchstart'].forEach(evt=>document.addEventListener(evt,()=>{if((currentMode==='parent'||currentMode==='school')&&parentUnlocked())touchParentSession()},{passive:true}));
