@@ -54,6 +54,18 @@ try{
     'production app load'
   );
 
+  await evaluate(`(()=>{
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem('aktywnik_plus_lang','pl');
+    location.reload();
+    return true;
+  })()`);
+  await waitFor(
+    "document.readyState==='complete' && document.documentElement.lang==='pl' && !!document.getElementById('pilotSetupCard')",
+    'Polish production app reload'
+  );
+
   const initial=await evaluate(`({
     version:document.querySelector('.version-badge')?.textContent?.trim()||'',
     setupVisible:!document.getElementById('pilotSetupCard')?.classList.contains('hidden'),
