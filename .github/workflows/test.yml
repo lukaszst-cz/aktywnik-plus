@@ -35,6 +35,7 @@ jobs:
           node --check api/_lib/backend.js
           node --check api/_lib/supabase.js
           node --check api/v1/classes.js
+          node --check api/v1/family-children.js
           node --check api/v1/class-invites.js
           node --check api/v1/class-join.js
           node --check api/v1/me.js
@@ -90,6 +91,7 @@ jobs:
           assert 'auth-config.js' in account and 'auth.js' in account, "account auth scripts missing"
           assert 'school-cloud.html' in account, "School Cloud link missing from account"
           assert 'auth-config.js' in school_cloud and 'auth.js' in school_cloud and 'school-cloud.js' in school_cloud, "School Cloud auth/scripts missing"
+          assert 'schoolCreateChildBtn' in school_cloud and 'schoolNewChildName' in school_cloud, "School Cloud child onboarding controls missing"
           assert 'SUPABASE_SERVICE_ROLE_KEY' not in auth and 'SUPABASE_SECRET_KEY' not in auth, "server key leaked to client auth"
           assert 'SUPABASE_SECRET_KEY' not in sync_client and 'SUPABASE_SERVICE_ROLE_KEY' not in sync_client, "server key leaked to sync client"
           assert 'sb_publishable_' in auth_config, "publishable key missing"
@@ -192,6 +194,7 @@ jobs:
             if(res.out.statusCode!==200) throw new Error(file+' status');
             if(!res.out.body) throw new Error(file+' no body');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.personalSyncProtocolVersion!==1) throw new Error('sync protocol capability missing');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudOnboarding!==false) throw new Error('family onboarding capability must fail closed when cloud is off');
           }
           const health=require('./api/health.js');
           const denied=mock();
@@ -201,12 +204,14 @@ jobs:
 
           const classes=require('./api/v1/classes.js');
           const classInvites=require('./api/v1/class-invites.js');
+          const familyChildren=require('./api/v1/family-children.js');
           const classJoin=require('./api/v1/class-join.js');
           const schoolYears=require('./api/v1/school-years.js');
           const me=require('./api/v1/me.js');
           const sync=require('./api/v1/sync.js');
           for (const [handler,req] of [
             [classes,{method:'GET'}],
+            [familyChildren,{method:'POST',body:{displayName:'Test'}}],
             [classInvites,{method:'POST',body:{}}],
             [classJoin,{method:'GET',query:{}}],
             [schoolYears,{method:'GET',query:{}}],
@@ -266,6 +271,9 @@ jobs:
             }
             if(String(url).includes('/rest/v1/school_years')){
               return {ok:true,status:200,text:async()=>JSON.stringify([{id:'ffffffff-ffff-4fff-8fff-ffffffffffff',tenant_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',label:'2026/2027',archived_at:null}])};
+            }
+            if(String(url).includes('/rest/v1/rpc/create_guardian_child')){
+              return {ok:true,status:200,text:async()=>JSON.stringify('abababab-abab-4bab-8bab-abababababab')};
             }
             if(String(url).includes('/rest/v1/rpc/create_school_class')){
               return {ok:true,status:200,text:async()=>JSON.stringify('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbc')};
@@ -461,6 +469,15 @@ jobs:
           if(meRes.out.body?.memberships?.[0]?.role!=='guardian') throw new Error('membership context missing');
           if(meRes.out.body?.children?.[0]?.display_name!=='Dziecko Test') throw new Error('guardian child context missing');
 
+          const familyChildRes=mock();
+          await familyChildren({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{displayName:'Nowe dziecko'}
+          },familyChildRes);
+          if(familyChildRes.out.statusCode!==201||familyChildRes.out.body?.childId!=='abababab-abab-4bab-8bab-abababababab') throw new Error('family child onboarding API failed');
+          if(!calls.some(x=>x.url.includes('/rest/v1/rpc/create_guardian_child'))) throw new Error('family child RPC missing');
+
           const yearRes=mock();
           await schoolYears({
             method:'GET',
@@ -527,6 +544,6 @@ jobs:
           if(joinDecision.out.statusCode!==200||joinDecision.out.body?.accepted!==true) throw new Error('class join decision API failed');
 
           global.fetch=originalFetch;
-          console.log('personal sync + authenticated school lifecycle API smoke OK');
+          console.log('personal sync + family onboarding + authenticated school lifecycle API smoke OK');
           })().catch(err=>{console.error(err);process.exit(1)});
           NODE
