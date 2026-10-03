@@ -20,15 +20,19 @@ module.exports = function handler(req,res){
     cloud:{
       enabled:cloud.enabled,
       databaseConfigured:cloud.databaseConfigured,
+      supabaseUserApiConfigured:cloud.supabaseConfigured,
       authenticationConfigured:cloud.authConfigured,
       rowLevelSecurityVerified:cloud.rlsVerified,
-      classes:cloud.enabled,
-      crossDeviceSync:cloud.enabled,
-      serverBackups:cloud.enabled,
       personalSyncBeta:true,
       personalSyncPull:true,
       personalSyncConflictRule:'newer_timestamp_wins',
-      personalSyncDeletes:false
+      personalSyncDeletes:false,
+      familySync:false,
+      profileContext:cloud.enabled,
+      classRead:cloud.enabled,
+      classLifecycle:false,
+      auditEventsIntegrated:false,
+      serverBackupRestoreVerified:false
     }
   });
 };
