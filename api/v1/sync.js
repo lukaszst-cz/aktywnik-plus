@@ -69,6 +69,17 @@ function requireSyncProtocol(value){
   return version;
 }
 
+function duplicateValidIds(items){
+  const seen=new Set(),duplicates=new Set();
+  for(const item of Array.isArray(items)?items:[]){
+    const id=String(item?.id||'');
+    if(!UUID_RE.test(id))continue;
+    if(seen.has(id))duplicates.add(id);
+    else seen.add(id);
+  }
+  return duplicates;
+}
+
 function toRow(entry,ownerId,fallbackUpdatedAt){
   if(!entry||typeof entry!=='object')return null;
   if(!UUID_RE.test(String(entry.id||'')))return null;
@@ -135,6 +146,20 @@ async function pushPersonal(auth,userId,body){
   const deletes=Array.isArray(body?.deletes)?body.deletes:[];
   if(entries.length>MAX_SYNC_ENTRIES||deletes.length>MAX_SYNC_ENTRIES){
     throw Object.assign(new Error('Too many entries in one sync batch.'),{status:413,code:'sync_batch_too_large'});
+  }
+
+  const duplicateEntries=duplicateValidIds(entries);
+  if(duplicateEntries.size){
+    throw Object.assign(new Error('Duplicate activity ID in sync batch.'),{status:400,code:'duplicate_sync_entry'});
+  }
+  const duplicateDeletes=duplicateValidIds(deletes);
+  if(duplicateDeletes.size){
+    throw Object.assign(new Error('Duplicate delete tombstone ID in sync batch.'),{status:400,code:'duplicate_delete_tombstone'});
+  }
+  const entryIds=new Set(entries.map(item=>String(item?.id||'')).filter(id=>UUID_RE.test(id)));
+  const overlap=[...new Set(deletes.map(item=>String(item?.id||'')).filter(id=>UUID_RE.test(id)))].find(id=>entryIds.has(id));
+  if(overlap){
+    throw Object.assign(new Error('The same activity cannot be updated and deleted in one sync batch.'),{status:400,code:'sync_entry_delete_conflict'});
   }
 
   const {url}=supabaseConfig();
