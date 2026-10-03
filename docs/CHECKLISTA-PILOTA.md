@@ -30,13 +30,16 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.3**.
 - [x] migracje Supabase 001–025 live
 - [x] GitHub CI po family sync: PASS
 
-## BLOCKER przed szerszym publicznym pilotem
+## Stan przed szerszym publicznym pilotem
 
-- [ ] **Vercel production musi zostać zaktualizowany do bieżącego `main` / 0.5.0-beta.3**
-- [ ] `/api/health` na produkcji ma raportować `0.5.0-beta.3`
-- [ ] `/api/capabilities` ma potwierdzić poprawną konfigurację produkcyjnej chmury i RLS
-- [ ] smoke produkcyjny: rodzic + co najmniej 2 profile dzieci
-- [ ] smoke cross-device: urządzenie A → sync → urządzenie B
+- [x] **Vercel production zaktualizowany do 0.5.0-beta.3**
+- [x] `/api/health` na produkcji raportuje `0.5.0-beta.3`
+- [x] `/api/capabilities` potwierdza produkcyjną chmurę, Auth i RLS
+- [x] production smoke z `require_cloud=true`: PASS
+- [x] deployment Vercel: `READY`
+- [x] brak świeżych błędów runtime po wdrożeniu
+- [x] 28/28 głównych plików runtime na produkcji zgodnych bit-po-bicie z aktualnym `main`
+- [ ] smoke na dwóch rzeczywistych urządzeniach: urządzenie A → sync → urządzenie B
 - [ ] smoke offline → reconnect → sync
 - [ ] smoke delete → tombstone → drugie urządzenie
 - [ ] smoke decyzji rodzica → drugie urządzenie
@@ -44,9 +47,9 @@ Stan roboczy: **2026-10-03 — 0.5.0-beta.3**.
 - [ ] przykładowy raport zapisany/drukowany jako PDF
 - [ ] 3–7 dni testu jednej rodziny przed szerszym pilotem
 
-### Aktualnie wykryty blocker Vercel
+### Vercel — stan końcowy
 
-Dla commita `06768123` GitHub raportuje status Vercel **failure: build-rate-limit**. Publiczny URL nadal odpowiada HTTP 200, ale 2026-10-03 podczas weryfikacji zwracał starszy backend (`/api/health`: `0.5.0-beta.1`, chmura wyłączona). Nie należy traktować tego deploymentu jako potwierdzenia bieżącego `main`.
+Historyczny status GitHub/Vercel przy starszym commicie może nadal wskazywać `build-rate-limit`, ale nie opisuje już aktualnej produkcji. Bieżący alias produkcyjny działa na deploymentcie `READY`, zwraca 0.5.0-beta.3 i przeszedł production smoke.
 
 ## School Cloud — technicznie gotowe do kontrolowanego E2E
 
