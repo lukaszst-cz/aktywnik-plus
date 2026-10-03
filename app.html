@@ -365,17 +365,25 @@
           <label>Klasa<select id="importClassId"></select></label>
           <label>Dziecko / identyfikator<input id="importChildName" maxlength="60" placeholder="np. Daniel S." /></label>
           <label>Plik CSV / JSON / TXT<input id="paperImportFile" type="file" accept=".csv,.json,.txt,text/csv,application/json,text/plain" /></label>
+          <label>Zdjęcie karty — OCR lokalny
+            <input id="paperOcrImageFile" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" capture="environment" />
+          </label>
           <label class="wide">Wklej tekst po OCR
             <textarea id="ocrPaste" rows="6" placeholder="Data;Aktywność;Czas;Zmęczenie;Uwagi&#10;2026-10-01;Judo;90;3;trening klubowy"></textarea>
           </label>
         </div>
         <div class="actions">
+          <button id="runLocalOcrBtn" class="ghost" type="button" disabled>Rozpoznaj zdjęcie lokalnie</button>
           <button id="parsePaperImportBtn" class="ghost">Pokaż podgląd</button>
           <button id="savePaperImportBtn" class="primary" disabled>Zapisz import</button>
         </div>
-        <div id="paperImportStatus"></div>
+        <div class="section-head ocr-capability">
+          <small>Zdjęcie nie jest wysyłane do School Cloud ani family sync i nie jest zapisywane po odświeżeniu strony.</small>
+          <span id="paperOcrCapabilityBadge" class="badge">sprawdzanie OCR…</span>
+        </div>
+        <div id="paperImportStatus" aria-live="polite"></div>
         <div id="paperImportPreview" class="import-preview"></div>
-        <small>DocPilot → skan / zdjęcie → OCR → eksport CSV/JSON → Aktywnik+ → podgląd → poprawki → zatwierdzenie.</small>
+        <small>Ścieżka A: zdjęcie → lokalny OCR (jeśli wspierany) → podgląd → poprawki → zatwierdzenie. Ścieżka B: DocPilot → OCR → CSV/JSON/TXT → Aktywnik+.</small>
       </section>
 
       <section class="card">
