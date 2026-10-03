@@ -277,7 +277,7 @@ async function run(){
     if(!futureBlocked)throw new Error('future backup version was not blocked');
 
     let foreignBlocked=false;
-    try{w.backupStateFromPayload({format:'inna-aplikacja',version:1,data:backupSource})}catch(err){foreignBlocked=/nie jest kopią aktywnik/i.test(String(err?.message||err))}
+    try{w.backupStateFromPayload({format:'inna-aplikacja',version:1,data:backupSource})}catch(err){foreignBlocked=String(err?.message||err).includes('To nie jest kopia Aktywnik+')}
     if(!foreignBlocked)throw new Error('foreign backup format was not blocked');
 
     const purgeState=JSON.parse(localStorage.getItem(KEY)||'{}');
