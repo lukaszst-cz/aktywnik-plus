@@ -182,7 +182,36 @@ function mergeFamilyCloudEntries(localChildId,rows){
   if(localNewer)window.AktywnikFamilySync?.markDirty?.(state);
   return {added,updated,localNewer,ignored};
 }
-window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries,mergePersonalCloudState,mergeFamilyCloudEntries};
+function applyFamilyCloudDeletes(localChildId,rows){
+  if(isSelfMode()||!getChild(localChildId)||!Array.isArray(rows))return {deleted:0,ignored:0};
+  let deleted=0,ignored=0,localNewer=0;
+  for(const row of rows.slice(0,MAX_ENTRIES)){
+    const id=String(row?.client_entry_id||''),deletedAt=new Date(row?.deleted_at||'').getTime();
+    if(!validUuid(id)||!Number.isFinite(deletedAt)){ignored++;continue}
+    const idx=state.entries.findIndex(e=>e.id===id&&e.childId===localChildId);
+    if(idx<0)continue;
+    const local=state.entries[idx],localTime=personalEntrySyncTime(local);
+    if(deletedAt>=localTime){
+      state.entries.splice(idx,1);deleted++;
+    }else{
+      localNewer++;
+    }
+  }
+  if(deleted)persist({skipSync:true});
+  if(localNewer)window.AktywnikFamilySync?.markDirty?.(state);
+  return {deleted,ignored,localNewer};
+}
+function mergeFamilyCloudState(localChildId,entries,deletes){
+  const merged=mergeFamilyCloudEntries(localChildId,entries);
+  const removed=applyFamilyCloudDeletes(localChildId,deletes);
+  return {
+    ...merged,
+    deleted:removed.deleted,
+    ignored:Number(merged.ignored||0)+Number(removed.ignored||0),
+    localNewer:Number(merged.localNewer||0)+Number(removed.localNewer||0)
+  };
+}
+window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries,mergePersonalCloudState,mergeFamilyCloudEntries,mergeFamilyCloudState};
 function parentChild(){return getChild(parentSelectedChildId)||activeChild()}
 function childEntries(childId){return state.entries.filter(e=>e.childId===childId)}
 function childRewards(childId){return state.rewards.filter(r=>r.childId===childId)}
@@ -412,6 +441,16 @@ function deleteSelfEntry(id){
   window.AktywnikSync?.markDeleted?.(id,deletedAt);
   persist();
 }
+function deleteFamilyEntry(id){
+  if(isSelfMode()||!guardParent())return;
+  const child=parentChild(),entry=state.entries.find(e=>e.id===id&&e.childId===child?.id);if(!entry)return;
+  if(!confirm('Usunąć ten wpis? Usunięcie zostanie zsynchronizowane na urządzeniach rodziny.'))return;
+  const deletedAt=nowIso(),activity=entry.activity,date=entry.date;
+  addApprovalEvent('deleted',entry,'parent','Rodzic usunął wpis · '+activity+' · '+date,{status:entry.status},{deleted:true});
+  state.entries=state.entries.filter(e=>!(e.id===id&&e.childId===child.id));
+  window.AktywnikFamilySync?.markDeleted?.(child.id,id,deletedAt);
+  persist();
+}
 function statusLabel(e){
   if(e.status==='approved')return isSelfMode()?'✅ zapisane':'✅ zatwierdzone';
   if(e.status==='rejected')return '↩️ do poprawy'+(e.rejectionReason?': '+e.rejectionReason:'');
@@ -471,12 +510,13 @@ function approveAllVisible(){
 function renderApprovals(){
   const list=$('#approvalList'),history=$('#approvalHistory');if(!parentUnlocked()||!parentChild()){$('#pendingCount').textContent='0';list.innerHTML='';history.innerHTML='';return}
   const child=parentChild(),pending=state.entries.filter(e=>e.childId===child.id&&e.status==='pending');$('#pendingCount').textContent=pending.length;list.innerHTML='';
-  pending.forEach(e=>{const el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+' · wysiłek '+e.effort+'/5 · '+(e.source==='timer'?'⏱ Start/Stop':'✍️ ręczny')+(e.note?' · '+escapeHtml(e.note):'')+'</small></div><div class="entry-actions"><button class="primary" data-approve="'+escapeAttr(e.id)+'">Zatwierdź</button><button class="ghost" data-correct="'+escapeAttr(e.id)+'">Popraw</button><button class="danger" data-reject="'+escapeAttr(e.id)+'">Odrzuć</button></div>';list.append(el)});
+  pending.forEach(e=>{const el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+' · wysiłek '+e.effort+'/5 · '+(e.source==='timer'?'⏱ Start/Stop':'✍️ ręczny')+(e.note?' · '+escapeHtml(e.note):'')+'</small></div><div class="entry-actions"><button class="primary" data-approve="'+escapeAttr(e.id)+'">Zatwierdź</button><button class="ghost" data-correct="'+escapeAttr(e.id)+'">Popraw</button><button class="danger" data-reject="'+escapeAttr(e.id)+'">Odrzuć</button><button class="danger" data-family-delete="'+escapeAttr(e.id)+'">Usuń</button></div>';list.append(el)});
   if(!pending.length)list.innerHTML='<small>Brak wpisów oczekujących na decyzję.</small>';
-  $$('[data-approve]').forEach(b=>b.onclick=()=>approve(b.dataset.approve));$$('[data-correct]').forEach(b=>b.onclick=()=>openParentCorrection(b.dataset.correct));$$('[data-reject]').forEach(b=>b.onclick=()=>openReject(b.dataset.reject));
+  $('[data-approve]').forEach(b=>b.onclick=()=>approve(b.dataset.approve));$('[data-correct]').forEach(b=>b.onclick=()=>openParentCorrection(b.dataset.correct));$('[data-reject]').forEach(b=>b.onclick=()=>openReject(b.dataset.reject));$('[data-family-delete]').forEach(b=>b.onclick=()=>deleteFamilyEntry(b.dataset.familyDelete));
   const n=new Date(),after=n.getHours()>state.reminderHour||(n.getHours()===state.reminderHour&&n.getMinutes()>=state.reminderMinute);$('#approvalReminder').classList.toggle('hidden',!(after&&pending.length));
-  const labels={created:'Utworzono wpis',edited:'Dziecko poprawiło wpis',resubmitted:'Ponownie wysłano',approved:'Rodzic zatwierdził',approved_auto:'Zatwierdzono automatycznie',corrected:'Rodzic poprawił i zatwierdził',rejected:'Rodzic odrzucił'};history.innerHTML='';
-  state.approvalEvents.filter(ev=>ev.childId===child.id).slice(0,30).forEach(ev=>{const entry=state.entries.find(e=>e.id===ev.entryId),el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+escapeHtml(labels[ev.action]||ev.action)+(entry?' · '+escapeHtml(entry.activity):'')+'</strong><small>'+new Date(ev.at).toLocaleString('pl-PL')+(ev.note?' · '+escapeHtml(ev.note):'')+'</small></div>';history.append(el)});
+  const labels={created:'Utworzono wpis',edited:'Dziecko poprawiło wpis',resubmitted:'Ponownie wysłano',approved:'Rodzic zatwierdził',approved_auto:'Zatwierdzono automatycznie',corrected:'Rodzic poprawił i zatwierdził',rejected:'Rodzic odrzucił',deleted:'Rodzic usunął wpis'};history.innerHTML='';
+  state.approvalEvents.filter(ev=>ev.childId===child.id).slice(0,30).forEach(ev=>{const entry=state.entries.find(e=>e.id===ev.entryId),el=document.createElement('div');el.className='entry';el.innerHTML='<div><strong>'+escapeHtml(labels[ev.action]||ev.action)+(entry?' · '+escapeHtml(entry.activity):'')+'</strong><small>'+new Date(ev.at).toLocaleString('pl-PL')+(ev.note?' · '+escapeHtml(ev.note):'')+'</small></div>'+(entry?'<div class="entry-actions"><button class="danger" data-family-delete="'+escapeAttr(entry.id)+'">Usuń</button></div>':'');history.append(el)});
+  $('[data-family-delete]').forEach(b=>b.onclick=()=>deleteFamilyEntry(b.dataset.familyDelete));
   if(!history.children.length)history.innerHTML='<small>Historia decyzji pojawi się po pierwszym wpisie.</small>';
 }
 function startFor(type,d=new Date()){const y=d.getFullYear(),m=d.getMonth();if(type==='month')return new Date(y,m,1);if(type==='quarter')return new Date(y,Math.floor(m/3)*3,1);if(type==='half')return new Date(y,m<6?0:6,1);return new Date(y,0,1)}
@@ -526,7 +566,8 @@ function reportPeriodLabel(type,referenceDate){
 function renderParentReport(){
   const box=$('#parentReport');if(!box)return;if(!parentUnlocked()||!parentChild()){box.innerHTML='';return}
   const child=parentChild(),reference=parentReportReferenceDate(),st=stats(reportType,child.id,reference);
-  box.innerHTML='<div class="report-head"><div><h3>'+reportTitle(reportType)+' — '+escapeHtml(child.displayName)+'</h3><small>'+escapeHtml(reportPeriodLabel(reportType,reference))+'</small></div><span>'+fmtMin(st.minutes)+'</span></div><div class="report-summary"><div><b>'+st.days+'</b><small>aktywne dni</small></div><div><b>'+st.es.length+'</b><small>wpisy</small></div><div><b>'+st.types+'</b><small>rodzaje</small></div></div><div class="list">'+(st.es.map(e=>'<div class="entry"><div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+(e.note?' · '+escapeHtml(e.note):'')+'</small></div></div>').join('')||'<small>Brak zatwierdzonych wpisów w tym okresie.</small>')+'</div>';
+  box.innerHTML='<div class="report-head"><div><h3>'+reportTitle(reportType)+' — '+escapeHtml(child.displayName)+'</h3><small>'+escapeHtml(reportPeriodLabel(reportType,reference))+'</small></div><span>'+fmtMin(st.minutes)+'</span></div><div class="report-summary"><div><b>'+st.days+'</b><small>aktywne dni</small></div><div><b>'+st.es.length+'</b><small>wpisy</small></div><div><b>'+st.types+'</b><small>rodzaje</small></div></div><div class="list">'+(st.es.map(e=>'<div class="entry"><div><strong>'+escapeHtml(e.activity)+' · '+fmtMin(e.minutes)+'</strong><small>'+escapeHtml(e.date)+(e.note?' · '+escapeHtml(e.note):'')+'</small></div><div class="entry-actions"><button class="danger" data-family-delete="'+escapeAttr(e.id)+'">Usuń</button></div></div>').join('')||'<small>Brak zatwierdzonych wpisów w tym okresie.</small>')+'</div>';
+  $('[data-family-delete]').forEach(b=>b.onclick=()=>deleteFamilyEntry(b.dataset.familyDelete));
 }
 function buildSchoolPrintPages(childId,referenceDate){
   const entries=filtered('month',childId,referenceDate).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
