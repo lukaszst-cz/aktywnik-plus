@@ -13,6 +13,10 @@
 - raport diagnostyczny jest zanonimizowany i nie zawiera nazw dzieci, PIN-u, identyfikatorów chmurowych ani tokenów;
 - production smoke sprawdza teraz **dokładny SHA wdrożonego commita**, a nie tylko numer beta.4, eliminując fałszywie zielony wynik na starszym buildzie tej samej wersji;
 - dodano produkcyjny family UI smoke oraz test prywatności diagnostyki.
+- dodano progresywny lokalny OCR zdjęcia karty: JPG/PNG/WebP → natywny `TextDetector` → istniejący parser → edytowalny podgląd;
+- zdjęcie OCR nie jest zapisywane w stanie aplikacji ani wysyłane do family sync / School Cloud; limit obrazu 12 MB;
+- brak wsparcia `TextDetector` nie blokuje importu — pozostają DocPilot, CSV/JSON/TXT i ręczne wklejenie tekstu;
+- browser smoke testuje rekonstrukcję tabeli OCR ze skalą `Zmęczenie 1–5`.
 
 ## 0.5.0-beta.3 — Full Family Sync Pilot — 2026-10-03
 
