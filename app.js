@@ -201,17 +201,70 @@ function applyFamilyCloudDeletes(localChildId,rows){
   if(localNewer)window.AktywnikFamilySync?.markDirty?.(state);
   return {deleted,ignored,localNewer};
 }
-function mergeFamilyCloudState(localChildId,entries,deletes){
+function normalizeFamilyCloudDecision(row,localChildId){
+  if(!row||typeof row!=='object')return null;
+  const id=String(row.client_event_id||''),entryId=String(row.client_entry_id||'');
+  const action=String(row.decision||''),at=safeIso(row.decided_at);
+  if(!validUuid(id)||!validUuid(entryId)||!['approved','rejected','corrected','deleted'].includes(action)||!at)return null;
+  const safeState=value=>{
+    if(!value||typeof value!=='object'||Array.isArray(value))return null;
+    const out={};
+    if(value.date!=null)out.date=cleanText(value.date,10);
+    if(value.activity!=null)out.activity=cleanText(value.activity,80);
+    if(value.minutes!=null)out.minutes=clampInt(value.minutes,1,600,1);
+    if(value.effort!=null)out.effort=clampInt(value.effort,1,5,2);
+    if(value.note!=null)out.note=cleanText(value.note,120);
+    if(value.status!=null)out.status=cleanText(value.status,20);
+    if(value.rejectionReason!=null)out.rejectionReason=cleanText(value.rejectionReason,160);
+    if(value.deleted===true)out.deleted=true;
+    return Object.keys(out).length?out:null;
+  };
+  return {
+    id,
+    entryId,
+    childId:localChildId,
+    action,
+    actor:'parent',
+    note:cleanText(row.reason,240),
+    before:safeState(row.before_state),
+    after:safeState(row.after_state),
+    at
+  };
+}
+function mergeFamilyCloudDecisions(localChildId,rows){
+  if(isSelfMode()||!getChild(localChildId)||!Array.isArray(rows))return {decisionsAdded:0,ignored:0};
+  const existing=new Set((state.approvalEvents||[]).filter(ev=>ev.childId===localChildId).map(ev=>ev.id));
+  let decisionsAdded=0,ignored=0;
+  for(const row of rows.slice(0,MAX_ENTRIES)){
+    const incoming=normalizeFamilyCloudDecision(row,localChildId);
+    if(!incoming){ignored++;continue}
+    if(existing.has(incoming.id))continue;
+    state.approvalEvents.unshift(incoming);
+    existing.add(incoming.id);
+    decisionsAdded++;
+  }
+  if(decisionsAdded){
+    state.approvalEvents=state.approvalEvents
+      .slice()
+      .sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')))
+      .slice(0,10000);
+    persist({skipSync:true});
+  }
+  return {decisionsAdded,ignored};
+}
+function mergeFamilyCloudState(localChildId,entries,deletes,decisions=[]){
   const merged=mergeFamilyCloudEntries(localChildId,entries);
   const removed=applyFamilyCloudDeletes(localChildId,deletes);
+  const history=mergeFamilyCloudDecisions(localChildId,decisions);
   return {
     ...merged,
     deleted:removed.deleted,
-    ignored:Number(merged.ignored||0)+Number(removed.ignored||0),
+    decisionsAdded:history.decisionsAdded,
+    ignored:Number(merged.ignored||0)+Number(removed.ignored||0)+Number(history.ignored||0),
     localNewer:Number(merged.localNewer||0)+Number(removed.localNewer||0)
   };
 }
-window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries,mergePersonalCloudState,mergeFamilyCloudEntries,mergeFamilyCloudState};
+window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries,mergePersonalCloudState,mergeFamilyCloudEntries,mergeFamilyCloudDecisions,mergeFamilyCloudState};
 function parentChild(){return getChild(parentSelectedChildId)||activeChild()}
 function childEntries(childId){return state.entries.filter(e=>e.childId===childId)}
 function childRewards(childId){return state.rewards.filter(r=>r.childId===childId)}
