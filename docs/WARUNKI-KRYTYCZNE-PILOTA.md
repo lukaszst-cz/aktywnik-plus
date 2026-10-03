@@ -9,7 +9,7 @@ Legenda:
 
 ## Status tej wersji
 
-Aktywnik+ działa jako **0.5.0-beta.2, local-first z opcjonalnym kontem oraz pełnym sync trybu osobistego i rodzinnego dla jawnie powiązanych profili**.
+Aktywnik+ kodowo działa jako **0.5.0-beta.3, local-first z opcjonalnym kontem oraz pełnym sync trybu osobistego i rodzinnego dla jawnie powiązanych profili**.
 
 Nie jest jeszcze:
 - szkolnym dziennikiem elektronicznym;
@@ -19,7 +19,7 @@ Nie jest jeszcze:
 Publiczna wersja:
 **https://aktywnik-plus.vercel.app**
 
-## 1. Hosting publicznego pilota — ✅
+## 1. Hosting publicznego pilota — 🟡
 
 - Vercel + HTTPS;
 - stały publiczny adres;
@@ -27,6 +27,8 @@ Publiczna wersja:
 - blokada obcych iframe;
 - kod i dokumentacja w GitHub;
 - dane testowe są syntetyczne.
+
+Aktualny blocker operacyjny: najnowszy `main` nie został jeszcze potwierdzony na production Vercel. Status deploymentu dla commita `06768123` wskazuje `build-rate-limit`; publiczny URL podczas weryfikacji nadal raportował starszy backend `0.5.0-beta.1` z wyłączoną chmurą. Pilot z chmurą wymaga redeployu i ponownej weryfikacji `/api/health` oraz `/api/capabilities`.
 
 ## 2. Local-first + opcjonalna synchronizacja — 🟡
 
@@ -118,7 +120,7 @@ Gotowe:
 - działający projekt Supabase w regionie EU;
 - Supabase Auth dla dorosłych;
 - role i model tenant;
-- migracje 001–022;
+- migracje 001–025;
 - RLS;
 - endpoint `GET /api/v1/me`;
 - endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
@@ -146,14 +148,15 @@ Gotowe w UI:
 - wysłanie zgłoszenia oraz akceptacja/odrzucenie przez staff.
 
 Pozostaje:
-- family sync działa live dla jawnie powiązanych profili: aktywności, statusy, tombstones/usunięcia i historia decyzji;
-- E2E przez publiczne API z realnymi kontami testowymi przed School production.
+- redeploy production do bieżącego `main` i potwierdzenie aktywnej konfiguracji chmury;
+- E2E przez publiczne API z kontrolowanymi kontami testowymi przed School production.
 
 ## 10. Warunki produkcyjne — stan bieżący
 
 | Warunek | Stan |
 | --- | --- |
 | backend API + personal sync | ✅ |
+| deployment production zgodny z bieżącym main | 🟡 aktualnie blokowany przez Vercel build-rate-limit; wymaga redeploy + smoke |
 | uwierzytelnianie dorosłych | ✅ Magic Link / Supabase Auth |
 | role/uprawnienia w DB | ✅ RLS + migracja 018 live; `profile_type` nie jest samodzielnie edytowalne przez użytkownika |
 | izolacja tenant/szkoła w DB | ✅ polityki wdrożone |
@@ -212,7 +215,7 @@ Publiczna wersja powinna jasno komunikować:
 - chmura jest funkcją beta;
 - pełny Aktywnik+ School nie jest jeszcze wdrożeniem produkcyjnym szkoły.
 
-## Backend — stan 0.5.0-beta.2
+## Backend — stan 0.5.0-beta.3
 
 Dostępne:
 - `/api/health`;
