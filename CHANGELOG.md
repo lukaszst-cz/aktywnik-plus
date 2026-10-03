@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — family delete sync
+
+- migracja 024 dodaje `family_activity_tombstones` z RLS per guardian;
+- tylko guardian może usuwać tenant-neutral family activity; school rows z `tenant_id` nie podlegają tej ścieżce;
+- family API synchronizuje tombstones i stosuje regułę `deletedAt >= client_updated_at`;
+- klient utrzymuje osobną kolejkę usunięć per `cloudChildId` i nie czyści jej przed potwierdzeniem serwera;
+- rolling deploy jest bezpieczny: brak tabeli 024 (`PGRST205`) nie psuje zwykłego family sync, a tombstone pozostaje oczekujący;
+- rodzic może usuwać wpisy rodzinne z kolejki decyzji, historii i raportu; panel dziecka nie dostaje family DELETE;
+- browser smoke sprawdza izolację rodzeństwa oraz starszy/nowszy tombstone;
+- migration 024 + RLS regression: PASS; migracje 023+024 + security preflight: PASS w rollbacku;
+- migracja 024 nie jest jeszcze live, więc capability `familySyncDeletes` pozostaje `false`.
+
+
 ## Unreleased — School Cloud retry idempotency
 
 - migracja 023 dodaje prywatny ledger `app_private.idempotency_keys`;

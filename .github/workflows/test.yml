@@ -56,6 +56,10 @@ jobs:
           node --check api/v1/family-sync.js
           test -f backend/migrations/022_family_activity_sync.sql
           test -f backend/tests/family_activity_sync.sql
+          test -f backend/migrations/024_family_activity_tombstones.sql
+          test -f backend/tests/family_delete_sync.sql
+          grep -q "family_activity_tombstones" backend/migrations/024_family_activity_tombstones.sql
+          grep -q "activities_delete_family_guardian" backend/migrations/024_family_activity_tombstones.sql
           grep -q "familySyncBeta:cloud.enabled" api/capabilities.js
           grep -q "family-sync-client.js" app.html
           grep -q "./family-sync-client.js" sw.js
@@ -240,7 +244,8 @@ jobs:
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.profileRoleEscalationBlocked!==true) throw new Error('profile role hardening capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familyCloudLinkReady!==true) throw new Error('family cloud link readiness missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncBeta!==false) throw new Error('family sync beta must fail closed when cloud is off');
-            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySync!==false) throw new Error('full family sync must remain false until deletes/history ship');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySync!==false) throw new Error('full family sync must remain false until decision history ships');
+            if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.familySyncDeletes!==false) throw new Error('family delete sync must remain disabled until migration 024 is live');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolAuditCoverageVerified!==true) throw new Error('school audit capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionMechanismReady!==true) throw new Error('school retention mechanism capability missing');
             if(file.endsWith('capabilities.js')&&res.out.body?.cloud?.schoolRetentionPolicyConfigured!==false) throw new Error('school retention policy must remain externally configurable');
@@ -290,6 +295,7 @@ jobs:
           const originalFetch=global.fetch;
           let calls=[];
           let missingIdempotent=false;
+          let missingFamilyTombstones=false;
           global.fetch=async (url,options={})=>{
             calls.push({url:String(url),options});
             if(String(url).includes('/auth/v1/user')){
@@ -325,9 +331,19 @@ jobs:
               const allowed=String(url).includes('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee');
               return {ok:true,status:200,text:async()=>JSON.stringify(allowed?[{child_id:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'}]:[])};
             }
+            if(String(url).includes('/rest/v1/family_activity_tombstones')){
+              if(missingFamilyTombstones)return {ok:false,status:404,text:async()=>JSON.stringify({code:'PGRST205',message:"Could not find the table 'public.family_activity_tombstones' in the schema cache"})};
+              const method=String(options.method||'GET').toUpperCase();
+              if(method==='POST')return {ok:true,status:201,text:async()=>''};
+              return {ok:true,status:200,text:async()=>JSON.stringify([{
+                client_entry_id:'67676767-6767-4676-8676-676767676767',
+                deleted_at:'2026-10-03T08:30:00.000Z'
+              }])};
+            }
             if(String(url).includes('/rest/v1/activities')){
               const method=String(options.method||'GET').toUpperCase();
               if(method==='POST')return {ok:true,status:201,text:async()=>''};
+              if(method==='DELETE')return {ok:true,status:204,text:async()=>''};
               return {ok:true,status:200,text:async()=>JSON.stringify([{
                 client_entry_id:'56565656-5656-4565-8565-565656565656',
                 activity_date:'2026-10-02',
@@ -446,13 +462,38 @@ jobs:
                 source:'manual',
                 createdAt:'2026-10-03T08:00:00.000Z',
                 updatedAt:'2026-10-03T08:00:00.000Z'
+              }],
+              deletes:[{
+                id:'67676767-6767-4676-8676-676767676767',
+                deletedAt:'2026-10-03T08:31:00.000Z'
               }]
             }
           },familyPushRes);
-          if(familyPushRes.out.statusCode!==200||familyPushRes.out.body?.synced!==1) throw new Error('family sync push failed');
-          if(familyPushRes.out.body?.protocolVersion!==1||familyPushRes.out.body?.deletesSupported!==false) throw new Error('family sync push contract');
+          if(familyPushRes.out.statusCode!==200||familyPushRes.out.body?.synced!==1||familyPushRes.out.body?.deleted!==1) throw new Error('family sync push failed');
+          if(familyPushRes.out.body?.protocolVersion!==1||familyPushRes.out.body?.deletesSupported!==true) throw new Error('family sync push contract');
           if(!calls.some(x=>x.url.includes('/rest/v1/guardians'))) throw new Error('family guardian verification missing');
           if(!calls.some(x=>x.url.includes('/rest/v1/activities')&&String(x.options?.method||'GET').toUpperCase()==='POST')) throw new Error('family activity write missing');
+          if(!calls.some(x=>x.url.includes('/rest/v1/family_activity_tombstones')&&String(x.options?.method||'GET').toUpperCase()==='POST')) throw new Error('family tombstone write missing');
+          if(!calls.some(x=>x.url.includes('/rest/v1/activities')&&String(x.options?.method||'GET').toUpperCase()==='DELETE')) throw new Error('family activity delete missing');
+
+          missingFamilyTombstones=true;
+          const familyDeleteDeferred=mock();
+          await familySync({
+            method:'POST',
+            headers:{authorization:'Bearer test-token'},
+            body:{
+              protocolVersion:1,
+              childId:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+              updatedAt:'2026-10-03T08:32:00.000Z',
+              entries:[],
+              deletes:[{
+                id:'67676767-6767-4676-8676-676767676767',
+                deletedAt:'2026-10-03T08:32:00.000Z'
+              }]
+            }
+          },familyDeleteDeferred);
+          if(familyDeleteDeferred.out.statusCode!==200||familyDeleteDeferred.out.body?.deletesSupported!==false||familyDeleteDeferred.out.body?.deleted!==0) throw new Error('pre-024 family delete rolling fallback failed');
+          missingFamilyTombstones=false;
 
           const familyPullRes=mock();
           await familySync({
@@ -460,9 +501,9 @@ jobs:
             headers:{authorization:'Bearer test-token'},
             query:{protocolVersion:'1',childId:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'}
           },familyPullRes);
-          if(familyPullRes.out.statusCode!==200||familyPullRes.out.body?.entries?.length!==1) throw new Error('family sync pull failed');
+          if(familyPullRes.out.statusCode!==200||familyPullRes.out.body?.entries?.length!==1||familyPullRes.out.body?.deletes?.length!==1) throw new Error('family sync pull failed');
           if(familyPullRes.out.body.entries[0]?.status!=='approved') throw new Error('family pull status payload');
-          if(familyPullRes.out.body?.childId!=='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee') throw new Error('family pull child context');
+          if(familyPullRes.out.body?.childId!=='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'||familyPullRes.out.body?.deletesSupported!==true) throw new Error('family pull child context');
 
           const familyForbidden=mock();
           await familySync({

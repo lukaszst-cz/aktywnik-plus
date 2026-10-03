@@ -43,6 +43,10 @@ function duplicateIds(items){
   return dupes;
 }
 
+function missingTombstoneTable(response,data){
+  return response?.status===404&&(data?.code==='PGRST205'||data?.code==='42P01');
+}
+
 function normalizeEntry(entry,childId,fallbackUpdatedAt){
   if(!entry||typeof entry!=='object'||!UUID_RE.test(String(entry.id||'')))return null;
   if(!validDate(entry.date))return null;
@@ -102,40 +106,196 @@ async function pullFamily(token,childId){
   return Array.isArray(data)?data:[];
 }
 
+async function pullFamilyDeletes(token,childId){
+  const params=new URLSearchParams({
+    select:'client_entry_id,deleted_at',
+    child_id:'eq.'+childId,
+    order:'deleted_at.asc',
+    limit:String(MAX_SYNC_ENTRIES)
+  });
+  const response=await supabaseUserFetch(token,'/rest/v1/family_activity_tombstones?'+params.toString());
+  const data=await jsonOrNull(response);
+  if(missingTombstoneTable(response,data))return {rows:[],supported:false};
+  if(!response.ok)throw Object.assign(new Error(data?.message||'Family tombstone read failed.'),{status:502,code:'family_delete_read_failed'});
+  return {rows:Array.isArray(data)?data:[],supported:true};
+}
+
 async function pushFamily(token,childId,body){
   const entries=Array.isArray(body?.entries)?body.entries:[];
-  if(entries.length>MAX_SYNC_ENTRIES){
+  const deletes=Array.isArray(body?.deletes)?body.deletes:[];
+  if(entries.length>MAX_SYNC_ENTRIES||deletes.length>MAX_SYNC_ENTRIES){
     throw Object.assign(new Error('Too many family entries in one sync batch.'),{status:413,code:'family_sync_batch_too_large'});
   }
+
   if(duplicateIds(entries).size){
     throw Object.assign(new Error('Duplicate family activity ID in sync batch.'),{status:400,code:'duplicate_family_sync_entry'});
+  }
+  if(duplicateIds(deletes).size){
+    throw Object.assign(new Error('Duplicate family delete tombstone ID in sync batch.'),{status:400,code:'duplicate_family_delete_tombstone'});
+  }
+  const entryIds=new Set(entries.map(item=>String(item?.id||'')).filter(id=>UUID_RE.test(id)));
+  const overlap=deletes.map(item=>String(item?.id||'')).find(id=>entryIds.has(id));
+  if(overlap){
+    throw Object.assign(new Error('The same family activity cannot be updated and deleted in one sync batch.'),{status:400,code:'family_sync_entry_delete_conflict'});
+  }
+
+  const deleteRows=deletes.map(item=>{
+    if(!item||!UUID_RE.test(String(item.id||'')))return null;
+    const deletedAt=safeClientTime(item.deletedAt);
+    if(!deletedAt)return null;
+    return {
+      child_id:childId,
+      client_entry_id:String(item.id),
+      deleted_at:deletedAt.toISOString()
+    };
+  }).filter(Boolean);
+  if(deleteRows.length!==deletes.length){
+    throw Object.assign(new Error('One or more family delete tombstones are invalid.'),{status:400,code:'invalid_family_delete_tombstone'});
+  }
+
+  let deletedCount=0;
+  let deleteSuppressed=0;
+  let deletesSupported=true;
+
+  if(deleteRows.length){
+    const ids=deleteRows.map(row=>row.client_entry_id);
+    const tombLookup=new URLSearchParams({
+      select:'client_entry_id,deleted_at',
+      child_id:'eq.'+childId,
+      client_entry_id:'in.('+ids.join(',')+')'
+    });
+    const currentTombResponse=await supabaseUserFetch(token,'/rest/v1/family_activity_tombstones?'+tombLookup.toString());
+    const currentTombData=await jsonOrNull(currentTombResponse);
+    if(missingTombstoneTable(currentTombResponse,currentTombData)){
+      deletesSupported=false;
+      deleteSuppressed=deleteRows.length;
+    }else if(!currentTombResponse.ok){
+      throw Object.assign(new Error(currentTombData?.message||'Family tombstone check failed.'),{status:502,code:'family_delete_check_failed'});
+    }
+
+    const currentTombs=new Map((deletesSupported&&Array.isArray(currentTombData)?currentTombData:[]).map(row=>[
+      String(row.client_entry_id),
+      new Date(row.deleted_at).getTime()
+    ]));
+    const newestDeletes=deletesSupported?deleteRows.filter(row=>{
+      const previous=currentTombs.get(row.client_entry_id);
+      return !Number.isFinite(previous)||new Date(row.deleted_at).getTime()>previous;
+    }):[];
+
+    if(newestDeletes.length){
+      const tombstoneResponse=await supabaseUserFetch(
+        token,
+        '/rest/v1/family_activity_tombstones?on_conflict=child_id,client_entry_id',
+        {
+          method:'POST',
+          headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+          body:JSON.stringify(newestDeletes)
+        }
+      );
+      const tombstoneData=await jsonOrNull(tombstoneResponse);
+      if(!tombstoneResponse.ok)throw Object.assign(new Error(tombstoneData?.message||'Family tombstone write failed.'),{status:502,code:'family_delete_write_failed'});
+    }
+
+    if(deletesSupported){
+      const activityLookup=new URLSearchParams({
+        select:'client_entry_id,client_updated_at',
+        child_id:'eq.'+childId,
+        tenant_id:'is.null',
+        client_entry_id:'in.('+ids.join(',')+')'
+      });
+    const activityResponse=await supabaseUserFetch(token,'/rest/v1/activities?'+activityLookup.toString());
+    const activityData=await jsonOrNull(activityResponse);
+    if(!activityResponse.ok)throw Object.assign(new Error(activityData?.message||'Family activity delete check failed.'),{status:502,code:'family_delete_check_failed'});
+
+    const activityTimes=new Map((Array.isArray(activityData)?activityData:[]).map(row=>[
+      String(row.client_entry_id),
+      new Date(row.client_updated_at).getTime()
+    ]));
+    const deleteTimes=new Map(deleteRows.map(row=>[
+      row.client_entry_id,
+      new Date(row.deleted_at).getTime()
+    ]));
+    const safeDeleteIds=ids.filter(id=>{
+      const activityTime=activityTimes.get(id);
+      const deleteTime=deleteTimes.get(id);
+      return !Number.isFinite(activityTime)||deleteTime>=activityTime;
+    });
+
+    if(safeDeleteIds.length){
+      const deleteQuery=new URLSearchParams({
+        child_id:'eq.'+childId,
+        tenant_id:'is.null',
+        client_entry_id:'in.('+safeDeleteIds.join(',')+')'
+      });
+      const deleteResponse=await supabaseUserFetch(
+        token,
+        '/rest/v1/activities?'+deleteQuery.toString(),
+        {
+          method:'DELETE',
+          headers:{Prefer:'return=minimal'}
+        }
+      );
+      const deleteData=await jsonOrNull(deleteResponse);
+      if(!deleteResponse.ok)throw Object.assign(new Error(deleteData?.message||'Family cloud delete failed.'),{status:502,code:'family_delete_failed'});
+    }
+
+      deletedCount=safeDeleteIds.length;
+      deleteSuppressed=deleteRows.length-safeDeleteIds.length;
+    }
   }
 
   const rows=entries.map(entry=>normalizeEntry(entry,childId,body?.updatedAt)).filter(Boolean);
   if(rows.length!==entries.length){
     throw Object.assign(new Error('One or more family entries are invalid for cloud sync.'),{status:400,code:'invalid_family_sync_entry'});
   }
-  if(!rows.length)return {synced:0,suppressed:0};
 
-  const ids=rows.map(row=>row.client_entry_id);
-  const lookup=new URLSearchParams({
-    select:'client_entry_id,client_updated_at',
-    child_id:'eq.'+childId,
-    tenant_id:'is.null',
-    client_entry_id:'in.('+ids.join(',')+')'
-  });
-  const currentResponse=await supabaseUserFetch(token,'/rest/v1/activities?'+lookup.toString());
-  const currentData=await jsonOrNull(currentResponse);
-  if(!currentResponse.ok)throw Object.assign(new Error(currentData?.message||'Family conflict check failed.'),{status:502,code:'family_conflict_check_failed'});
+  let allowedByTombstone=rows;
+  if(rows.length){
+    const ids=rows.map(row=>row.client_entry_id);
+    const tombLookup=new URLSearchParams({
+      select:'client_entry_id,deleted_at',
+      child_id:'eq.'+childId,
+      client_entry_id:'in.('+ids.join(',')+')'
+    });
+    const tombResponse=await supabaseUserFetch(token,'/rest/v1/family_activity_tombstones?'+tombLookup.toString());
+    const tombData=await jsonOrNull(tombResponse);
+    if(missingTombstoneTable(tombResponse,tombData)){
+      deletesSupported=false;
+    }else if(!tombResponse.ok){
+      throw Object.assign(new Error(tombData?.message||'Family tombstone check failed.'),{status:502,code:'family_delete_check_failed'});
+    }
+    const tombstones=new Map((deletesSupported&&Array.isArray(tombData)?tombData:[]).map(row=>[
+      String(row.client_entry_id),
+      new Date(row.deleted_at).getTime()
+    ]));
+    allowedByTombstone=rows.filter(row=>{
+      const deletedAt=tombstones.get(row.client_entry_id);
+      return !Number.isFinite(deletedAt)||new Date(row.client_updated_at).getTime()>deletedAt;
+    });
+  }
 
-  const currentTimes=new Map((Array.isArray(currentData)?currentData:[]).map(row=>[
-    String(row.client_entry_id),
-    new Date(row.client_updated_at).getTime()
-  ]));
-  const allowed=rows.filter(row=>{
-    const current=currentTimes.get(row.client_entry_id);
-    return !Number.isFinite(current)||new Date(row.client_updated_at).getTime()>current;
-  });
+  let allowed=allowedByTombstone;
+  if(allowedByTombstone.length){
+    const ids=allowedByTombstone.map(row=>row.client_entry_id);
+    const lookup=new URLSearchParams({
+      select:'client_entry_id,client_updated_at',
+      child_id:'eq.'+childId,
+      tenant_id:'is.null',
+      client_entry_id:'in.('+ids.join(',')+')'
+    });
+    const currentResponse=await supabaseUserFetch(token,'/rest/v1/activities?'+lookup.toString());
+    const currentData=await jsonOrNull(currentResponse);
+    if(!currentResponse.ok)throw Object.assign(new Error(currentData?.message||'Family conflict check failed.'),{status:502,code:'family_conflict_check_failed'});
+
+    const currentTimes=new Map((Array.isArray(currentData)?currentData:[]).map(row=>[
+      String(row.client_entry_id),
+      new Date(row.client_updated_at).getTime()
+    ]));
+    allowed=allowedByTombstone.filter(row=>{
+      const current=currentTimes.get(row.client_entry_id);
+      return !Number.isFinite(current)||new Date(row.client_updated_at).getTime()>current;
+    });
+  }
 
   if(allowed.length){
     const response=await supabaseUserFetch(
@@ -151,7 +311,13 @@ async function pushFamily(token,childId,body){
     if(!response.ok)throw Object.assign(new Error(data?.message||'Family cloud write failed.'),{status:502,code:'family_cloud_write_failed'});
   }
 
-  return {synced:allowed.length,suppressed:rows.length-allowed.length};
+  return {
+    synced:allowed.length,
+    deleted:deletedCount,
+    deleteSuppressed,
+    suppressed:rows.length-allowed.length,
+    deletesSupported
+  };
 }
 
 module.exports=async function handler(req,res){
@@ -177,14 +343,18 @@ module.exports=async function handler(req,res){
     await requireGuardian(token,childId);
 
     if(req.method==='GET'){
-      const entries=await pullFamily(token,childId);
+      const [entries,deleteResult]=await Promise.all([
+        pullFamily(token,childId),
+        pullFamilyDeletes(token,childId)
+      ]);
       return res.status(200).json({
         ok:true,
         mode:'family',
         protocolVersion,
         childId,
         entries,
-        deletesSupported:false
+        deletes:deleteResult.rows,
+        deletesSupported:deleteResult.supported
       });
     }
 
@@ -195,8 +365,10 @@ module.exports=async function handler(req,res){
       protocolVersion,
       childId,
       synced:result.synced,
+      deleted:result.deleted,
+      deleteSuppressed:result.deleteSuppressed,
       suppressed:result.suppressed,
-      deletesSupported:false
+      deletesSupported:result.deletesSupported
     });
   }catch(err){
     const status=Number(err?.status)||500;
