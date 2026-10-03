@@ -216,6 +216,30 @@
           <button id="removeChildBtn" class="danger" data-i18n="parent.removeChild">Usuń profil dziecka</button>
         </div>
         <small data-i18n="parent.multiProfiles">Rodzic może prowadzić wiele profili. Na ekranie dziecka aktywny jest tylko jeden profil; jego zmiana wymaga PIN-u.</small>
+
+        <div class="family-cloud-link">
+          <div class="section-head">
+            <div>
+              <h3 data-i18n="parent.cloudLinkTitle">☁️ Powiązanie profilu z chmurą</h3>
+              <small data-i18n="parent.cloudLinkText">Połącz lokalny profil tylko z wybranym profilem dziecka widocznym na Twoim koncie. Aktywnik+ nie dopasowuje dzieci automatycznie po imieniu.</small>
+            </div>
+            <span id="familyCloudLinkBadge" class="badge" data-i18n="parent.cloudUnlinked">niepołączony</span>
+          </div>
+          <div class="form-grid">
+            <label class="wide"><span data-i18n="parent.cloudProfile">Profil dziecka w School Cloud</span>
+              <select id="familyCloudChildSelect">
+                <option value="" data-i18n="parent.cloudRefreshFirst">Odśwież profile z chmury</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions">
+            <button id="familyCloudRefreshBtn" class="ghost" type="button" data-i18n="parent.cloudRefresh">Odśwież profile</button>
+            <button id="familyCloudLinkBtn" class="primary" type="button" data-i18n="parent.cloudLink">Połącz wybrany profil</button>
+            <button id="familyCloudCreateLinkBtn" class="ghost" type="button" data-i18n="parent.cloudCreateLink">Utwórz w chmurze i połącz</button>
+            <button id="familyCloudUnlinkBtn" class="danger" type="button" data-i18n="parent.cloudUnlink">Odłącz</button>
+          </div>
+          <p id="familyCloudLinkStatus" class="calm-note" aria-live="polite" data-i18n="parent.cloudLinkHint">Powiązanie jest wymagane przed przyszłą synchronizacją aktywności rodzinnych.</p>
+        </div>
       </section>
 
       <section class="card">
