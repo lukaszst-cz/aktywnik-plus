@@ -274,6 +274,69 @@ async function run(){
     d.getElementById('newChildName').value='Dziecko B';d.getElementById('addChildBtn').click();await sleep(80);
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');if(saved.children?.length!==2)throw new Error('second child not added');
     const childB=saved.children.find(x=>x.displayName==='Dziecko B');if(!childB)throw new Error('second child missing');
+    if(!d.getElementById('familyCloudChildSelect')||!w.AktywnikFamilyCloudLink)throw new Error('family cloud link foundation missing');
+
+    const cloudA='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',cloudB='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2';
+    const originalFamilyFetch=w.fetch;
+    const originalValidSession=w.AktywnikAuth.validSession;
+    w.AktywnikAuth.validSession=async()=>({access_token:'family-link-test-token'});
+    w.fetch=async(url,options={})=>{
+      const target=String(url);
+      if(target.includes('/api/v1/me'))return new w.Response(JSON.stringify({
+        ok:true,
+        profile:{id:'11111111-1111-4111-8111-111111111111',display_name:'Rodzic Test',profile_type:'adult'},
+        memberships:[],
+        children:[
+          {id:cloudA,display_name:'Cloud A'},
+          {id:cloudB,display_name:'Cloud B'}
+        ]
+      }),{status:200,headers:{'Content-Type':'application/json'}});
+      return originalFamilyFetch(url,options);
+    };
+    if(!await w.AktywnikFamilyCloudLink.refresh())throw new Error('family cloud children refresh failed');
+    d.getElementById('parentChildSelect').value='child-a';
+    d.getElementById('parentChildSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+    await sleep(40);
+    d.getElementById('familyCloudChildSelect').value=cloudA;
+    if(!w.AktywnikFamilyCloudLink.link())throw new Error('family cloud child A link failed');
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.children.find(x=>x.id==='child-a')?.cloudChildId!==cloudA)throw new Error('family cloud child A link not persisted');
+
+    d.getElementById('parentChildSelect').value=childB.id;
+    d.getElementById('parentChildSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+    await sleep(40);
+    if([...d.getElementById('familyCloudChildSelect').options].some(o=>o.value===cloudA))throw new Error('cloud child already linked to sibling remained selectable');
+    d.getElementById('familyCloudChildSelect').value=cloudB;
+    if(!w.AktywnikFamilyCloudLink.link())throw new Error('family cloud child B link failed');
+    saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(saved.children.find(x=>x.id===childB.id)?.cloudChildId!==cloudB)throw new Error('family cloud child B link not persisted');
+
+    const linkBackup=w.makeBackupPayload(saved);
+    const linkRestored=w.backupStateFromPayload(linkBackup);
+    if(linkRestored.children.find(x=>x.id==='child-a')?.cloudChildId!==cloudA||linkRestored.children.find(x=>x.id===childB.id)?.cloudChildId!==cloudB)throw new Error('family cloud links not preserved in backup');
+
+    let duplicateCloudLinkBlocked=false;
+    try{
+      w.backupStateFromPayload({
+        format:'aktywnik-plus-backup',
+        version:6,
+        data:{...saved,children:saved.children.map((c,i)=>({...c,cloudChildId:i<2?cloudA:c.cloudChildId}))}
+      });
+    }catch(err){duplicateCloudLinkBlocked=/ten sam profil chmurowy/i.test(String(err?.message||err))}
+    if(!duplicateCloudLinkBlocked)throw new Error('duplicate cloud child link backup was not blocked');
+
+    let invalidCloudLinkBlocked=false;
+    try{
+      w.backupStateFromPayload({
+        format:'aktywnik-plus-backup',
+        version:6,
+        data:{...saved,children:saved.children.map((c,i)=>({...c,cloudChildId:i===0?'not-a-uuid':c.cloudChildId}))}
+      });
+    }catch(err){invalidCloudLinkBlocked=/nieprawidłowe powiązanie/i.test(String(err?.message||err))}
+    if(!invalidCloudLinkBlocked)throw new Error('invalid cloud child UUID backup was not blocked');
+
+    w.fetch=originalFamilyFetch;
+    w.AktywnikAuth.validSession=originalValidSession;
 
     d.getElementById('parentChildSelect').value='child-a';d.getElementById('parentChildSelect').dispatchEvent(new w.Event('change',{bubbles:true}));await sleep(50);
     const correct=d.querySelector('[data-correct]');if(!correct)throw new Error('parent correct action missing');

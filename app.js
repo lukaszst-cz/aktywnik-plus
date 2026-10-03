@@ -21,7 +21,7 @@ const PIN_LOCK_MS=30000;
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
 const defaultState={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
-let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let parentReportMonth=today().slice(0,7); let lastPersistOk=true;
+let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let parentReportMonth=today().slice(0,7); let lastPersistOk=true; let familyCloudContext=null; let familyCloudBusy=false;
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist({skipSync=false}={}){
   state.meta={...(state.meta||{}),lastWriteAt:nowIso()};
@@ -39,6 +39,8 @@ const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(
 function fmtMin(m){const h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
 function today(){const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
 function cleanText(v,max=160){return String(v??'').trim().slice(0,max)}
+function validUuid(v){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v??''))}
+function uiText(key,fallback){const i18n=window.AktywnikI18n,lang=i18n?.getLanguage?.()||document.documentElement.lang||'pl';return i18n?.messages?.[lang]?.[key]||fallback}
 function clampInt(v,min,max,fallback){const n=Math.round(Number(v));return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback}
 function validDate(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(v??'')))return false;return !Number.isNaN(new Date(String(v)+'T12:00:00').getTime())}
 function allowedActivityDate(v){return validDate(v)&&v<=today()}
@@ -524,15 +526,144 @@ function switchMode(mode,bypass=false){
   if(mode==='parent'||mode==='school')touchParentSession();
   renderAll();
 }
+function familyCloudStatus(message,kind=''){
+  const el=$('#familyCloudLinkStatus');if(!el)return;el.textContent=message;el.dataset.kind=kind;
+}
+function availableFamilyCloudChildren(){
+  return Array.isArray(familyCloudContext?.children)?familyCloudContext.children.filter(c=>validUuid(c?.id)):[];
+}
+function familyCloudLinkedElsewhere(cloudChildId,localChildId){
+  return state.children.some(c=>c.id!==localChildId&&validUuid(c.cloudChildId)&&String(c.cloudChildId).toLowerCase()===String(cloudChildId).toLowerCase());
+}
+function renderFamilyCloudLink(){
+  const select=$('#familyCloudChildSelect'),badge=$('#familyCloudLinkBadge'),child=parentChild();
+  if(!select||!badge)return;
+  if(!parentUnlocked()||!child){select.innerHTML='';return}
+  const linked=validUuid(child.cloudChildId)?String(child.cloudChildId).toLowerCase():'';
+  const used=new Set(state.children.filter(c=>c.id!==child.id&&validUuid(c.cloudChildId)).map(c=>String(c.cloudChildId).toLowerCase()));
+  const cloud=availableFamilyCloudChildren().filter(c=>!used.has(String(c.id).toLowerCase())||String(c.id).toLowerCase()===linked);
+  const current=cloud.find(c=>String(c.id).toLowerCase()===linked);
+  let options='';
+  if(!familyCloudContext){
+    options='<option value="">'+escapeHtml(uiText('parent.cloudRefreshFirst','Odśwież profile z chmury'))+'</option>';
+  }else if(!cloud.length){
+    options='<option value="">'+escapeHtml(uiText('parent.cloudNoProfiles','Brak wolnych profili dziecka w chmurze.'))+'</option>';
+  }else{
+    options='<option value="">—</option>'+cloud.map(c=>'<option value="'+escapeAttr(c.id)+'">'+escapeHtml(c.display_name||'Dziecko')+' · '+escapeHtml(String(c.id).slice(0,8))+'…</option>').join('');
+  }
+  if(linked&&!current){
+    options+='<option value="'+escapeAttr(linked)+'">'+escapeHtml('Powiązany profil · '+linked.slice(0,8)+'…')+'</option>';
+  }
+  select.innerHTML=options;
+  if(linked)select.value=linked;
+  badge.textContent=linked?uiText('parent.cloudLinked','połączony'):uiText('parent.cloudUnlinked','niepołączony');
+  $('#familyCloudUnlinkBtn').disabled=!linked||familyCloudBusy;
+  $('#familyCloudLinkBtn').disabled=familyCloudBusy||!select.value||!availableFamilyCloudChildren().some(c=>String(c.id).toLowerCase()===String(select.value).toLowerCase());
+  $('#familyCloudCreateLinkBtn').disabled=familyCloudBusy||!!linked;
+  $('#familyCloudRefreshBtn').disabled=familyCloudBusy;
+  if(linked){
+    const name=current?.display_name||linked.slice(0,8)+'…';
+    familyCloudStatus((document.documentElement.lang==='en'?'Linked to: ':'Połączono z: ')+name,'ok');
+  }else if(!familyCloudContext){
+    familyCloudStatus(uiText('parent.cloudLinkHint','Powiązanie jest wymagane przed przyszłą synchronizacją aktywności rodzinnych.'));
+  }else if(!cloud.length){
+    familyCloudStatus(uiText('parent.cloudNoProfiles','Brak wolnych profili dziecka w chmurze. Możesz utworzyć nowy profil.'));
+  }else{
+    familyCloudStatus(uiText('parent.cloudLinkHint','Powiązanie jest wymagane przed przyszłą synchronizacją aktywności rodzinnych.'));
+  }
+}
+async function familyCloudApi(path,options={}){
+  const session=await window.AktywnikAuth?.validSession?.();
+  if(!session?.access_token)throw Object.assign(new Error('authentication_required'),{status:401});
+  const res=await fetch(path,{
+    ...options,
+    cache:'no-store',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,...(options.headers||{})}
+  });
+  let data=null;try{data=await res.json()}catch{}
+  if(!res.ok)throw Object.assign(new Error(data?.detail||data?.message||data?.error||('HTTP '+res.status)),{status:res.status,data});
+  return data;
+}
+async function refreshFamilyCloudChildren(){
+  if(!guardParent()||isSelfMode()||familyCloudBusy)return false;
+  familyCloudBusy=true;renderFamilyCloudLink();
+  try{
+    const session=await window.AktywnikAuth?.validSession?.();
+    if(!session?.access_token){
+      familyCloudContext=null;
+      familyCloudStatus(uiText('parent.cloudLoginRequired','Zaloguj konto dorosłego, aby wczytać profile School Cloud.'),'error');
+      return false;
+    }
+    const data=await familyCloudApi('/api/v1/me');
+    if(data?.profile?.profile_type!=='adult')throw Object.assign(new Error('adult_account_required'),{status:403});
+    familyCloudContext={profile:data.profile||null,children:Array.isArray(data.children)?data.children:[]};
+    familyCloudStatus(uiText('parent.cloudLoaded','Profile School Cloud zostały odświeżone.'),'ok');
+    return true;
+  }catch(err){
+    familyCloudContext=null;
+    familyCloudStatus(err?.status===401?uiText('parent.cloudLoginRequired','Zaloguj konto dorosłego, aby wczytać profile School Cloud.'):uiText('parent.cloudLoadFail','Nie udało się wczytać profili School Cloud.')+' '+String(err?.message||''),'error');
+    return false;
+  }finally{
+    familyCloudBusy=false;renderFamilyCloudLink();
+  }
+}
+function linkSelectedFamilyCloudChild(){
+  if(!guardParent()||isSelfMode())return false;
+  const child=parentChild(),select=$('#familyCloudChildSelect'),cloudId=String(select?.value||'').toLowerCase();
+  if(!child||!validUuid(cloudId)){familyCloudStatus(uiText('parent.cloudInvalid','Wybrany profil chmurowy jest nieprawidłowy albo nie jest dostępny na tym koncie.'),'error');return false}
+  const visible=availableFamilyCloudChildren().some(c=>String(c.id).toLowerCase()===cloudId);
+  if(!visible){familyCloudStatus(uiText('parent.cloudInvalid','Wybrany profil chmurowy jest nieprawidłowy albo nie jest dostępny na tym koncie.'),'error');return false}
+  if(familyCloudLinkedElsewhere(cloudId,child.id)){familyCloudStatus(uiText('parent.cloudAlreadyUsed','Ten profil chmurowy jest już połączony z innym lokalnym dzieckiem.'),'error');return false}
+  child.cloudChildId=cloudId;persist({skipSync:true});renderFamilyCloudLink();
+  familyCloudStatus(uiText('parent.cloudLinkSaved','Powiązanie profilu zostało zapisane lokalnie.'),'ok');
+  return true;
+}
+async function createAndLinkFamilyCloudChild(){
+  if(!guardParent()||isSelfMode()||familyCloudBusy)return false;
+  const child=parentChild();if(!child||validUuid(child.cloudChildId))return false;
+  familyCloudBusy=true;renderFamilyCloudLink();
+  try{
+    const data=await familyCloudApi('/api/v1/family-children',{method:'POST',body:JSON.stringify({displayName:child.displayName})});
+    const cloudId=String(data?.childId||'').toLowerCase();
+    if(!validUuid(cloudId))throw new Error('invalid_cloud_child_id');
+    if(familyCloudLinkedElsewhere(cloudId,child.id))throw new Error('cloud_child_already_linked');
+    child.cloudChildId=cloudId;persist({skipSync:true});
+    const context=await familyCloudApi('/api/v1/me');
+    familyCloudContext={profile:context.profile||null,children:Array.isArray(context.children)?context.children:[]};
+    familyCloudStatus(uiText('parent.cloudCreatedLinked','Profil dziecka został utworzony w chmurze i połączony.'),'ok');
+    return true;
+  }catch(err){
+    familyCloudStatus(String(err?.message||'').includes('authentication_required')?uiText('parent.cloudLoginRequired','Zaloguj konto dorosłego, aby wczytać profile School Cloud.'):uiText('parent.cloudLoadFail','Nie udało się wczytać profili School Cloud.')+' '+String(err?.message||''),'error');
+    return false;
+  }finally{
+    familyCloudBusy=false;renderFamilyCloudLink();
+  }
+}
+function unlinkFamilyCloudChild(){
+  if(!guardParent()||isSelfMode())return false;
+  const child=parentChild();if(!child||!validUuid(child.cloudChildId))return false;
+  if(!confirm(document.documentElement.lang==='en'?'Unlink this local profile from School Cloud? No cloud data will be deleted.':'Odłączyć ten lokalny profil od School Cloud? Dane w chmurze nie zostaną usunięte.'))return false;
+  child.cloudChildId=null;persist({skipSync:true});renderFamilyCloudLink();
+  familyCloudStatus(uiText('parent.cloudLinkRemoved','Powiązanie profilu zostało usunięte.'),'ok');
+  return true;
+}
+window.AktywnikFamilyCloudLink={
+  refresh:refreshFamilyCloudChildren,
+  link:linkSelectedFamilyCloudChild,
+  unlink:unlinkFamilyCloudChild,
+  createAndLink:createAndLinkFamilyCloudChild,
+  render:renderFamilyCloudLink
+};
+
 function renderParentChildren(){
   const select=$('#parentChildSelect');if(!select)return;if(!parentUnlocked()){select.innerHTML='';return}
   if(!getChild(parentSelectedChildId))parentSelectedChildId=state.activeChildId||state.children[0]?.id||null;
   select.innerHTML=state.children.map(c=>'<option value="'+escapeAttr(c.id)+'" '+(c.id===parentSelectedChildId?'selected':'')+'>'+escapeHtml(c.displayName)+(c.id===state.activeChildId?' — profil urządzenia':'')+'</option>').join('');
-  const child=parentChild();$('#childApprovalMode').value=approvalRequired(child)?'required':'automatic';$('#joinChildName').value=child?.displayName||'';$('#parentAutoLockMinutes').value=String(clampInt(state.parentAuth?.autoLockMinutes,1,15,5));renderRewardChildSelect();
+  const child=parentChild();$('#childApprovalMode').value=approvalRequired(child)?'required':'automatic';$('#joinChildName').value=child?.displayName||'';$('#parentAutoLockMinutes').value=String(clampInt(state.parentAuth?.autoLockMinutes,1,15,5));renderRewardChildSelect();renderFamilyCloudLink();
 }
 function addChild(){
   if(!guardParent())return;const name=cleanText($('#newChildName').value,60);if(!name)return;
-  const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:true,createdAt:nowIso()};state.children.push(child);parentSelectedChildId=child.id;$('#newChildName').value='';persist();
+  const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:true,cloudChildId:null,createdAt:nowIso()};state.children.push(child);parentSelectedChildId=child.id;$('#newChildName').value='';persist();
 }
 function renameChild(){
   if(!guardParent())return;const child=parentChild();if(!child)return;const name=cleanText(prompt('Nowa nazwa profilu dziecka:',child.displayName),60);if(!name)return;child.displayName=name;persist();
@@ -704,7 +835,7 @@ async function startPilot(){
   if(mode==='family'&&pin!==confirmPin){alert('PIN-y nie są takie same.');return}
   state.profileMode=mode;
   if(!state.children.length){
-    const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:mode==='family',createdAt:nowIso()};
+    const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:mode==='family',cloudChildId:null,createdAt:nowIso()};
     state.children=[child];state.activeChildId=child.id;parentSelectedChildId=child.id;state.pilot={started:true};
   }else{
     state.children[0].displayName=name;state.children[0].requireParentApproval=mode==='family';state.activeChildId=state.activeChildId||state.children[0].id;parentSelectedChildId=state.activeChildId;
@@ -742,6 +873,15 @@ function validateBackupIdentityIntegrity(raw){
   if(!d)throw new Error('Nieprawidłowa struktura kopii Aktywnik+.');
   assertUniqueBackupIds(d.children,'profilu');
   assertUniqueBackupIds(d.entries,'wpisu');
+  const cloudChildIds=new Set();
+  for(const child of (Array.isArray(d.children)?d.children:[])){
+    const cloudId=cleanText(child?.cloudChildId,80);
+    if(!cloudId)continue;
+    if(!validUuid(cloudId))throw new Error('Kopia zawiera nieprawidłowe powiązanie profilu z chmurą.');
+    const normalized=cloudId.toLowerCase();
+    if(cloudChildIds.has(normalized))throw new Error('Kopia zawiera ten sam profil chmurowy przypisany do więcej niż jednego lokalnego dziecka.');
+    cloudChildIds.add(normalized);
+  }
   const childIds=new Set((Array.isArray(d.children)?d.children:[]).map(child=>cleanText(child?.id,80)).filter(Boolean));
   const requireKnownChild=(item,label)=>{
     if(!item||typeof item!=='object')return;
@@ -776,10 +916,11 @@ function safeBackupState(raw){
     if(!c||typeof c!=='object')return null;
     const displayName=cleanText(c.displayName||c.name,60);if(!displayName)return null;
     const favorites=(Array.isArray(c.favorites)?c.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20);
-    return {id:cleanText(c.id,80)||uuid(),displayName,favorites:favorites.length?favorites:[...DEFAULT_FAVORITES],requireParentApproval:c.requireParentApproval!==false,createdAt:c.createdAt||nowIso()};
+    const cloudChildId=validUuid(c.cloudChildId)?String(c.cloudChildId).toLowerCase():null;
+    return {id:cleanText(c.id,80)||uuid(),displayName,favorites:favorites.length?favorites:[...DEFAULT_FAVORITES],requireParentApproval:c.requireParentApproval!==false,cloudChildId,createdAt:c.createdAt||nowIso()};
   }).filter(Boolean).slice(0,50);
   if(!children.length&&(d.pilot?.started||cleanText(d.pilot?.childDisplayName,60)||(Array.isArray(d.entries)&&d.entries.length))){
-    children=[{id:uuid(),displayName:cleanText(d.pilot?.childDisplayName,60)||'Profil dziecka',favorites:(Array.isArray(d.favorites)?d.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20),requireParentApproval:true,createdAt:nowIso()}];
+    children=[{id:uuid(),displayName:cleanText(d.pilot?.childDisplayName,60)||'Profil dziecka',favorites:(Array.isArray(d.favorites)?d.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20),requireParentApproval:true,cloudChildId:null,createdAt:nowIso()}];
   }
   const ids=new Set(children.map(c=>c.id)),fallback=children[0]?.id||null,activeChildId=ids.has(d.activeChildId)?d.activeChildId:fallback;
   const entries=(Array.isArray(d.entries)?d.entries:[]).slice(0,MAX_ENTRIES).map(e=>{
@@ -874,6 +1015,11 @@ $('#addChildBtn').onclick=addChild;
 $('#renameChildBtn').onclick=renameChild;
 $('#setDeviceChildBtn').onclick=setDeviceChild;
 $('#removeChildBtn').onclick=removeChild;
+$('#familyCloudRefreshBtn').onclick=()=>refreshFamilyCloudChildren();
+$('#familyCloudLinkBtn').onclick=linkSelectedFamilyCloudChild;
+$('#familyCloudCreateLinkBtn').onclick=()=>createAndLinkFamilyCloudChild();
+$('#familyCloudUnlinkBtn').onclick=unlinkFamilyCloudChild;
+$('#familyCloudChildSelect').onchange=renderFamilyCloudLink;
 $('#exportBackupBtn').onclick=exportBackup;
 $('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
 $('#requestPersistentStorageBtn').onclick=requestPersistentStorage;
@@ -909,7 +1055,7 @@ $('#exportCsvBtn').onclick=exportReportCsv;
 $('#printReportBtn').onclick=()=>{if(guardParent())window.print()};
 $('#printSchoolReportBtn').onclick=printSchoolMonthlyReport;
 window.addEventListener('afterprint',()=>document.body.classList.remove('school-print-mode'));
-window.addEventListener('aktywnik:languagechange',()=>{if(selected&&!editingEntryId)showDurationSuggestion(selected)});
+window.addEventListener('aktywnik:languagechange',()=>{if(selected&&!editingEntryId)showDurationSuggestion(selected);renderFamilyCloudLink()});
 setInterval(renderTimer,1000);
 setInterval(()=>{if((currentMode==='parent'||currentMode==='school')&&!parentUnlocked())lockParent()},10000);
 ['pointerdown','keydown','touchstart'].forEach(evt=>document.addEventListener(evt,()=>{if((currentMode==='parent'||currentMode==='school')&&parentUnlocked())touchParentSession()},{passive:true}));

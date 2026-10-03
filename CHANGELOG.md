@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — explicit family cloud profile links
+
+- lokalny profil dziecka może być jawnie powiązany z konkretnym profilem School Cloud przez `cloudChildId`;
+- aplikacja nie dopasowuje dzieci automatycznie po imieniu;
+- jeden profil chmurowy nie może być przypisany do dwóch lokalnych dzieci;
+- rodzic może odświeżyć listę własnych profili chmurowych, połączyć istniejący profil albo utworzyć nowy i od razu go powiązać;
+- odłączenie usuwa wyłącznie lokalne powiązanie i nie kasuje danych w chmurze;
+- backup v6 waliduje poprawność i unikalność `cloudChildId`;
+- smoke test obejmuje link, duplicate guard, unlink i backup validation;
+- capability API raportuje `familyCloudLinkReady: true`.
+
 ## Unreleased — School Cloud request timeout
 
 - requesty School Cloud mają 15-sekundowy timeout przez `AbortController`;
@@ -25,7 +36,7 @@
 - migracja jest wyłącznie addytywna i nie zmienia danych ani RLS;
 - `backend/tests/performance_preflight.sql` weryfikuje obecność indeksów;
 - migracja 021 + performance preflight przeszły PASS na live schemacie w transakcji zakończonej rollbackiem;
-- migracja 021 nie została jeszcze trwale wdrożona na Supabase.
+- migracja 021 została trwale wdrożona na Supabase; performance preflight: PASS. Performance Advisor raportuje jedynie INFO dla nowych, jeszcze nieużytych indeksów.
 
 
 ## Unreleased — public RPC privilege refactor

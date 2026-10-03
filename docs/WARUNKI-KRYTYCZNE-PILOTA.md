@@ -116,11 +116,12 @@ Gotowe:
 - działający projekt Supabase w regionie EU;
 - Supabase Auth dla dorosłych;
 - role i model tenant;
-- migracje 001–020;
+- migracje 001–021;
 - RLS;
 - endpoint `GET /api/v1/me`;
 - endpoint `GET /api/v1/classes` działający w kontekście JWT + RLS;
 - endpoint `POST /api/v1/family-children` do bezpiecznego tworzenia profilu dziecka przez dorosłego opiekuna;
+- jawne powiązanie lokalnego profilu z wybranym profilem chmurowym przez `cloudChildId`; brak automatycznego dopasowania po imieniu;
 - `/api/v1/sync` dla trybu osobistego;
 - fail-closed przy braku konfiguracji bezpieczeństwa.
 
@@ -180,7 +181,7 @@ Pozostaje:
 Sprawdzenie 2026-10-03:
 - projekt `aktywnik-plus`: ACTIVE_HEALTHY;
 - region: `eu-central-1`;
-- migracje `001`–`020`: zastosowane;
+- migracje `001`–`021`: zastosowane;
 - tabele `public`: 23;
 - RLS: 23/23;
 - granty dla `anon`: 0;
@@ -194,7 +195,8 @@ Sprawdzenie 2026-10-03:
 - migracja 018 jest trwale zastosowana live; test `child → adult` = BLOCKED/PASS, a `display_name` pozostaje edytowalne;
 - security preflight wymaga wyłącznie `UPDATE(display_name)` dla `authenticated` i zwraca PASS;
 - migracja 019: 8 triggerów School audit + prywatna funkcja retencji z `dry_run=true`, bez automatycznego harmonogramu;
-- migracja 020: publiczne RPC lifecycle → `SECURITY INVOKER`, uprzywilejowane helpery → `app_private`; class lifecycle PASS, family onboarding PASS, Security Advisor 0 lintów.
+- migracja 020: publiczne RPC lifecycle → `SECURITY INVOKER`, uprzywilejowane helpery → `app_private`; class lifecycle PASS, family onboarding PASS, Security Advisor 0 lintów;
+- migracja 021: indeksy pokrywające 4 wcześniej nieindeksowane FK; live performance preflight PASS.
 
 ## 12. Warunek publikacji pilota — ✅
 
@@ -219,7 +221,7 @@ Zwykłe endpointy użytkownika używają publishable key + Bearer JWT. Service-r
 
 1. family onboarding — ✅ rodzic może utworzyć profil dziecka w School Cloud bez e-maila/hasła dziecka;
 2. migracja 018 / profile role hardening — ✅ live + security preflight PASS;
-3. synchronizacja trybu rodzinnego;
+3. synchronizacja trybu rodzinnego — jawne powiązanie profilu lokalny→cloud ✅, przesyłanie aktywności nadal otwarte;
 4. synchronizacja usunięć w trybie rodzinnym — zależna od przyszłego family sync;
 5. backend restore drill — ✅ dane aplikacji; platformowy backup/restore Supabase nadal otwarty;
 6. School audit + mechanizm retencji — ✅ technicznie; okres/częstotliwość retencji nadal do zatwierdzenia przez szkołę/IOD;
