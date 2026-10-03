@@ -17,18 +17,27 @@ module.exports = async function handler(req,res){
   if(!token)return;
 
   const classId=String(req.body?.classId||'');
+  const operationId=String(req.body?.operationId||'');
   const rawValidDays=req.body?.validDays;
   const validDays=rawValidDays==null||rawValidDays===''?14:Number(rawValidDays);
   if(!UUID_RE.test(classId))return res.status(400).json({ok:false,error:'invalid_class_id'});
+  if(operationId&&!UUID_RE.test(operationId))return res.status(400).json({ok:false,error:'invalid_operation_id'});
   if(!Number.isInteger(validDays)||validDays<1||validDays>30){
     return res.status(400).json({ok:false,error:'invalid_invite_validity'});
   }
 
   try{
-    const response=await supabaseUserFetch(token,'/rest/v1/rpc/create_class_invite',{
-      method:'POST',
-      body:JSON.stringify({target_class:classId,valid_days:validDays})
-    });
+    const idempotent=Boolean(operationId);
+    const response=await supabaseUserFetch(
+      token,
+      idempotent?'/rest/v1/rpc/create_class_invite_idempotent':'/rest/v1/rpc/create_class_invite',
+      {
+        method:'POST',
+        body:JSON.stringify(idempotent
+          ?{target_class:classId,operation_key:operationId,valid_days:validDays}
+          :{target_class:classId,valid_days:validDays})
+      }
+    );
     const data=await jsonOrNull(response);
     if(response.status===401)return res.status(401).json({ok:false,error:'invalid_session'});
     if(response.status===403)return res.status(403).json({ok:false,error:'forbidden'});
