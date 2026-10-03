@@ -106,12 +106,19 @@
     if(out)out.textContent=data.token?'Token (14 dni): '+data.token:'Zaproszenie utworzone.';
   }
   async function createCloudChild(){
-    const input=$('#schoolNewChildName'),displayName=input?.value.trim()||'';
+    const input=$('#schoolNewChildName'),button=$('#schoolCreateChildBtn'),displayName=input?.value.trim()||'';
     if(!displayName){status('Podaj nazwę profilu dziecka.','error');return}
-    await api('/api/v1/family-children',{method:'POST',body:JSON.stringify({displayName})});
-    if(input)input.value='';
-    status('Profil dziecka został utworzony w School Cloud.','ok');
-    await loadContext();
+    if(displayName.length>60){status('Nazwa profilu dziecka może mieć maksymalnie 60 znaków.','error');return}
+    if(button?.disabled)return;
+    if(button)button.disabled=true;
+    try{
+      await api('/api/v1/family-children',{method:'POST',body:JSON.stringify({displayName})});
+      if(input)input.value='';
+      status('Profil dziecka został utworzony w School Cloud.','ok');
+      await loadContext();
+    }finally{
+      if(button)button.disabled=false;
+    }
   }
   async function requestJoin(){
     const childId=$('#schoolGuardianChildSelect').value,inviteToken=$('#schoolInviteTokenInput').value.trim();
