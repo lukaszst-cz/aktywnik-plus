@@ -1,14 +1,21 @@
 name: Production smoke
 
 on:
-  push:
-    branches: [main]
+  repository_dispatch:
+    types:
+      - vercel.deployment.success
+      - vercel.deployment.ready
+      - vercel.deployment.promoted
   workflow_dispatch:
     inputs:
       expected_version:
         description: Expected production version
         required: true
         default: 0.5.0-beta.4
+      expected_commit:
+        description: Expected deployed commit SHA (optional for manual runs)
+        required: false
+        default: ''
       require_cloud:
         description: Require production cloud gate to be enabled
         required: true
@@ -19,7 +26,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: production-smoke-main
+  group: production-smoke
   cancel-in-progress: true
 
 jobs:
@@ -31,6 +38,25 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+
+      - name: Resolve deployment target
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_URL: ${{ github.event.client_payload.url }}
+          INPUT_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          BASE_URL="https://aktywnik-plus.vercel.app"
+          EXPECTED_COMMIT="$INPUT_COMMIT"
+          if [ "$EVENT_NAME" = "repository_dispatch" ] && [ -n "$DISPATCH_URL" ]; then
+            case "$DISPATCH_URL" in
+              http://*|https://*) BASE_URL="$DISPATCH_URL" ;;
+              *) BASE_URL="https://$DISPATCH_URL" ;;
+            esac
+          fi
+          echo "base_url=$BASE_URL" >> "$GITHUB_OUTPUT"
+          echo "expected_commit=$EXPECTED_COMMIT" >> "$GITHUB_OUTPUT"
+
       - name: Verify production smoke scripts
         run: |
           node --check tests/production-smoke.mjs
@@ -38,9 +64,9 @@ jobs:
 
       - name: Verify production deployment
         env:
-          AKTYWNIK_BASE_URL: https://aktywnik-plus.vercel.app
+          AKTYWNIK_BASE_URL: ${{ steps.target.outputs.base_url }}
           AKTYWNIK_EXPECTED_VERSION: ${{ inputs.expected_version || '0.5.0-beta.4' }}
-          AKTYWNIK_EXPECTED_COMMIT: ${{ github.sha }}
+          AKTYWNIK_EXPECTED_COMMIT: ${{ steps.target.outputs.expected_commit }}
           AKTYWNIK_REQUIRE_CLOUD: ${{ inputs.require_cloud || 'true' }}
         run: |
           for attempt in $(seq 1 18); do
@@ -56,6 +82,8 @@ jobs:
           done
 
       - name: Verify production family UI
+        env:
+          AKTYWNIK_UI_URL: ${{ steps.target.outputs.base_url }}/app.html
         run: |
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME"
@@ -66,9 +94,9 @@ jobs:
             --no-first-run \
             --remote-debugging-port=9225 \
             --user-data-dir=/tmp/aktywnik-production-ui \
-            'https://aktywnik-plus.vercel.app/app.html?production-ui-smoke=1' \
+            "$AKTYWNIK_UI_URL?production-ui-smoke=1" \
             >/tmp/aktywnik-production-ui.log 2>&1 &
           echo $! > /tmp/aktywnik-production-ui.pid
           sleep 2
-          node tests/production-ui-smoke.mjs 9225 'https://aktywnik-plus.vercel.app/app.html'
+          node tests/production-ui-smoke.mjs 9225 "$AKTYWNIK_UI_URL"
           echo "Aktywnik+ production family UI smoke PASS"
