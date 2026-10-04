@@ -258,6 +258,31 @@
           <button id="pilotDiagnosticsCopyBtn" class="ghost" type="button" data-i18n="parent.diagCopy">Kopiuj raport diagnostyczny</button>
         </div>
         <small id="pilotDiagnosticsStatus" class="calm-note" aria-live="polite" data-i18n="parent.diagHint">Do testu dwóch urządzeń najlepiej mieć „online”, połączony profil i pustą kolejkę synchronizacji.</small>
+
+        <div class="pilot-test-box">
+          <div class="section-head">
+            <div>
+              <h3 data-i18n="parent.pilotTestTitle">📱 Test dwóch urządzeń A/B</h3>
+              <small data-i18n="parent.pilotTestText">Zaznaczaj tylko kroki faktycznie wykonane na dwóch realnych urządzeniach.</small>
+            </div>
+            <span id="pilotTestProgressBadge" class="badge">0/8</span>
+          </div>
+          <div id="pilotTestChecklist" class="pilot-test-list">
+            <label><input type="checkbox" data-pilot-step="parent-login"> <span data-i18n="parent.pilotStepLogin">A: rodzic zalogowany, rodzina widoczna</span></label>
+            <label><input type="checkbox" data-pilot-step="child-sync"> <span data-i18n="parent.pilotStepChildSync">B: wpis dziecka pojawił się u rodzica</span></label>
+            <label><input type="checkbox" data-pilot-step="decision-sync"> <span data-i18n="parent.pilotStepDecision">A→B: akceptacja / odrzucenie / korekta zsynchronizowana</span></label>
+            <label><input type="checkbox" data-pilot-step="delete-sync"> <span data-i18n="parent.pilotStepDelete">A↔B: usunięcie propaguje się na drugie urządzenie</span></label>
+            <label><input type="checkbox" data-pilot-step="offline-reconnect"> <span data-i18n="parent.pilotStepOffline">B: wpis offline → powrót online → synchronizacja</span></label>
+            <label><input type="checkbox" data-pilot-step="restart-pwa"> <span data-i18n="parent.pilotStepRestart">B: restart PWA nie gubi danych</span></label>
+            <label><input type="checkbox" data-pilot-step="sibling-isolation"> <span data-i18n="parent.pilotStepIsolation">Brak danych drugiego profilu dziecka w widoku aktywnego dziecka</span></label>
+            <label><input type="checkbox" data-pilot-step="pdf-report"> <span data-i18n="parent.pilotStepPdf">A: wygenerowany przykładowy raport PDF/A4</span></label>
+          </div>
+          <div class="actions">
+            <button id="pilotTestCopyBtn" class="ghost" type="button" data-i18n="parent.pilotTestCopy">Kopiuj wynik testu</button>
+            <button id="pilotTestResetBtn" class="ghost" type="button" data-i18n="parent.pilotTestReset">Wyczyść checklistę</button>
+          </div>
+          <small id="pilotTestStatus" class="calm-note" aria-live="polite" data-i18n="parent.pilotTestLocal">Checklista jest tylko lokalnym notatnikiem testera i nie trafia do synchronizacji.</small>
+        </div>
       </section>
 
       <section class="card">
