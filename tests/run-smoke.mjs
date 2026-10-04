@@ -18,9 +18,18 @@ const page=await waitForPage();
 const ws=new WebSocket(page.webSocketDebuggerUrl);
 let id=0;
 const pending=new Map();
+const diagnostics=[];
 ws.onmessage=e=>{
   const msg=JSON.parse(e.data);
-  if(msg.id&&pending.has(msg.id)){pending.get(msg.id)(msg);pending.delete(msg.id)}
+  if(msg.id&&pending.has(msg.id)){pending.get(msg.id)(msg);pending.delete(msg.id);return}
+  if(msg.method==='Runtime.exceptionThrown'){
+    const ex=msg.params?.exceptionDetails;
+    diagnostics.push('JS EXCEPTION: '+(ex?.exception?.description||ex?.text||'unknown exception'));
+  }
+  if(msg.method==='Log.entryAdded'){
+    const entry=msg.params?.entry;
+    if(entry&&['error','warning'].includes(entry.level))diagnostics.push('BROWSER '+entry.level.toUpperCase()+': '+entry.text);
+  }
 };
 await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject});
 
@@ -32,6 +41,9 @@ function call(method,params={}){
   });
 }
 
+await call('Runtime.enable');
+await call('Log.enable');
+
 while(Date.now()<deadline){
   const response=await call('Runtime.evaluate',{
     expression:"({test:document.body.dataset.test||'',result:document.getElementById('result')?.textContent||''})",
@@ -40,6 +52,9 @@ while(Date.now()<deadline){
   const value=response.result?.result?.value||{};
   if(value.test){
     console.log(value.result);
+    if(value.test!=='pass'&&diagnostics.length){
+      console.error('Browser diagnostics:\n'+diagnostics.slice(-40).join('\n'));
+    }
     ws.close();
     process.exit(value.test==='pass'?0:1);
   }
