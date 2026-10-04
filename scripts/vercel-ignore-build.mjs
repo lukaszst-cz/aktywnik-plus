@@ -11,7 +11,6 @@ const ignored=[
   ':(exclude)docs/**',
   ':(exclude)tests/**',
   ':(exclude)backend/tests/**',
-  ':(exclude)backend/migrations/**',
   ':(exclude)README.md',
   ':(exclude)CHANGELOG.md'
 ];
