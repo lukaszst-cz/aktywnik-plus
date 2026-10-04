@@ -28,6 +28,8 @@ production_smoke = (ROOT / "tests" / "production-smoke.mjs").read_text(encoding=
 production_workflow = (ROOT / ".github" / "workflows" / "production-smoke.yml").read_text(encoding="utf-8")
 install = (ROOT / "install.js").read_text(encoding="utf-8")
 styles = (ROOT / "styles.css").read_text(encoding="utf-8")
+vercel_config = (ROOT / "vercel.json").read_text(encoding="utf-8")
+vercel_gate = (ROOT / "scripts" / "vercel-ignore-build.mjs").read_text(encoding="utf-8")
 
 # Parent-only movement-load hint must stay outside child UI, exports and sync.
 assert "parentMovementLoadText" in app, "parent movement load hint missing"
@@ -55,7 +57,14 @@ diag_report = app.split("function pilotDiagnosticsReport()",1)[1].split("async f
 for forbidden in ["displayName","cloudChildId","pinHash","pinSalt","access_token","refresh_token"]:
     assert forbidden not in diag_report, f"diagnostics report contains sensitive field: {forbidden}"
 assert "AKTYWNIK_EXPECTED_COMMIT" in production_smoke, "production smoke does not verify exact commit"
-assert "AKTYWNIK_EXPECTED_COMMIT: ${{ github.sha }}" in production_workflow, "production workflow does not pass github.sha"
+assert "repository_dispatch:" in production_workflow and "vercel.deployment.success" in production_workflow, "production smoke must follow Vercel deployment events"
+assert "push:" not in production_workflow.split("workflow_dispatch:",1)[0], "production smoke must not run on every push"
+assert "expected_commit" in production_workflow and "AKTYWNIK_EXPECTED_COMMIT" in production_workflow, "manual exact-commit production verification missing"
+assert "node scripts/vercel-ignore-build.mjs" in vercel_config, "Vercel build gate not configured"
+for runtime_path in ["backend/migrations", "api/", "app.js", "family-sync-client.js", "vercel.json"]:
+    assert runtime_path not in vercel_gate, f"runtime path must not be ignored by Vercel build gate: {runtime_path}"
+for safe_path in [".github/**", "docs/**", "tests/**", "backend/tests/**", "README.md", "CHANGELOG.md"]:
+    assert safe_path in vercel_gate, f"non-runtime path missing from Vercel ignore gate: {safe_path}"
 assert "appUpdateNotice" in install and "controllerchange" in install and "registration.update()" in install, "PWA update notification missing"
 assert "app-update-notice" in styles, "PWA update notice styles missing"
 assert "navigator.serviceWorker.register('./sw.js')" not in app, "app.js still duplicates service worker registration"
