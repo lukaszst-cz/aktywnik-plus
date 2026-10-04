@@ -1311,7 +1311,7 @@ function writePilotTestChecklist(completed){
 function renderPilotTestChecklist(){
   const box=$('#pilotTestChecklist'),badge=$('#pilotTestProgressBadge');if(!box||!badge||!parentUnlocked())return;
   const data=readPilotTestChecklist(),done=new Set(data.completed);
-  $('[data-pilot-step]').forEach(input=>{input.checked=done.has(input.dataset.pilotStep)});
+  $$('[data-pilot-step]').forEach(input=>{input.checked=done.has(input.dataset.pilotStep)});
   badge.textContent=done.size+'/'+PILOT_TEST_STEPS.length;
   badge.dataset.state=done.size===PILOT_TEST_STEPS.length?'ok':done.size?'warn':'';
 }
@@ -1403,7 +1403,7 @@ $('#familyCloudChildSelect').onchange=renderFamilyCloudLink;
 $('#pilotSyncNowBtn').onclick=syncPilotNow;
 $('#pilotDiagnosticsRefreshBtn').onclick=()=>renderPilotDiagnostics();
 $('#pilotDiagnosticsCopyBtn').onclick=copyPilotDiagnostics;
-$('[data-pilot-step]').forEach(input=>input.onchange=()=>{if(!guardParent())return;const done=$('[data-pilot-step]:checked').map(x=>x.dataset.pilotStep);writePilotTestChecklist(done)});
+$$('[data-pilot-step]').forEach(input=>input.onchange=()=>{if(!guardParent())return;const done=$$('[data-pilot-step]:checked').map(x=>x.dataset.pilotStep);writePilotTestChecklist(done)});
 const pilotTestCopyBtn=$('#pilotTestCopyBtn');if(pilotTestCopyBtn)pilotTestCopyBtn.onclick=copyPilotTestReport;
 const pilotTestResetBtn=$('#pilotTestResetBtn');if(pilotTestResetBtn)pilotTestResetBtn.onclick=resetPilotTestChecklist;
 $('#exportBackupBtn').onclick=exportBackup;
