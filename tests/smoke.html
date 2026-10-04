@@ -274,7 +274,20 @@ async function run(){
     if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('authorized parent session not shown');
     if(!d.getElementById('paperImportCard'))throw new Error('paper OCR import UI missing');
     if(!d.getElementById('pilotDiagnosticsCard')||!w.AktywnikPilotDiagnostics?.report)throw new Error('pilot diagnostics missing');
+    if(!w.AktywnikPilotDeviceTest?.report||!d.getElementById('pilotTestChecklist'))throw new Error('two-device pilot checklist missing');
     await w.AktywnikPilotDiagnostics.render();
+    w.AktywnikPilotDeviceTest.render();
+    const firstPilotStep=d.querySelector('[data-pilot-step="parent-login"]');
+    const secondPilotStep=d.querySelector('[data-pilot-step="child-sync"]');
+    firstPilotStep.checked=true;firstPilotStep.dispatchEvent(new w.Event('change',{bubbles:true}));
+    secondPilotStep.checked=true;secondPilotStep.dispatchEvent(new w.Event('change',{bubbles:true}));
+    const pilotTestReport=JSON.stringify(w.AktywnikPilotDeviceTest.report());
+    if(!pilotTestReport.includes('"completedCount":2'))throw new Error('pilot device checklist did not persist');
+    for(const forbidden of ['Dziecko A','child-a','cloudChildId','access_token','refresh_token','2468']){
+      if(pilotTestReport.includes(forbidden))throw new Error('pilot device test report leaked sensitive value: '+forbidden);
+    }
+    w.AktywnikPilotDeviceTest.reset();
+    if(w.AktywnikPilotDeviceTest.report().completedCount!==0)throw new Error('pilot device checklist reset failed');
     const diagnosticReport=JSON.stringify(w.AktywnikPilotDiagnostics.report());
     for(const forbidden of ['Dziecko A','child-a','test-hash','test-salt','cloudChildId','access_token','refresh_token','2468']){
       if(diagnosticReport.includes(forbidden))throw new Error('pilot diagnostics leaked sensitive value: '+forbidden);
@@ -669,6 +682,7 @@ async function run(){
     localStorage.setItem(FAMILY_SYNC_KEY,JSON.stringify({dirty:true}));
     localStorage.setItem(FAMILY_LAST_SYNC_KEY,new Date().toISOString());
     localStorage.setItem(CLOUD_SESSION_KEY,JSON.stringify({access_token:'remove-me'}));
+    localStorage.setItem('aktywnik-plus-pilot-device-test-v1',JSON.stringify({version:1,completed:['parent-login'],updatedAt:new Date().toISOString()}));
     localStorage.setItem(DRAFT_KEY+':wipe-test',JSON.stringify({note:'remove-me'}));
     localStorage.setItem(LANG_KEY,'pl');
     sessionStorage.setItem(SESSION_KEY,String(Date.now()+600000));
@@ -676,6 +690,7 @@ async function run(){
     sessionStorage.setItem(PIN_LOCK_KEY,String(Date.now()+600000));
     w.clearAllLocalUserData();
     if(localStorage.getItem(KEY)!==null||localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_SYNC_KEY)!==null||localStorage.getItem(FAMILY_LAST_SYNC_KEY)!==null||localStorage.getItem(CLOUD_SESSION_KEY)!==null)throw new Error('full local wipe left user data');
+    if(localStorage.getItem('aktywnik-plus-pilot-device-test-v1')!==null)throw new Error('full local wipe left pilot device checklist');
     if(Object.keys(localStorage).some(k=>k===DRAFT_KEY||k.startsWith(DRAFT_KEY+':')))throw new Error('full local wipe left entry draft');
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('full local wipe left parent session state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('full local wipe removed language preference');
