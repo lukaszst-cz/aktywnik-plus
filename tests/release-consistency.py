@@ -50,6 +50,7 @@ assert "activityEffortValue" in app_html, "fatigue scale selected value is not v
 assert "pilotDiagnosticsCard" in app_html, "parent pilot diagnostics panel missing"
 assert "pilotTestChecklist" in app_html and "data-pilot-step" in app_html, "two-device pilot checklist missing"
 assert "AktywnikPilotDeviceTest" in app and "PILOT_TEST_KEY" in app, "pilot device test state missing"
+assert "$(\'[data-pilot-step]\')" in app and "$(\'[data-pilot-step]:checked\')" in app, "single-selector checklist regression"
 assert "paperOcrImageFile" in app_html and 'capture="environment"' in app_html, "local photo OCR input missing"
 assert "TextDetector" in app and "AktywnikPaperOcr" in app, "local OCR implementation missing"
 assert "MAX_OCR_IMAGE_BYTES" in app, "local OCR image size guard missing"
