@@ -15,6 +15,10 @@ Celem jest sprawdzenie zachowania na prawdziwych urządzeniach. To nie jest test
 
 Automatycznie sprawdzamy już m.in. zachowanie kolejki family sync offline, zachowanie zmian lokalnych przy braku sieci, synchronizację statusów, tombstones/usunięcia, historię decyzji rodzica, izolację rodzeństwa, restart PWA oraz raporty. Test automatyczny nie zastępuje jednak próby na dwóch fizycznych urządzeniach.
 
+## Checklista A/B w aplikacji
+
+W chronionej strefie rodzica, pod „Diagnostyka pilota”, znajduje się lokalna checklista 8 kroków testu dwóch urządzeń. Nie wykonuje testów automatycznie — służy wyłącznie do ręcznego potwierdzenia kroków faktycznie wykonanych na realnym sprzęcie. Wynik można skopiować jako anonimowy raport techniczny bez nazw dzieci, PIN-u i tokenów.
+
 ## Scenariusze krytyczne
 
 | Test | Czynność | Oczekiwany wynik |
