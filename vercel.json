@@ -73,5 +73,6 @@
         }
       ]
     }
-  ]
+  ],
+  "ignoreCommand": "if [ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ]; then exit 1; fi; git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD -- . ':(exclude).github/**' ':(exclude)docs/**' ':(exclude)tests/**' ':(exclude)backend/tests/**' ':(exclude)backend/migrations/**' ':(exclude)README.md' ':(exclude)CHANGELOG.md'"
 }
