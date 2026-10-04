@@ -10,6 +10,7 @@ const FAMILY_SYNC_OUTBOX_KEY='aktywnik-plus-family-sync-outbox-v1';
 const FAMILY_SYNC_DELETES_KEY='aktywnik-plus-family-sync-deletes-v1';
 const FAMILY_SYNC_LAST_KEY='aktywnik-plus-last-family-cloud-sync-v1';
 const CLOUD_SESSION_KEY='aktywnik-plus-cloud-session-v1';
+const PILOT_TEST_KEY='aktywnik-plus-pilot-device-test-v1';
 const ENTRY_DRAFT_MAX_AGE_MS=7*24*60*60*1000;
 const MAX_BACKUP_BYTES=2*1024*1024;
 const MAX_OCR_IMAGE_BYTES=12*1024*1024;
@@ -1293,6 +1294,56 @@ async function copyPilotDiagnostics(){
 }
 window.AktywnikPilotDiagnostics={snapshot:pilotDiagnosticsSnapshot,report:pilotDiagnosticsReport,render:renderPilotDiagnostics};
 
+const PILOT_TEST_STEPS=['parent-login','child-sync','decision-sync','delete-sync','offline-reconnect','restart-pwa','sibling-isolation','pdf-report'];
+function readPilotTestChecklist(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(PILOT_TEST_KEY)||'{}');
+    const completed=Array.isArray(raw?.completed)?raw.completed.filter(step=>PILOT_TEST_STEPS.includes(step)):[];
+    return {version:1,completed:[...new Set(completed)],updatedAt:safeIso(raw?.updatedAt)};
+  }catch{return {version:1,completed:[],updatedAt:null}}
+}
+function writePilotTestChecklist(completed){
+  const safe=[...new Set((completed||[]).filter(step=>PILOT_TEST_STEPS.includes(step)))];
+  try{localStorage.setItem(PILOT_TEST_KEY,JSON.stringify({version:1,completed:safe,updatedAt:nowIso()}))}catch{}
+  renderPilotTestChecklist();
+}
+function renderPilotTestChecklist(){
+  const box=$('#pilotTestChecklist'),badge=$('#pilotTestProgressBadge');if(!box||!badge||!parentUnlocked())return;
+  const data=readPilotTestChecklist(),done=new Set(data.completed);
+  $('[data-pilot-step]').forEach(input=>{input.checked=done.has(input.dataset.pilotStep)});
+  badge.textContent=done.size+'/'+PILOT_TEST_STEPS.length;
+  badge.dataset.state=done.size===PILOT_TEST_STEPS.length?'ok':done.size?'warn':'';
+}
+function pilotTestReport(){
+  const data=readPilotTestChecklist();
+  return {
+    generatedAt:nowIso(),
+    version:cleanText(document.querySelector('.version-badge')?.textContent||'0.5.0 beta.4',40),
+    completedCount:data.completed.length,
+    totalSteps:PILOT_TEST_STEPS.length,
+    completedSteps:[...data.completed],
+    updatedAt:data.updatedAt||null
+  };
+}
+async function copyPilotTestReport(){
+  if(!guardParent())return;
+  const textValue=JSON.stringify(pilotTestReport(),null,2),status=$('#pilotTestStatus');
+  let copied=false;
+  try{await navigator.clipboard?.writeText?.(textValue);copied=true}catch{}
+  if(!copied){
+    const area=document.createElement('textarea');area.value=textValue;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();
+    try{copied=document.execCommand('copy')}catch{}finally{area.remove()}
+  }
+  if(status)status.textContent=copied?uiText('parent.pilotTestCopied','Wynik testu skopiowany — bez danych dziecka.'):uiText('parent.diagCopyFail','Nie udało się skopiować raportu. Spróbuj ponownie.');
+}
+function resetPilotTestChecklist(){
+  if(!guardParent())return;
+  try{localStorage.removeItem(PILOT_TEST_KEY)}catch{}
+  renderPilotTestChecklist();
+  const status=$('#pilotTestStatus');if(status)status.textContent=uiText('parent.pilotTestResetDone','Checklista wyczyszczona.');
+}
+window.AktywnikPilotDeviceTest={read:readPilotTestChecklist,report:pilotTestReport,render:renderPilotTestChecklist,reset:resetPilotTestChecklist};
+
 function exportBackup(){
   if(!canManageLocalData())return;
   state.meta={...(state.meta||{}),lastBackupAt:nowIso()};persist({skipSync:true});
@@ -1314,7 +1365,7 @@ function renderAll(){
   const child=activeChild();if(!child)return;
   renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();renderFatigueValue();if(isSelfMode())renderStorageStatus();
   if(parentUnlocked()){
-    renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();renderPilotDiagnostics();renderPaperOcrCapability();
+    renderParentChildren();renderParentSnapshot();renderApprovals();renderParentReport();renderSchoolSettings();renderClasses();renderJoinRequests();renderPaperImports();renderStorageStatus();renderPilotDiagnostics();renderPilotTestChecklist();renderPaperOcrCapability();
   }else{
     $('#approvalList').innerHTML='';$('#approvalHistory').innerHTML='';$('#pendingCount').textContent='0';$('#parentPanel').classList.add('hidden');$('#schoolPanel').classList.add('hidden');if(currentMode!=='child')currentMode='child';
   }
@@ -1351,6 +1402,9 @@ $('#familyCloudChildSelect').onchange=renderFamilyCloudLink;
 $('#pilotSyncNowBtn').onclick=syncPilotNow;
 $('#pilotDiagnosticsRefreshBtn').onclick=()=>renderPilotDiagnostics();
 $('#pilotDiagnosticsCopyBtn').onclick=copyPilotDiagnostics;
+$('[data-pilot-step]').forEach(input=>input.onchange=()=>{if(!guardParent())return;const done=$('[data-pilot-step]:checked').map(x=>x.dataset.pilotStep);writePilotTestChecklist(done)});
+$('#pilotTestCopyBtn').onclick=copyPilotTestReport;
+$('#pilotTestResetBtn').onclick=resetPilotTestChecklist;
 $('#exportBackupBtn').onclick=exportBackup;
 $('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
 $('#requestPersistentStorageBtn').onclick=requestPersistentStorage;
