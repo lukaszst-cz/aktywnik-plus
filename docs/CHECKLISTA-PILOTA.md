@@ -83,3 +83,16 @@ Produkcja **0.5.0-beta.4** jest zweryfikowana. Deployment Vercel dla commita `9a
 - ranking dzieci
 - publiczna lista klasy
 - automatyczne ocenianie dziecka
+
+
+## Przywrócenie zielonej produkcji po regresji checklisty A/B — 04.10.2026
+
+- [x] production smoke wykrył regresję UI w deployment `c14156e...`;
+- [x] regresja checklisty A/B naprawiona na `main`;
+- [x] finalny kandydat checklisty + cache v57 ma pełny Test pilot PASS;
+- [x] ostatni zielony deployment `bc1528a...` ponownie promowany do produkcji bez rebuilda;
+- [x] publiczny Production smoke po promocji: PASS;
+- [x] family UI smoke po promocji: PASS;
+- [ ] poprawiona checklista A/B czeka na finalny rollout po zwolnieniu Vercel build-rate-limit.
+
+Do czasu finalnego rollout-u checklisty publiczna beta.4 pozostaje na stabilnym `bc1528a...`. Nie tworzyć kolejnych zmian runtime.
