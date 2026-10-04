@@ -17,7 +17,7 @@
 <article><h3>📝 Papier zostaje</h3><p>W pilocie dostępny jest wzór źródłowy oparty na arkuszu Pani Ewy Gębskiej ze Szkoły Podstawowej Nr 3 im. Pomnik Zwycięstwa 1920 roku w Markach oraz neutralny wzór dla innych szkół.</p><a class="secondary" href="paper.html">Wzór źródłowy</a> <a class="secondary" href="paper-uniwersalny.html">Wzór uniwersalny</a></article>
 <article><h3>📱 Rodzic może używać telefonu</h3><p>Dziecko wpisuje aktywność ręcznie, wybiera szybki czas treningu albo używa Start/Stop. Rodzic zatwierdza wpisy.</p></article>
 <article><h3>📊 Raport zamiast przepisywania</h3><p>Rodzic może przekazać PDF lub CSV. Nauczyciel nie musi ręcznie sumować wszystkich minut.</p></article>
-<article><h3>📷 Skan kartki</h3><p>W panelu Szkoła można wczytać CSV/JSON albo wkleić tekst OCR. DocPilot może zrobić OCR i przygotować plik do importu.</p></article>
+<article><h3>📷 Skan kartki bez wysyłania zdjęcia</h3><p>W obsługiwanej przeglądarce można wskazać JPG/PNG/WebP i uruchomić lokalny OCR bez wysyłania obrazu do zewnętrznego API. Wynik zawsze trafia najpierw do edytowalnego podglądu. Jeśli urządzenie nie ma lokalnego OCR, pozostaje DocPilot, CSV/JSON/TXT albo ręczne wklejenie tekstu.</p></article>
 <article><h3>🔒 Bez rankingów dzieci</h3><p>Aktywnik+ nie porównuje uczniów między sobą i nie śledzi masy ciała, kalorii ani GPS.</p></article>
 <article><h3>💸 Pilot bezpłatny</h3><p>Obecny pilot jest bezpłatny, bez reklam. Rodzina może korzystać w przeglądarce, jako PWA albo całkowicie papierowo.</p></article>
 </div>
@@ -40,10 +40,16 @@ Na koniec miesiąca można przygotować raport PDF lub CSV.</textarea>
 
 <section class="section action">
 <h2>Najprostszy pilotaż</h2>
-<p><strong>1.</strong> Nauczyciel pokazuje link. <strong>2.</strong> Rodzice wybierają aplikację albo papier. <strong>3.</strong> Na koniec miesiąca nauczyciel dostaje raport/PDF/kartę. <strong>4.</strong> Kartę papierową można zeskanować i zaimportować po OCR.</p>
+<p><strong>1.</strong> Nauczyciel pokazuje link. <strong>2.</strong> Rodzice wybierają aplikację albo papier. <strong>3.</strong> Na koniec miesiąca nauczyciel dostaje raport/PDF/kartę. <strong>4.</strong> Kartę papierową można sfotografować lub zeskanować: lokalny OCR w Aktywnik+ działa tam, gdzie wspiera go przeglądarka; w pozostałych przypadkach używa się DocPilot/CSV/tekstu. <strong>5.</strong> Przed zapisem zawsze można poprawić datę, aktywność, czas, zmęczenie 1–5 i uwagi.</p>
 <a class="primary" href="school-cloud.html">Otwórz School Cloud — beta</a>
 <a class="secondary" href="app.html?mode=school">Otwórz lokalny panel Szkoła</a>
 </section>
+<section class="section action">
+<h2>Jak działa import zdjęcia</h2>
+<p><strong>Zdjęcie pozostaje na urządzeniu.</strong> Aktywnik+ nie zapisuje obrazu w School Cloud ani family sync. Lokalny OCR przyjmuje JPG/PNG/WebP do 12 MB, a po rozpoznaniu pokazuje edytowalny podgląd tabeli. Brak obsługi OCR w danej przeglądarce nie blokuje pilota — można użyć pliku CSV/JSON/TXT albo wkleić wynik OCR z DocPilot.</p>
+<a class="secondary" href="app.html?mode=school">Przejdź do importu karty</a>
+</section>
+
 <section class="section">
 <h2>Autorstwo i rozwój</h2>
 <p><strong>Źródło pierwszego pilota:</strong> arkusz autorstwa Pani Ewy Gębskiej ze Szkoły Podstawowej Nr 3 im. Pomnik Zwycięstwa 1920 roku w Markach.</p><p>W innych klasach i szkołach można używać neutralnego wzoru Aktywnik+, bez przypisywania Pani Ewie autorstwa lokalnych formularzy.</p>
