@@ -48,11 +48,8 @@ jobs:
         run: |
           BASE_URL="https://aktywnik-plus.vercel.app"
           EXPECTED_COMMIT="$INPUT_COMMIT"
-          if [ "$EVENT_NAME" = "repository_dispatch" ] && [ -n "$DISPATCH_URL" ]; then
-            case "$DISPATCH_URL" in
-              http://*|https://*) BASE_URL="$DISPATCH_URL" ;;
-              *) BASE_URL="https://$DISPATCH_URL" ;;
-            esac
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            echo "Triggered by Vercel deployment event; verifying canonical production URL."
           fi
           echo "base_url=$BASE_URL" >> "$GITHUB_OUTPUT"
           echo "expected_commit=$EXPECTED_COMMIT" >> "$GITHUB_OUTPUT"
