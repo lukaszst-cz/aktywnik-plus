@@ -96,3 +96,29 @@ Produkcja **0.5.0-beta.4** jest zweryfikowana. Deployment Vercel dla commita `9a
 - [ ] poprawiona checklista A/B czeka na finalny rollout po zwolnieniu Vercel build-rate-limit.
 
 Do czasu finalnego rollout-u checklisty publiczna beta.4 pozostaje na stabilnym `bc1528a...`. Nie tworzyć kolejnych zmian runtime.
+
+## Finalny rollout beta.4 — 04.10.2026
+
+- [x] źródło deploymentu: GitHub SHA `d40a0d8aebf62d7b36b3d20d688d8e551b055aaa`;
+- [x] runtime finalnego kandydata: `e91e3992...` + PWA cache v57;
+- [x] deployment Vercel `dpl_CxAsKzEjAD5w9iip7d52cMtex5R5`: READY;
+- [x] alias `aktywnik-plus.vercel.app`: przypisany do finalnego deploymentu;
+- [x] produkcyjny health: database/Auth/RLS/cloud = true;
+- [x] API production smoke: PASS;
+- [x] family UI smoke: PASS;
+- [x] diagnostics privacy: PASS;
+- [x] skan logów runtime po deployu: brak błędów;
+- [x] tymczasowy katalog deploymentu i lokalny `.env.local` usunięte z komputera.
+
+### Pozostaje wyłącznie test praktyczny
+
+- [ ] dwa fizyczne urządzenia A/B;
+- [ ] offline → reconnect → sync;
+- [ ] approve/reject/correction na drugim urządzeniu;
+- [ ] delete/tombstone na drugim urządzeniu;
+- [ ] restart zainstalowanej PWA;
+- [ ] przykładowy PDF/A4;
+- [ ] izolacja co najmniej dwóch profili dzieci;
+- [ ] 3–7 dni rodzinnego używania bez utraty lub konfliktu danych.
+
+Do zakończenia tego testu: **freeze funkcjonalny beta.4 — bez nowych funkcji.**
