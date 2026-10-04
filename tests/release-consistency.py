@@ -48,6 +48,8 @@ assert "0.5.0 beta.4" in app_html, "app version badge does not expose beta.4"
 assert "Zmęczenie 1–5" in app_html, "fatigue scale is not aligned with the paper journal"
 assert "activityEffortValue" in app_html, "fatigue scale selected value is not visible"
 assert "pilotDiagnosticsCard" in app_html, "parent pilot diagnostics panel missing"
+assert "pilotTestChecklist" in app_html and "data-pilot-step" in app_html, "two-device pilot checklist missing"
+assert "AktywnikPilotDeviceTest" in app and "PILOT_TEST_KEY" in app, "pilot device test state missing"
 assert "paperOcrImageFile" in app_html and 'capture="environment"' in app_html, "local photo OCR input missing"
 assert "TextDetector" in app and "AktywnikPaperOcr" in app, "local OCR implementation missing"
 assert "MAX_OCR_IMAGE_BYTES" in app, "local OCR image size guard missing"
@@ -68,6 +70,9 @@ for safe_path in [".github/**", "docs/**", "tests/**", "backend/tests/**", "READ
 assert "appUpdateNotice" in install and "controllerchange" in install and "registration.update()" in install, "PWA update notification missing"
 assert "app-update-notice" in styles, "PWA update notice styles missing"
 assert "navigator.serviceWorker.register('./sw.js')" not in app, "app.js still duplicates service worker registration"
+pilot_test_report = app.split("function pilotTestReport()",1)[1].split("async function copyPilotTestReport()",1)[0]
+for forbidden in ["displayName","cloudChildId","pinHash","pinSalt","access_token","refresh_token"]:
+    assert forbidden not in pilot_test_report, f"pilot device report contains sensitive field: {forbidden}"
 assert "0.5.0 beta.4" in about, "about page is stale"
 assert "0.5.0 beta.4" in faq, "FAQ page is stale"
 assert release.exists(), f"missing release notes: {release.name}"
