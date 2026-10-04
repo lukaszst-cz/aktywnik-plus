@@ -1190,6 +1190,7 @@ function clearAllLocalUserData(){
   clearSyncTransientState();
   localStorage.removeItem(KEY);
   localStorage.removeItem(CLOUD_SESSION_KEY);
+  localStorage.removeItem(PILOT_TEST_KEY);
   clearParentTransientState();
 }
 function canManageLocalData(){return isSelfMode()||guardParent()}
