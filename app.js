@@ -1186,8 +1186,7 @@ function applyBackupCandidate(candidate){
   clearParentTransientState();
   localStorage.removeItem(CLOUD_SESSION_KEY);
   state=candidate;
-  if(state.profileMode==='self')window.AktywnikSync?.markDirty?.(state);
-  if(state.profileMode==='family')window.AktywnikFamilySync?.markDirty?.(state);
+  // Przywrócenie kopii jest lokalne. Nie wysyłamy automatycznie danych do poprzedniego konta w chmurze.
 }
 function mergeBackupCandidate(candidate){
   if(candidate.profileMode!==state.profileMode)throw new Error('Kopia jest z innego trybu. Użyj pełnego przywracania po zapisaniu kopii aktualnych danych.');
