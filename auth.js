@@ -3,6 +3,7 @@
 (function(){
   const STORAGE_KEY='aktywnik-plus-cloud-session-v1';
   const cfg=window.AKTYWNIK_AUTH_CONFIG||{};
+  let authRevision=0;
   const $=s=>document.querySelector(s);
   function t(key,fallback){
     const i18n=window.AktywnikI18n;
@@ -22,6 +23,8 @@
   function writeSession(session){
     if(session)localStorage.setItem(STORAGE_KEY,JSON.stringify(session));
     else localStorage.removeItem(STORAGE_KEY);
+    authRevision++;
+    window.dispatchEvent(new Event('aktywnik:authchange'));
   }
   function sessionFromHash(){
     const hash=new URLSearchParams(location.hash.replace(/^#/,''));
@@ -37,11 +40,16 @@
   async function jsonFetch(url,options={}){
     const res=await fetch(url,options);
     let data=null;try{data=await res.json()}catch{}
-    if(!res.ok)throw new Error(data?.msg||data?.message||data?.error_description||data?.error||('HTTP '+res.status));
+    if(!res.ok){
+      const error=new Error(data?.msg||data?.message||data?.error_description||data?.error||('HTTP '+res.status));
+      error.status=res.status;
+      throw error;
+    }
     return data;
   }
   async function refresh(session){
     if(!session?.refresh_token)return null;
+    const revision=authRevision;
     const data=await jsonFetch(authBase()+'/token?grant_type=refresh_token',{
       method:'POST',headers:headers(),body:JSON.stringify({refresh_token:session.refresh_token})
     });
@@ -51,19 +59,28 @@
       token_type:data.token_type||'bearer',
       expires_at:Date.now()+Math.max(60,Number(data.expires_in||3600)-30)*1000
     };
+    if(revision!==authRevision)return null;
     writeSession(next);return next;
   }
   async function validSession(){
     let session=readSession();if(!session)return null;
     if(!session.expires_at||Date.now()>session.expires_at){
-      try{session=await refresh(session)}catch{writeSession(null);return null}
+      const revision=authRevision;
+      try{session=await refresh(session)}catch(err){
+        if(revision===authRevision && [400,401,403].includes(err?.status))writeSession(null);
+        return null;
+      }
     }
     return session;
   }
   async function currentUser(){
     const session=await validSession();if(!session)return null;
+    const revision=authRevision;
     try{return await jsonFetch(authBase()+'/user',{headers:headers(session.access_token)})}
-    catch{writeSession(null);return null}
+    catch(err){
+      if(revision===authRevision && [401,403].includes(err?.status))writeSession(null);
+      return null;
+    }
   }
   async function sendMagicLink(email){
     const clean=String(email||'').trim().toLowerCase();
@@ -77,9 +94,18 @@
   }
   async function signOut(){
     const session=readSession();
+    // Wylogowanie lokalne musi zadziałać nawet bez internetu.
+    writeSession(null);
+    if(!session?.access_token || !cfg.supabaseUrl || !cfg.publishableKey)return;
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),4000);
     try{
-      if(session?.access_token)await fetch(authBase()+'/logout',{method:'POST',headers:headers(session.access_token)});
-    }finally{writeSession(null)}
+      await fetch(authBase()+'/logout',{
+        method:'POST',headers:headers(session.access_token),signal:controller.signal
+      });
+    }catch(err){
+      console.warn('Aktywnik+: remote logout unavailable; local session removed.');
+    }finally{clearTimeout(timeout)}
   }
   function status(message,kind=''){
     const el=$('#accountStatus');if(!el)return;
@@ -93,7 +119,9 @@
       history.replaceState({},document.title,location.pathname+location.search);
       status(t('account.status.loginConfirmed','Logowanie potwierdzone.'),'ok');
     }
+    const revision=authRevision;
     const user=await currentUser();
+    if(revision!==authRevision){return render()}
     const logged=$('#loggedInCard'),login=$('#loginCard');
     if(user){
       logged?.classList.remove('hidden');login?.classList.add('hidden');
@@ -114,12 +142,21 @@
       const btn=$('#sendMagicLinkBtn');btn.disabled=true;
       try{
         await sendMagicLink($('#accountEmailInput')?.value);
-        status(t('account.status.sent','Link logowania został wysłany.'),'ok');
-      }catch(err){status(t('account.status.sendFail','Nie udało się wysłać linku:')+' '+err.message,'error')}
+        status(t('account.status.sent','Zlecenie wysyłki przyjęte. Sprawdź pocztę i folder spam. Dostarczenie zależy od ustawień poczty Supabase.'),'ok');
+      }catch(err){
+        let message=String(err?.message||'');
+        if(err?.status===429)message=t('account.status.rateLimit','Limit wiadomości został osiągnięty. Spróbuj później lub skontaktuj się z administratorem.');
+        if(err?.status===0 || !navigator.onLine)message=t('account.status.offline','Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.');
+        status(t('account.status.sendFail','Nie udało się wysłać linku:')+' '+message,'error');
+      }
       finally{btn.disabled=false}
     });
     $('#signOutBtn')?.addEventListener('click',async()=>{
-      await signOut();status(t('account.status.loggedOut','Wylogowano.'),'ok');await render();
+      const btn=$('#signOutBtn');if(btn)btn.disabled=true;
+      try{
+        await signOut();await render();status(t('account.status.loggedOut','Wylogowano. Dane lokalne pozostają na urządzeniu.'),'ok');
+      }catch(err){status(t('account.status.error','Błąd konta:')+' '+err.message,'error')}
+      finally{if(btn)btn.disabled=false}
     });
     render().catch(err=>status(t('account.status.error','Błąd konta:')+' '+err.message,'error'));
   });
