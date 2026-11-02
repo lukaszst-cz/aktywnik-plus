@@ -25,7 +25,7 @@ const MAX_PIN_ATTEMPTS=5;
 const PIN_LOCK_MS=30000;
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
-const defaultState={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
+const defaultState={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],weeklyGoals:{},reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
 let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let pendingPaperOcrImageFile=null; let parentReportMonth=today().slice(0,7); let lastPersistOk=true; let familyCloudContext=null; let familyCloudBusy=false;
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist({skipSync=false}={}){
@@ -1167,10 +1167,18 @@ function safeBackupState(raw){
   const joinRequests=(Array.isArray(d.joinRequests)?d.joinRequests:[]).slice(0,MAX_JOIN_REQUESTS).map(r=>r&&typeof r==='object'?{...r,childId:ids.has(r.childId)?r.childId:null,childName:cleanText(r.childName,60),status:['pending','accepted','rejected'].includes(r.status)?r.status:'pending'}:null).filter(Boolean);
   let activeTimer=null;
   if(d.activeTimer&&typeof d.activeTimer==='object'){const childId=ids.has(d.activeTimer.childId)?d.activeTimer.childId:fallback;if(childId&&cleanText(d.activeTimer.activity,80)&&d.activeTimer.startAt)activeTimer={...d.activeTimer,childId,activity:cleanText(d.activeTimer.activity,80),date:validDate(d.activeTimer.date)?d.activeTimer.date:today(),effort:clampInt(d.activeTimer.effort,1,5,2),note:cleanText(d.activeTimer.note,120)}}
+  // Personal, optional goals are local-only and travel with a JSON backup.
+  const rawGoals=d.weeklyGoals&&typeof d.weeklyGoals==='object'&&!Array.isArray(d.weeklyGoals)?d.weeklyGoals:{};
+  const weeklyGoals={};
+  for(const [childId,value] of Object.entries(rawGoals)){
+    if(!ids.has(childId))continue;
+    const minutes=Number(value);
+    if(Number.isInteger(minutes)&&minutes>=0&&minutes<=4200)weeklyGoals[childId]=minutes;
+  }
   const auth=d.parentAuth&&typeof d.parentAuth==='object'?d.parentAuth:{};
   const parentAuth={pinSalt:cleanText(auth.pinSalt,300),pinHash:cleanText(auth.pinHash,300),iterations:clampInt(auth.iterations,50000,500000,PIN_ITERATIONS),autoLockMinutes:clampInt(auth.autoLockMinutes,1,30,5)};
   const rawMeta=d.meta&&typeof d.meta==='object'?d.meta:{},meta={lastBackupAt:safeIso(rawMeta.lastBackupAt),lastWriteAt:safeIso(rawMeta.lastWriteAt)};
-  return {...base,schemaVersion:6,profileMode:d.profileMode==='self'?'self':'family',meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
+  return {...base,schemaVersion:6,profileMode:d.profileMode==='self'?'self':'family',meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,weeklyGoals,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
 function clearSyncTransientState(){
   [SYNC_OUTBOX_KEY,SYNC_LAST_KEY,SYNC_DELETES_KEY,FAMILY_SYNC_OUTBOX_KEY,FAMILY_SYNC_DELETES_KEY,FAMILY_SYNC_LAST_KEY].forEach(key=>localStorage.removeItem(key));
@@ -1450,6 +1458,7 @@ function renderAll(){
   $('#childPanel').classList.toggle('hidden',currentMode!=='child');
   $('#parentPanel').classList.toggle('hidden',currentMode!=='parent');
   $('#schoolPanel').classList.toggle('hidden',currentMode!=='school');
+  window.AktywnikExperience?.refresh?.();
 }
 $('#activitySearch').oninput=renderActivities;
 ['activityDate','activityDuration','activityEffort','customActivityName','activityNote'].forEach(id=>{const el=$('#'+id);if(!el)return;const onEdit=()=>{if(id==='activityEffort')renderFatigueValue();saveEntryDraft()};el.addEventListener('input',onEdit);el.addEventListener('change',onEdit)});
