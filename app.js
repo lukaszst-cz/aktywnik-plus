@@ -1459,6 +1459,7 @@ function renderAll(){
   $('#parentPanel').classList.toggle('hidden',currentMode!=='parent');
   $('#schoolPanel').classList.toggle('hidden',currentMode!=='school');
   window.AktywnikExperience?.refresh?.();
+  window.AktywnikTableImport?.refreshVisibility?.();
 }
 $('#activitySearch').oninput=renderActivities;
 ['activityDate','activityDuration','activityEffort','customActivityName','activityNote'].forEach(id=>{const el=$('#'+id);if(!el)return;const onEdit=()=>{if(id==='activityEffort')renderFatigueValue();saveEntryDraft()};el.addEventListener('input',onEdit);el.addEventListener('change',onEdit)});
