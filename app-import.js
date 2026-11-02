@@ -88,7 +88,7 @@ function dateParts(y,m,d){
  return [y,String(m).padStart(2,'0'),String(d).padStart(2,'0')].join('-');
 }
 function parseDate(v){
- if(v instanceof Date&&!Number.isNaN(v.valueOf()))return dateParts(v.getFullYear(),v.getMonth()+1,v.getDate());
+ if(Object.prototype.toString.call(v)==='[object Date]'&&!Number.isNaN(v.valueOf()))return dateParts(v.getFullYear(),v.getMonth()+1,v.getDate());
  const text=String(v??'').trim();
  let m=text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:T.*)?$/);
  if(m)return dateParts(+m[1],+m[2],+m[3]);
@@ -105,7 +105,7 @@ function parseDate(v){
 }
 function parseMinutes(value){
  // Arkusze Excel kodują czas jako ułamek doby; niektóre komórki zwracają obiekt Date.
- if(value instanceof Date){
+ if(Object.prototype.toString.call(value)==='[object Date]'){
   if(Number.isNaN(value.valueOf()))return NaN;
   return value.getUTCHours()*60+value.getUTCMinutes()+value.getUTCSeconds()/60;
  }
