@@ -261,3 +261,13 @@ body {background:radial-gradient(circle at 98% 1%,#e2f4d9 0,transparent 32%),var
   .activity-shortcuts a{padding:9px 12px}
 }
 @media print {.activity-shortcuts,.motivation-card,.club-card{display:none!important}}
+
+/* Optional account-bound goal synchronization */
+.goal-sync-controls{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-top:17px;border-top:1px solid #d7e9cf;padding-top:16px}
+.goal-sync-controls>div{display:grid;gap:5px;flex:1;min-width:180px}
+.goal-sync-controls strong{color:#143f2c}
+.goal-sync-controls small{color:#587567;line-height:1.4}
+.goal-sync-controls small[data-state="ok"]{color:#21693f;font-weight:750}
+.goal-sync-controls small[data-state="error"]{color:#974823}
+.goal-sync-controls button{min-height:46px;text-align:center}
+@media(max-width:600px){.goal-sync-controls button{width:100%}}
