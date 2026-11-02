@@ -1021,7 +1021,33 @@ async function runLocalPaperOcr(){
 window.AktywnikPaperOcr={supported:paperOcrSupported,blocksToDelimitedText:ocrBlocksToDelimitedText,run:runLocalPaperOcr};
 
 async function loadPaperImportFile(file){
-  if(!guardParent()||!file)return;try{$('#ocrPaste').value=await file.text();$('#paperImportStatus').innerHTML='<p class="status-approved">Plik wczytany. Sprawdź podgląd przed zapisem.</p>'}catch{$('#paperImportStatus').innerHTML='<p class="status-pending">Nie udało się odczytać pliku.</p>'}
+ if(!guardParent()||!file)return;
+ try{
+  const extension=(file.name.split('.').pop()||'').toLowerCase();
+  if(['xlsx','xls','xlsm','ods'].includes(extension)){
+   const parser=window.AktywnikTableImport;
+   if(!parser?.parseFile)throw Error('Moduł Excel jest niedostępny. Odśwież aplikację.');
+   const records=await parser.parseFile(file);
+   if(records.length>200)throw Error('Karta może zawierać maksymalnie 200 wierszy. Podziel plik.');
+   const clean=v=>String(v??'').replace(/[;\r\n\t]/g,',').slice(0,160);
+   const lines=['Data;Aktywność;Czas;Zmęczenie;Uwagi'];
+   for(const item of records){
+    lines.push([parser.parseDate(item.date)||item.date,clean(item.activity),
+     parser.parseMinutes(item.minutes),item.effort||2,clean(item.note)].join(';'));
+   }
+   $('#ocrPaste').value=lines.join('\n');
+   renderPaperImportPreview();
+   $('#paperImportStatus').textContent='Arkusz Excel odczytany lokalnie. Sprawdź i popraw wiersze przed zapisaniem.';
+  }else{
+   if(file.size>2*1024*1024)throw Error('Plik przekracza limit 2 MB.');
+   $('#ocrPaste').value=await file.text();
+   renderPaperImportPreview();
+   $('#paperImportStatus').textContent='Plik wczytany. Sprawdź rozpoznane wiersze przed zapisem.';
+  }
+ }catch(error){
+  $('#paperImportStatus').textContent='Nie udało się odczytać: '+String(error.message||error);
+  $('#savePaperImportBtn').disabled=true;
+ }
 }
 function renderPaperImportPreview(){
   if(!guardParent())return;pendingPaperImportRows=parseImportText($('#ocrPaste').value);const box=$('#paperImportPreview');
