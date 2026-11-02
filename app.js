@@ -10,6 +10,7 @@ const FAMILY_SYNC_OUTBOX_KEY='aktywnik-plus-family-sync-outbox-v1';
 const FAMILY_SYNC_DELETES_KEY='aktywnik-plus-family-sync-deletes-v1';
 const FAMILY_SYNC_LAST_KEY='aktywnik-plus-last-family-cloud-sync-v1';
 const CLOUD_SESSION_KEY='aktywnik-plus-cloud-session-v1';
+const GOAL_SYNC_ACCOUNT_KEY='aktywnik-plus-goal-sync-account-v1';
 const PILOT_TEST_KEY='aktywnik-plus-pilot-device-test-v1';
 const ENTRY_DRAFT_MAX_AGE_MS=7*24*60*60*1000;
 const MAX_BACKUP_BYTES=2*1024*1024;
@@ -1214,6 +1215,7 @@ function applyBackupCandidate(candidate){
   clearSyncTransientState();
   clearParentTransientState();
   localStorage.removeItem(CLOUD_SESSION_KEY);
+  localStorage.removeItem(GOAL_SYNC_ACCOUNT_KEY);
   state=candidate;
   // Przywrócenie kopii jest lokalne. Nie wysyłamy automatycznie danych do poprzedniego konta w chmurze.
 }
@@ -1253,6 +1255,7 @@ function clearAllLocalUserData(){
   clearSyncTransientState();
   localStorage.removeItem(KEY);
   localStorage.removeItem(CLOUD_SESSION_KEY);
+  localStorage.removeItem(GOAL_SYNC_ACCOUNT_KEY);
   localStorage.removeItem(PILOT_TEST_KEY);
   clearParentTransientState();
 }
