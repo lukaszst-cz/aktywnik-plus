@@ -20,12 +20,17 @@ jobs:
       - name: Syntax and PWA asset checks
         run: |
           node --check app.js
+          node --check app-experience.js
+          test -f app-experience.css
+          grep -q "app-experience.js" app.html
+          grep -q "./app-experience.css" sw.js
           grep -q "familyCloudLinkReady:true" api/capabilities.js
           grep -q "familyCloudChildSelect" app.html
           grep -q "cloudChildId" app.js
           node --check i18n.js
           node --check auth-config.js
           node --check auth.js
+          node tests/auth-smoke.mjs
           node --check sync-client.js
           node --check family-sync-client.js
           node --check school-cloud.js
