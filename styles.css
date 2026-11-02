@@ -151,3 +151,113 @@ button:focus-visible,.button-link:focus-visible,input:focus-visible,select:focus
 .pilot-test-list label{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:13px;background:#f8fafc;font-size:.9rem;line-height:1.4}
 .pilot-test-list input{flex:0 0 auto;margin-top:1px;min-height:auto;width:18px;height:18px}
 @media(max-width:680px){.pilot-test-list{grid-template-columns:1fr}}
+
+
+/* Aktywnik+ · Zielona Marka visual refresh · 2026-11-02 */
+:root {
+  --zm-forest:#173d2e;
+  --zm-deep:#0e2e23;
+  --zm-lime:#baf46d;
+  --zm-soft:#f3f8ec;
+  --zm-border:#d9e7d5;
+  --zm-text:#19362b;
+  --zm-muted:#5b776a;
+  color:var(--zm-text);
+  background:var(--zm-soft);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+body {background:radial-gradient(circle at 98% 1%,#e2f4d9 0,transparent 32%),var(--zm-soft);color:var(--zm-text)}
+.topbar {background:linear-gradient(105deg,var(--zm-deep) 0%,var(--zm-forest) 100%);color:#f8fff4;box-shadow:0 6px 22px rgba(9,42,28,.13)}
+.brand {font-weight:900;letter-spacing:-.045em}
+.topbar .tagline {color:#d5efce}
+.topbar .local-session-badge,.topbar .version-badge {font-size:.68rem;letter-spacing:.02em}
+.topbar a.button-link,.topbar .ghost {background:#2c5946;color:#fff;border:1px solid #49745d}
+.topbar a.button-link:hover,.topbar .ghost:hover {background:#3c7055}
+.topbar .badge {background:#e3f7da;color:#244f35}
+.shell {max-width:1120px;padding:26px 18px 34px}
+.card {background:#fff;box-shadow:0 10px 34px rgba(21,67,45,.055);border:1px solid var(--zm-border);border-radius:22px;padding:22px;margin-bottom:18px}
+.hero {background:linear-gradient(115deg,var(--zm-forest),#296647);color:white;position:relative;overflow:hidden}
+.hero .eyebrow,.hero p {color:#d8efd9}
+.hero h1 {color:white;letter-spacing:-.035em}
+.hero .metric {background:rgba(239,255,229,.13);border:1px solid rgba(239,255,229,.23)}
+.hero .metric small {color:#e1f4dc}
+.hero .metric span {color:var(--zm-lime)}
+.section-head h2 {color:var(--zm-deep);letter-spacing:-.02em;font-size:1.23rem}
+.eyebrow {color:#528064}
+.primary,.mode-switch button.active {background:var(--zm-lime);color:#123b26;box-shadow:0 2px 0 rgba(21,72,28,.12)}
+.primary:hover,.timer-start:hover {filter:brightness(.97)}
+.timer-start {background:var(--zm-forest);color:white}
+.ghost,.report-buttons button {background:#eaf2e5;color:var(--zm-deep);border:1px solid #dbe7d4}
+.activity {background:#f8fbf6;border-color:var(--zm-border);color:var(--zm-forest);transition:transform .15s,background .15s,box-shadow .15s}
+.activity:hover {transform:translateY(-2px);background:#eff9e8;border-color:#83b87b;box-shadow:0 5px 12px rgba(29,83,53,.07)}
+.badge {background:#edf6e5;color:#295d38}
+.overview-card {background:linear-gradient(180deg,#fff,#f7fbf5);border-color:#dce9d6}
+.snapshot-item,.stat,.report-summary>div {background:#f6faf2;border:1px solid #e2eedd}
+.snapshot-item strong,.stat strong {color:var(--zm-forest)}
+.bar {background:#e6efdf}.bar i {background:var(--zm-forest)}
+.timer-card {border:2px solid #79c47a;background:#effbea}
+.save-status[data-state="ok"] {background:#def4d7;color:#24603a}
+:where(button,.button-link,input,select,textarea,a):focus-visible {outline:3px solid #6a9d31;outline-offset:3px}
+.activity-shortcuts {
+  position:sticky;top:68px;z-index:4;
+  max-width:1120px;margin:10px auto 0;padding:8px 12px;
+  display:flex;gap:8px;overflow-x:auto;
+  border:1px solid var(--zm-border);border-radius:17px;
+  background:rgba(255,255,255,.96);
+  box-shadow:0 5px 20px rgba(24,60,37,.06);
+  backdrop-filter:blur(12px);
+  scrollbar-width:thin;
+}
+.activity-shortcuts a {
+  white-space:nowrap;text-decoration:none;color:#205239;
+  font-size:.86rem;font-weight:800;padding:10px 14px;border-radius:12px;
+  transition:background .15s;
+}
+.activity-shortcuts a:hover,.activity-shortcuts a:focus-visible {background:#e3f5dc}
+#childPanel,#motivationCard,#childActivityLogCard,#childStatsCard {scroll-margin-top:140px}
+.motivation-card {background:linear-gradient(135deg,#fff 50%,#f1f9ec 100%);border-color:#cfe4cb}
+.motivation-card .section-head {margin-bottom:18px}
+.streak-chip {display:flex;align-items:center;gap:6px;white-space:nowrap;background:#e6f7df;padding:10px 13px;border-radius:999px;color:var(--zm-deep);font-weight:800}
+.streak-chip strong {font-size:1.3rem;font-variant-numeric:tabular-nums}
+.motivation-periods {display:flex;gap:7px;flex-wrap:wrap}
+.motivation-periods button {border:1px solid #bfd8b9;background:white;color:#2a5a3b;font-weight:800;padding:10px 13px;border-radius:999px;cursor:pointer}
+.motivation-periods button.selected {background:var(--zm-forest);color:white;border-color:var(--zm-forest)}
+.motivation-period-date {display:block;margin:8px 0 16px;color:var(--zm-muted)}
+.motivation-summary-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.motivation-summary-tile {background:white;border:1px solid #d5e5d0;border-radius:17px;padding:17px;display:grid;gap:7px}
+.motivation-summary-tile strong {font-size:clamp(1.35rem,4vw,2rem);letter-spacing:-.035em;color:var(--zm-deep);font-variant-numeric:tabular-nums}
+.motivation-summary-tile small,.motivation-summary-tile span {color:#5a7768}
+#motivationComparison[data-trend="up"] {color:#226b41;font-weight:800}
+#motivationComparison[data-trend="down"] {color:#7b6242}
+.goal-setting {margin-top:15px;padding:17px;background:#f6fbf3;border:1px solid #d7e9cf;border-radius:17px}
+.goal-heading {display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.goal-heading small {color:#496b55}
+.goal-setting progress {display:block;width:100%;height:13px;appearance:none;accent-color:#3a9d55;border:0;margin:12px 0;border-radius:999px;overflow:hidden}
+.goal-setting progress::-webkit-progress-bar {background:#dfecdc;border-radius:999px}
+.goal-setting progress::-webkit-progress-value {background:linear-gradient(90deg,#399558,#b4e874);border-radius:999px}
+.goal-setting progress::-moz-progress-bar {background:#399558}
+.goal-controls {display:flex;flex-wrap:wrap;align-items:end;gap:10px}
+.goal-controls label {font-weight:800;font-size:.85rem;color:#3a604b}
+.goal-controls input {margin-top:5px;display:block;max-width:170px;background:white}
+.goal-controls button {min-height:46px}
+#motivationGoalFeedback,#motivationClubFeedback {display:block;margin-top:8px;color:#426850}
+.club-card {background:#fff}
+.club-card p {color:#526d60;max-width:70ch}
+.club-presets {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.club-presets button {text-align:left;background:#eaf5e6;color:#174530;border:1px solid #cfe4cb;border-radius:15px;padding:12px 11px;font-weight:800;cursor:pointer}
+.club-presets button:hover {background:#d7efca}
+.club-presets button small {display:block;font-size:.72rem;margin-top:4px;color:#527c5c}
+.club-presets button:disabled {opacity:.45;cursor:not-allowed}
+@media(max-width:900px){.club-presets{grid-template-columns:repeat(3,minmax(0,1fr))}.activity-shortcuts{top:0;margin:0 10px}}
+@media(max-width:600px){
+  .shell{padding:16px 12px 30px}
+  .card{padding:17px;border-radius:18px}
+  .topbar{position:relative}
+  .hero{align-items:flex-start}
+  .motivation-summary-grid {grid-template-columns:1fr}
+  .club-presets {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .streak-chip span {font-size:.75rem}
+  .activity-shortcuts{top:0;padding:5px;gap:3px;border-radius:0}
+  .activity-shortcuts a{padding:9px 12px}
+}
+@media print {.activity-shortcuts,.motivation-card,.club-card{display:none!important}}
