@@ -1,4 +1,4 @@
-const CACHE='aktywnik-plus-v60';
+const CACHE='aktywnik-plus-v61';
 const ASSETS=[
   './',
   './index.html',
@@ -21,6 +21,7 @@ const ASSETS=[
   './app.js',
   './motivation.js',
   './goal-sync.js',
+  './notion-handoff.js',
   './i18n.js',
   './auth-config.js',
   './auth.js',
