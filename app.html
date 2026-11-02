@@ -10,13 +10,14 @@
   <link rel="icon" type="image/png" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="app-experience.css" />
+  <link rel="stylesheet" href="app-visuals.css" />
   <title>Aktywnik+ — aplikacja</title>
 </head>
 <body>
   <a class="skip-link" href="#mainContent" data-i18n="app.skip">Przejdź do treści</a>
   <header class="topbar">
     <div>
-      <span class="brand-mark" aria-hidden="true">A++</span><strong class="brand">Aktywnik+</strong>
+      <span class="brand-art" aria-hidden="true"></span><strong class="brand">Aktywnik+</strong>
       <span class="tagline" data-i18n="app.tagline">ruch bez presji</span>
       <span class="version-badge">0.5.0 beta.4</span>
       <span class="local-session-badge" data-i18n="app.localSession">bez logowania · dane lokalne</span>
@@ -81,13 +82,14 @@
           <div id="streakWeekGrid" class="streak-week-grid" aria-label="Aktywności z bieżącego tygodnia"></div>
           <p id="streakMessage" class="streak-bottom"></p>
         </section>
-      <div class="hero card">
+      <div class="hero card illustrated-hero">
         <div>
           <p class="eyebrow"><span data-i18n="app.today">Dzisiaj</span> <span id="childDisplayName"></span></p>
-          <h1 data-i18n="app.whatDid">Co robiłeś/aś?</h1>
-          <p data-i18n="app.chooseActivity">Wybierz ulubioną aktywność albo znajdź inną.</p>
+          <h1 id="playfulGreeting">Cześć! 👋</h1>
+          <p id="playfulTodayHint" class="calm-note">Na jaki ruch masz dziś ochotę?</p>
         </div>
         <div class="metric"><span id="todayMinutes">0</span><small data-i18n="app.minToday">min dzisiaj</small></div>
+        <span class="brand-art hero-illustration" aria-hidden="true"></span>
       </div>
 
       <section id="childOverviewCard" class="card overview-card">
@@ -131,6 +133,11 @@
         <small data-i18n="app.timerHint">Możesz zminimalizować lub zamknąć PWA. Czas jest liczony od zapisanego momentu startu.</small>
       </section>
 
+      <section class="card" aria-label="Wybierz aktywność obrazkiem">
+        <div class="section-head"><h2>🎨 Ruszamy!</h2><small class="calm-note">Dotknij obrazka</small></div>
+        <div id="playfulActivities" class="playful-chips"></div>
+      </section>
+
       <section class="card">
         <div class="section-head">
           <h2 data-i18n="app.favorites">⭐ Ulubione</h2>
@@ -145,6 +152,18 @@
           <input id="activitySearch" type="search" placeholder="Szukaj aktywności" data-i18n-placeholder="app.search" />
         </div>
         <div id="allActivities" class="activity-grid compact"></div>
+      </section>
+      <section class="card" aria-labelledby="discoverModulesTitle">
+        <div class="section-head"><h2 id="discoverModulesTitle">✨ Odkrywaj Aktywnik+</h2></div>
+        <div id="illustratedModules" class="illustrated-module-grid"></div>
+        <p id="adventureSurprise" class="calm-note" role="status" aria-live="polite"></p>
+      </section>
+      <section id="adventurePanel" class="card" hidden>
+        <div class="section-head"><h2 id="adventurePanelTitle">Twoje przygody</h2><button id="adventureClose" class="ghost" type="button">Zamknij</button></div>
+        <div id="adventureBadges" class="badge-grid" hidden></div>
+        <div id="adventureChallenges" hidden></div>
+        <div id="adventureCalendar" hidden></div>
+        <small>To tylko Twoje postępy. Bez porównywania z innymi.</small>
       </section>
 
       <section id="entryCard" class="card hidden">
@@ -233,6 +252,7 @@
           <label class="button-link ghost file-button"><span data-i18n="app.mergeBackup">Dodaj wpisy z kopii</span>
             <input id="selfMergeBackupInput" type="file" accept="application/json,.json" hidden />
           </label>
+          <a class="button-link ghost" href="#structuredImportCard">📥 Importuj Excel / CSV / JSON</a>
           <button id="selfSyncLocalDataBtn" class="ghost" type="button">Wyślij dane do chmury</button>
           <button id="selfPersistentStorageBtn" class="ghost" data-i18n="app.protect">Chroń dane na urządzeniu</button>
           <button id="selfDeleteLocalDataBtn" class="danger" data-i18n="app.delete">Usuń dane</button>
@@ -420,6 +440,7 @@
           <label class="button-link ghost file-button"><span data-i18n="app.mergeBackup">Dodaj wpisy z kopii</span>
             <input id="mergeBackupInput" type="file" accept="application/json,.json" hidden />
           </label>
+          <a class="button-link ghost" href="#structuredImportCard">📥 Importuj Excel / CSV / JSON</a>
           <button id="syncLocalDataBtn" class="ghost" type="button">Wyślij dane do chmury</button>
           <button id="requestPersistentStorageBtn" class="ghost" data-i18n="app.protect">Chroń dane na urządzeniu</button>
           <button id="deleteLocalDataBtn" class="danger" data-i18n="parent.deleteDevice">Usuń dane z tego urządzenia</button>
@@ -538,6 +559,28 @@
         <a class="button-link primary" href="paper.html" target="_blank" rel="noopener">Otwórz formularz do druku</a>
       </section>
     </section>
+    <section id="structuredImportCard" class="card" hidden aria-labelledby="structuredImportTitle">
+      <div class="section-head"><h2 id="structuredImportTitle">📥 Import danych</h2><span class="badge">lokalnie</span></div>
+      <p>Dodaj aktywności z Excel, CSV, TSV lub JSON. Plik jest odczytywany na urządzeniu, bez wysyłania do serwera.</p>
+      <div class="import-controls">
+        <label class="import-control">Wybierz plik
+          <input id="structuredImportFile" type="file" accept=".json,.csv,.tsv,.txt,.xlsx,.xls,.xlsm,.ods,application/json,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+        </label>
+        <label class="import-sheet-row" hidden>Arkusz
+          <select id="structuredImportSheet" aria-label="Arkusz do importu"></select>
+        </label>
+      </div>
+      <label for="structuredImportPaste"><strong>Lub wklej tabelę z Excela</strong></label>
+      <textarea id="structuredImportPaste" class="import-paste" placeholder="Data&#9;Aktywność&#9;Minuty&#10;2026-11-02&#9;Rower&#9;30" rows="4"></textarea>
+      <div class="import-controls">
+        <button id="structuredImportPasteBtn" class="ghost" type="button">Sprawdź wklejone dane</button>
+        <button id="structuredImportClear" class="ghost" type="button">Wyczyść</button>
+      </div>
+      <div id="structuredImportPreview" class="import-preview" hidden></div>
+      <div class="actions"><button id="structuredImportConfirm" class="primary" type="button" disabled>Dodaj sprawdzone wpisy</button></div>
+      <p id="structuredImportStatus" role="status" aria-live="polite">Wymagane kolumny: Data, Aktywność, Minuty. Opcjonalne: Zmęczenie, Notatka, Profil.</p>
+      <small>Przy imporcie nie nadpisujemy istniejących wpisów. W trybie rodzinnym wymagany jest odblokowany PIN. Przed większym importem pobierz kopię JSON.</small>
+    </section>
   </main>
 
   <section id="schoolPrintReport" class="school-print-report" aria-hidden="true"></section>
@@ -599,6 +642,9 @@
   <script src="family-sync-client.js"></script>
   <script src="app.js"></script>
   <script src="app-experience.js"></script>
+  <script src="app-playful.js"></script>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="app-import.js"></script>
   <script src="install.js"></script>
 </body>
 </html>
