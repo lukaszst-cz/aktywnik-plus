@@ -70,6 +70,20 @@ async function run(){
     if(selfSaved.profileMode!=='self'||selfSaved.children?.[0]?.requireParentApproval!==false)throw new Error('self mode setup failed');
     if(!d.getElementById('parentAccessBtn').classList.contains('hidden'))throw new Error('parent access visible in self mode');
     if(d.getElementById('selfDataCard').classList.contains('hidden'))throw new Error('self data card missing');
+    if(!w.AktywnikExperience?.setView)throw new Error('new dashboard controller missing');
+    if(!d.getElementById('childViewTabs')||!d.getElementById('streakCard')||!d.getElementById('goalPanel'))throw new Error('new dashboard missing');
+    d.querySelector('#childViewTabs [data-view="stats"]').click();await sleep(50);
+    if(d.querySelector('[data-app-view="stats"]').hidden||!d.querySelector('[data-app-view="add"]').hidden)throw new Error('dashboard tabs do not switch');
+    d.getElementById('goalInput').value='120';
+    d.getElementById('saveGoalBtn').click();await sleep(50);
+    selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(selfSaved.weeklyGoals?.[selfSaved.children[0].id]!==120)throw new Error('private goal was not saved locally');
+    const goalBackup=w.backupStateFromPayload(w.makeBackupPayload(selfSaved));
+    if(goalBackup.weeklyGoals?.[selfSaved.children[0].id]!==120)throw new Error('private goal was lost in backup');
+    d.querySelector('#childViewTabs [data-view="data"]').click();
+    if(d.getElementById('selfDataCard').closest('[data-app-view]').hidden)throw new Error('data tab did not open');
+    w.AktywnikExperience.setView('add');
+
     let custom=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Inna aktywność'));if(!custom)throw new Error('custom activity missing');
     custom.click();
     d.getElementById('customActivityName').value='Prace w ogrodzie';
@@ -94,6 +108,50 @@ async function run(){
     if(selfSaved.entries?.some(e=>e.id===localDeleteId))throw new Error('self delete did not remove local entry');
     const queuedDeletes=JSON.parse(localStorage.getItem('aktywnik-plus-personal-deletes-v1')||'{}');
     if(!queuedDeletes[localDeleteId])throw new Error('self delete tombstone not queued');
+    if(!w.AktywnikTableImport||!w.AktywnikPlayful||!w.XLSX)throw new Error('illustrations, Excel library or importer missing');
+    if(!d.getElementById('appSidebar')||!w.AktywnikShell||!d.getElementById('setupRestoreBackupInput'))throw new Error('visual sidebar or restore from setup missing');
+
+    if(!d.querySelector('.brand-art')||!d.getElementById('playfulActivities')||!d.getElementById('illustratedModules'))throw new Error('new visual assets missing');
+    const parser=w.AktywnikTableImport;
+    if(parser.parseDelimited('Data;Aktywność;Minuty\n2026-10-12;"Rower; spacer";35').length!==2)throw new Error('quoted CSV parsing failed');
+    if(parser.matrixRows([['Data','Aktywność','Minuty'],['12.10.2026','Spacer','35']])[0].activity!=='Spacer')throw new Error('table header mapping failed');
+    if(parser.parseDate('31.02.2026')!==null||parser.parseDate('12.10.2026')!=='2026-10-12')throw new Error('date import validation failed');
+    if(parser.jsonRows([{date:'2026-10-11',activity:'Rower',minutes:10}])[0].activity!=='Rower')throw new Error('JSON table import mapping failed');
+    w.AktywnikExperience.setView('data');
+    if(d.getElementById('structuredImportCard').hidden)throw new Error('self import panel not visible in Data tab');
+    await parser.prepare(null,'Data\tAktywność\tMinuty\tZmęczenie\n2026-10-28\tRower\t30\t2');
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('CSV import preview could not confirm: '+d.getElementById('structuredImportStatus').textContent);
+    w.confirm=()=>true;
+    d.getElementById('structuredImportConfirm').click();
+    await sleep(50);
+    let tableState=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(!tableState.entries.some(e=>e.activity==='Rower'&&e.date==='2026-10-28'&&e.minutes===30))throw new Error('CSV imported entry missing');
+    if(d.querySelector('[data-app-view="diary"]').hidden)throw new Error('imported entries did not open diary');
+    if(!d.getElementById('childEntries').textContent.includes('Rower'))throw new Error('imported record not rendered in diary');
+    if(d.getElementById('importSuccessBanner').hidden)throw new Error('import success is not visible');
+    w.AktywnikShell.open('data');
+    if(d.querySelector('[data-app-view="data"]').hidden)throw new Error('sidebar cannot open data screen');
+
+    await parser.prepare(null,'Data\tAktywność\tMinuty\n2026-10-28\tRower\t30');
+    if(!d.getElementById('structuredImportConfirm').disabled)throw new Error('duplicate CSV record not blocked');
+    const exportPayload=w.makeBackupPayload(JSON.parse(localStorage.getItem(KEY)));
+    const backupFile=new w.File([JSON.stringify(exportPayload)],'backup-aktywnik.json',{type:'application/json'});
+    await parser.prepare(backupFile);
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('JSON backup not recognized');
+    d.getElementById('structuredImportConfirm').click();
+    await sleep(40);
+    if(!d.getElementById('structuredImportStatus').textContent.includes('Z kopii'))throw new Error('JSON backup import did not confirm');
+    w.AktywnikShell.open('data');
+    const workbook=w.XLSX.utils.book_new();
+    w.XLSX.utils.book_append_sheet(workbook,w.XLSX.utils.aoa_to_sheet([['Data','Aktywność','Minuty'],['2026-10-23','Spacer',45]]),'Dziennik');
+    const xlsxBytes=w.XLSX.write(workbook,{bookType:'xlsx',type:'array'});
+    await parser.prepare(new w.File([xlsxBytes],'aktywnosc.xlsx'));
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('XLSX import preview unavailable');
+    const xlsBytes=w.XLSX.write(workbook,{bookType:'biff8',type:'array'});
+    await parser.prepare(new w.File([xlsBytes],'aktywnosc.xls'));
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('XLS import preview unavailable');
+    w.AktywnikExperience.setView('add');
+
 
     const cloudBridge=w.AktywnikCloudBridge;
     if(!cloudBridge?.mergePersonalEntries)throw new Error('personal cloud merge bridge missing');
@@ -152,6 +210,7 @@ async function run(){
     if(d.getElementById('entryCard').classList.contains('hidden')||d.getElementById('activityDuration').value!=='22')throw new Error('legacy entry draft was not restored');
     if(localStorage.getItem(DRAFT_KEY)!==null||!localStorage.getItem(DRAFT_KEY+':child-a'))throw new Error('legacy entry draft migration failed');
     d.getElementById('cancelEntryBtn').click();await sleep(30);
+    if(!d.getElementById('structuredImportCard').hidden)throw new Error('child view exposed parent-only import panel');
     if(!w.AktywnikSync)throw new Error('sync client missing');
     if(w.AktywnikSync.protocolVersion!==1)throw new Error('sync protocol version missing');
     const familySyncStatus=d.getElementById('cloudSyncBadge').textContent.toLowerCase();
@@ -578,9 +637,9 @@ async function run(){
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');const first=saved.entries.find(x=>x.childId==='child-a');
     if(first.status!=='approved'||first.minutes!==35||!first.correctedByParent)throw new Error('parent correction failed');
     if(!d.getElementById('parentSnapshot').textContent.includes('35 min'))throw new Error('parent quick snapshot missing approved activity');
-    d.getElementById('parentReportMonth').value='2026-10';d.getElementById('parentReportMonth').dispatchEvent(new w.Event('change',{bubbles:true}));await sleep(60);
+    d.getElementById('parentReportMonth').value=testToday.slice(0,7);d.getElementById('parentReportMonth').dispatchEvent(new w.Event('change',{bubbles:true}));await sleep(60);
     if(!d.getElementById('parentReport').textContent.includes('35 min'))throw new Error('selected-month report missing approved entry');
-    const printPages=w.buildSchoolPrintPages('child-a',new w.Date('2026-10-15T12:00:00'));
+    const printPages=w.buildSchoolPrintPages('child-a',new w.Date(testToday.slice(0,7)+'-15T12:00:00'));
     if(printPages.length!==2||printPages[0].rows[0].entry?.minutes!==35||printPages[0].rows.length!==35)throw new Error('A4 monthly report pagination failed');
 
     const childADraftKey=DRAFT_KEY+':child-a',childBDraftKey=DRAFT_KEY+':'+childB.id;
@@ -659,7 +718,7 @@ async function run(){
     sessionStorage.setItem(PIN_LOCK_KEY,String(Date.now()+600000));
     w.applyBackupCandidate(restored);
     if(localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_SYNC_KEY)!==null||localStorage.getItem(FAMILY_LAST_SYNC_KEY)!==null)throw new Error('restore left stale sync transient state');
-    if(!localStorage.getItem(CLOUD_SESSION_KEY))throw new Error('restore unexpectedly removed account session');
+    if(localStorage.getItem(CLOUD_SESSION_KEY)!==null)throw new Error('restore should log out previous cloud account');
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('restore left parent transient state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('restore removed language preference');
 

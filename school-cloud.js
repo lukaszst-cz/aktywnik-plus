@@ -112,7 +112,7 @@
     const tenantSelect=$('#schoolTenantSelect');
     tenantSelect.innerHTML=memberships.map(m=>'<option value="'+esc(m.tenant_id)+'">'+esc(m.role)+' · '+esc(m.tenant_id.slice(0,8))+'…</option>').join('');
     $('#schoolStaffPanel').classList.toggle('hidden',!canStaff());
-    $('#schoolAdminCreateBox').classList.toggle('hidden',!isAdmin());
+    $('#schoolAdminCreateBox').classList.toggle('hidden',!canStaff());
     $('#schoolJoinRequestsPanel').classList.toggle('hidden',!canStaff());
     const children=context?.children||[];
     $('#schoolGuardianPanel').classList.toggle('hidden',profile?.profile_type!=='adult');
@@ -161,6 +161,7 @@
     if(name.length>80){status('Nazwa klasy może mieć maksymalnie 80 znaków.','error');return}
     if(button?.disabled)return;
     if(button)button.disabled=true;
+    if(!canStaff()){status('Brak uprawnień do tworzenia klas w tej szkole.','error');return}
     const payload={tenantId:tenant,schoolYearId,name};
     const operationId=await getOperationId('create-class',payload);
     try{

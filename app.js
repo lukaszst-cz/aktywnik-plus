@@ -25,7 +25,7 @@ const MAX_PIN_ATTEMPTS=5;
 const PIN_LOCK_MS=30000;
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
-const defaultState={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
+const defaultState={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],weeklyGoals:{},reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
 let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let pendingPaperOcrImageFile=null; let parentReportMonth=today().slice(0,7); let lastPersistOk=true; let familyCloudContext=null; let familyCloudBusy=false;
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
 function persist({skipSync=false}={}){
@@ -1167,10 +1167,18 @@ function safeBackupState(raw){
   const joinRequests=(Array.isArray(d.joinRequests)?d.joinRequests:[]).slice(0,MAX_JOIN_REQUESTS).map(r=>r&&typeof r==='object'?{...r,childId:ids.has(r.childId)?r.childId:null,childName:cleanText(r.childName,60),status:['pending','accepted','rejected'].includes(r.status)?r.status:'pending'}:null).filter(Boolean);
   let activeTimer=null;
   if(d.activeTimer&&typeof d.activeTimer==='object'){const childId=ids.has(d.activeTimer.childId)?d.activeTimer.childId:fallback;if(childId&&cleanText(d.activeTimer.activity,80)&&d.activeTimer.startAt)activeTimer={...d.activeTimer,childId,activity:cleanText(d.activeTimer.activity,80),date:validDate(d.activeTimer.date)?d.activeTimer.date:today(),effort:clampInt(d.activeTimer.effort,1,5,2),note:cleanText(d.activeTimer.note,120)}}
+  // Personal, optional goals are local-only and travel with a JSON backup.
+  const rawGoals=d.weeklyGoals&&typeof d.weeklyGoals==='object'&&!Array.isArray(d.weeklyGoals)?d.weeklyGoals:{};
+  const weeklyGoals={};
+  for(const [childId,value] of Object.entries(rawGoals)){
+    if(!ids.has(childId))continue;
+    const minutes=Number(value);
+    if(Number.isInteger(minutes)&&minutes>=0&&minutes<=4200)weeklyGoals[childId]=minutes;
+  }
   const auth=d.parentAuth&&typeof d.parentAuth==='object'?d.parentAuth:{};
   const parentAuth={pinSalt:cleanText(auth.pinSalt,300),pinHash:cleanText(auth.pinHash,300),iterations:clampInt(auth.iterations,50000,500000,PIN_ITERATIONS),autoLockMinutes:clampInt(auth.autoLockMinutes,1,30,5)};
   const rawMeta=d.meta&&typeof d.meta==='object'?d.meta:{},meta={lastBackupAt:safeIso(rawMeta.lastBackupAt),lastWriteAt:safeIso(rawMeta.lastWriteAt)};
-  return {...base,schemaVersion:6,profileMode:d.profileMode==='self'?'self':'family',meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
+  return {...base,schemaVersion:6,profileMode:d.profileMode==='self'?'self':'family',meta,pilot:{started:children.length>0},parentAuth,children,activeChildId,activeTimer,entries,approvalEvents,rewards,classes,joinRequests,paperImports,weeklyGoals,reminderHour:clampInt(d.reminderHour,0,23,base.reminderHour),reminderMinute:clampInt(d.reminderMinute,0,59,base.reminderMinute),school:{...base.school,...(d.school||{})}};
 }
 function clearSyncTransientState(){
   [SYNC_OUTBOX_KEY,SYNC_LAST_KEY,SYNC_DELETES_KEY,FAMILY_SYNC_OUTBOX_KEY,FAMILY_SYNC_DELETES_KEY,FAMILY_SYNC_LAST_KEY].forEach(key=>localStorage.removeItem(key));
@@ -1179,11 +1187,45 @@ function clearParentTransientState(){
   [PARENT_SESSION_KEY,PARENT_PIN_FAIL_KEY,PARENT_PIN_LOCK_KEY].forEach(key=>sessionStorage.removeItem(key));
 }
 function applyBackupCandidate(candidate){
+  // Zapisz nowy stan przed usunięciem tymczasowych danych, żeby uniknąć utraty kopii przy błędzie pamięci.
+  localStorage.setItem(KEY,JSON.stringify(candidate));
   clearAllEntryDrafts();
   clearSyncTransientState();
   clearParentTransientState();
+  localStorage.removeItem(CLOUD_SESSION_KEY);
   state=candidate;
-  localStorage.setItem(KEY,JSON.stringify(state));
+  // Przywrócenie kopii jest lokalne. Nie wysyłamy automatycznie danych do poprzedniego konta w chmurze.
+}
+function mergeBackupCandidate(candidate){
+  if(candidate.profileMode!==state.profileMode)throw new Error('Kopia jest z innego trybu. Użyj pełnego przywracania po zapisaniu kopii aktualnych danych.');
+  if(!state.children.length)throw new Error('Brak lokalnego profilu. Aby przenieść wszystkie dane na nowe urządzenie, użyj Przywróć kopię.');
+  const currentChildren=new Map(state.children.map(child=>[child.id,child]));
+  for(const child of candidate.children){
+    const current=currentChildren.get(child.id);
+    if(!current)throw new Error('Kopia zawiera inny profil dziecka. Dla bezpieczeństwa dodawanie wpisów wymaga tych samych identyfikatorów profili.');
+    if((current.cloudChildId||null)!==(child.cloudChildId||null))throw new Error('Różne powiązania z chmurą. Nie można automatycznie scalić tych danych.');
+  }
+  const appendUnique=(existing,incoming,limit)=>{
+    const known=new Set(existing.map(x=>x.id));
+    const toAdd=[];
+    for(const item of incoming){
+      if(!currentChildren.has(item.childId))throw new Error('Wpis nie jest przypisany do lokalnego profilu.');
+      if(known.has(item.id))continue;
+      if(existing.length+toAdd.length>=limit)throw new Error('Przekroczono limit rekordów. Nie zaimportowano żadnych danych.');
+      known.add(item.id);toAdd.push(item);
+    }
+    return toAdd;
+  };
+  const entries=appendUnique(state.entries,candidate.entries,MAX_ENTRIES);
+  const decisions=appendUnique(state.approvalEvents,candidate.approvalEvents,10000);
+  const rewards=appendUnique(state.rewards,candidate.rewards,2000);
+  if(!entries.length&&!decisions.length&&!rewards.length)return {entries:0,decisions:0,rewards:0};
+  const next={...state,entries:[...state.entries,...entries],approvalEvents:[...state.approvalEvents,...decisions],rewards:[...state.rewards,...rewards]};
+  localStorage.setItem(KEY,JSON.stringify(next));
+  state=next;
+  if(state.profileMode==='self')window.AktywnikSync?.markDirty?.(state);
+  if(state.profileMode==='family')window.AktywnikFamilySync?.markDirty?.(state);
+  return {entries:entries.length,decisions:decisions.length,rewards:rewards.length};
 }
 function clearAllLocalUserData(){
   clearAllEntryDrafts();
@@ -1349,11 +1391,54 @@ function exportBackup(){
   if(!canManageLocalData())return;
   state.meta={...(state.meta||{}),lastBackupAt:nowIso()};persist({skipSync:true});
   const payload=makeBackupPayload(state),blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='aktywnik-plus-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);const badge=$('#backupStatus');if(badge)badge.textContent='dziś';
+  a.href=url;a.download='aktywnik-plus-backup-'+today()+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);const badge=$('#backupStatus');if(badge)badge.textContent='dziś';
 }
 async function importBackup(file){
   if(!canManageLocalData()||!file)return;
-  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());const candidate=backupStateFromPayload(parsed),summary='Kopia zawiera '+candidate.children.length+' profili i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne?';if(!confirm(summary))return;applyBackupCandidate(candidate);alert(isSelfMode()?'Kopia została przywrócona.':'Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{const a=$('#importBackupInput'),b=$('#selfImportBackupInput');if(a)a.value='';if(b)b.value=''}
+  try{if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');const parsed=JSON.parse(await file.text());const candidate=backupStateFromPayload(parsed),summary='Kopia zawiera '+candidate.children.length+' profili i '+candidate.entries.length+' wpisów. Zastąpić aktualne dane lokalne? Zostaniesz wylogowany z chmury. Przed potwierdzeniem zapisz kopię obecnych danych.';if(!confirm(summary))return;applyBackupCandidate(candidate);alert(isSelfMode()?'Kopia została przywrócona.':'Kopia została przywrócona. Strefa rodzica zostanie ponownie zablokowana.');location.reload()}catch(err){alert('Nie udało się przywrócić kopii: '+err.message)}finally{const a=$('#importBackupInput'),b=$('#selfImportBackupInput');if(a)a.value='';if(b)b.value=''}
+}
+async function importBackupMerge(file){
+  if(!canManageLocalData()||!file)return;
+  try{
+    if(file.size>MAX_BACKUP_BYTES)throw new Error('Plik kopii jest zbyt duży (maks. 2 MB).');
+    const payload=JSON.parse(await file.text());
+    const candidate=backupStateFromPayload(payload);
+    if(!confirm('Dodać brakujące wpisy, decyzje i nagrody z tej kopii? Istniejące dane zostaną zachowane, a powtarzające się identyfikatory pominięte.'))return;
+    const result=mergeBackupCandidate(candidate);
+    alert('Import zakończony. Dodano wpisów: '+result.entries+', decyzji: '+result.decisions+', nagród: '+result.rewards+'.');
+    renderAll();
+  }catch(err){alert('Nie udało się dodać danych: '+err.message)}
+  finally{
+    const a=$('#mergeBackupInput'),b=$('#selfMergeBackupInput');
+    if(a)a.value='';if(b)b.value='';
+  }
+}
+async function syncLocalDataNow(){
+  if(!canManageLocalData())return;
+  if(navigator.onLine===false){
+    setStorageMessage('Brak internetu. Dane pozostają zapisane na urządzeniu.');
+    return;
+  }
+  try{
+    const auth=window.AktywnikAuth;
+    const user=await auth?.currentUser?.();
+    if(!user?.email){
+      setStorageMessage('Najpierw zaloguj się na właściwe konto dorosłego w zakładce Konto / Sync.');
+      return;
+    }
+    if(state.profileMode==='family' && !state.children.some(child=>validUuid(child.cloudChildId))){
+      setStorageMessage('Najpierw połącz profile dzieci z chmurą w strefie rodzica.');
+      return;
+    }
+    if(!confirm('Wysłać lokalne aktywności na konto '+user.email+'? Sprawdź, czy to właściwe konto. Dane już obecne w chmurze mogą zostać połączone według zasad synchronizacji.'))return;
+    const service=state.profileMode==='self'?window.AktywnikSync:window.AktywnikFamilySync;
+    if(!service?.markDirty||!service?.syncNow)throw new Error('Synchronizacja jest niedostępna.');
+    service.markDirty(state);
+    const result=await service.syncNow();
+    setStorageMessage(result===false?'Zlecono synchronizację. Sprawdź stan konta i dostępność chmury. Dane lokalne pozostały na urządzeniu.':'Synchronizacja zakończona. Sprawdź status chmury na obu urządzeniach.');
+  }catch(err){
+    setStorageMessage('Nie udało się zsynchronizować: '+String(err?.message||err));
+  }
 }
 async function requestPersistentStorage(){if(!canManageLocalData())return;try{const ok=await navigator.storage?.persist?.();setStorageMessage(ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.')}catch{setStorageMessage('Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.')}}
 async function renderStorageStatus(){if(!isSelfMode()&&!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();setStorageMessage(persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.')}catch{setStorageMessage('Dane są zapisane lokalnie w tej przeglądarce.')}}
@@ -1373,6 +1458,9 @@ function renderAll(){
   $('#childPanel').classList.toggle('hidden',currentMode!=='child');
   $('#parentPanel').classList.toggle('hidden',currentMode!=='parent');
   $('#schoolPanel').classList.toggle('hidden',currentMode!=='school');
+  window.AktywnikExperience?.refresh?.();
+  window.AktywnikTableImport?.refreshVisibility?.();
+  window.AktywnikShell?.refresh?.();
 }
 $('#activitySearch').oninput=renderActivities;
 ['activityDate','activityDuration','activityEffort','customActivityName','activityNote'].forEach(id=>{const el=$('#'+id);if(!el)return;const onEdit=()=>{if(id==='activityEffort')renderFatigueValue();saveEntryDraft()};el.addEventListener('input',onEdit);el.addEventListener('change',onEdit)});
@@ -1408,11 +1496,15 @@ const pilotTestCopyBtn=$('#pilotTestCopyBtn');if(pilotTestCopyBtn)pilotTestCopyB
 const pilotTestResetBtn=$('#pilotTestResetBtn');if(pilotTestResetBtn)pilotTestResetBtn.onclick=resetPilotTestChecklist;
 $('#exportBackupBtn').onclick=exportBackup;
 $('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
+$('#mergeBackupInput').onchange=e=>importBackupMerge(e.target.files?.[0]);
+$('#syncLocalDataBtn').onclick=syncLocalDataNow;
 $('#requestPersistentStorageBtn').onclick=requestPersistentStorage;
 $('#deleteLocalDataBtn').onclick=deleteLocalData;
 $('#selfExportCsvBtn').onclick=exportSelfCsv;
 $('#selfExportBackupBtn').onclick=exportBackup;
 $('#selfImportBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
+$('#selfMergeBackupInput').onchange=e=>importBackupMerge(e.target.files?.[0]);
+$('#selfSyncLocalDataBtn').onclick=syncLocalDataNow;
 $('#selfPersistentStorageBtn').onclick=requestPersistentStorage;
 $('#selfDeleteLocalDataBtn').onclick=deleteLocalData;
 $('#createClassBtn').onclick=createClass;

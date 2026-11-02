@@ -7,19 +7,31 @@
   <meta name="description" content="Aktywnik+ — prosty, spokojny tracker aktywności dla siebie, rodziny, szkoły lub klubu." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="icons/aktywnik-logo.svg" />
   <link rel="icon" type="image/png" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="app-experience.css" />
+  <link rel="stylesheet" href="app-visuals.css" />
+  <link rel="stylesheet" href="app-shell.css" />
   <title>Aktywnik+ — aplikacja</title>
 </head>
 <body>
   <a class="skip-link" href="#mainContent" data-i18n="app.skip">Przejdź do treści</a>
   <header class="topbar">
-    <div>
-      <strong class="brand">Aktywnik+</strong>
+    <button id="sidebarToggleBtn" type="button" aria-label="Otwórz menu Aktywnika" aria-controls="appSidebar" aria-expanded="false">☰</button>
+    <div class="topbar-identity">
+      <span class="brand-art" aria-hidden="true"></span><strong class="brand">Aktywnik+</strong>
       <span class="tagline" data-i18n="app.tagline">ruch bez presji</span>
       <span class="version-badge">0.5.0 beta.4</span>
       <span class="local-session-badge" data-i18n="app.localSession">bez logowania · dane lokalne</span>
     </div>
+    <nav id="childViewTabs" aria-label="Widoki aplikacji" hidden>
+      <button type="button" data-view="add">＋ Dodaj</button>
+      <button type="button" data-view="diary">▤ Dziennik</button>
+      <button type="button" data-view="stats">▥ Statystyki</button>
+      <button type="button" data-view="data">▤ Dane</button>
+    </nav>
+    <span class="nav-profile" id="navProfileInitial" aria-label="Aktualny profil">•</span>
     <select class="language-switch" data-language-switch><option value="pl">PL</option><option value="en">EN</option></select>
     <button class="install-mini" type="button" data-install-pwa data-i18n="common.install">Zainstaluj</button>
     <div class="secure-actions">
@@ -27,9 +39,34 @@
       <span id="cloudSyncBadge" class="badge" aria-live="polite" data-i18n="app.syncOptional">lokalnie · sync opcjonalny</span>
       <span id="deviceChildBadge" class="badge"></span>
       <a class="ghost button-link" href="konto.html" data-i18n="app.accountSync">Konto / Sync ☁️</a>
+      <button id="signOutBtn" class="ghost hidden" type="button" data-i18n="app.logoutCloud">Wyloguj z chmury</button>
       <button id="parentAccessBtn" class="ghost" data-i18n="app.parentZone">Strefa rodzica 🔒</button>
     </div>
+    <small id="logoutStatus" role="status" aria-live="polite"></small>
   </header>
+
+  <div id="sidebarShade" aria-hidden="true"></div>
+  <aside id="appSidebar" aria-label="Menu Aktywnik+">
+    <a class="sidebar-logo" href="./"><span class="brand-art" aria-hidden="true"></span><span><strong>Aktywnik+</strong><small>Ruch · Klasa · Drużyna</small></span></a>
+    <nav id="sidebarNav" aria-label="Główne menu" hidden>
+      <button type="button" data-nav-action="home" class="selected"><span class="nav-emoji">🏡</span>Pulpit</button>
+      <button type="button" data-nav-action="add"><span class="nav-emoji">➕</span>Dodaj aktywność</button>
+      <button type="button" data-nav-action="diary"><span class="nav-emoji">📔</span>Dziennik</button>
+      <button type="button" data-nav-action="stats"><span class="nav-emoji">📊</span>Statystyki</button>
+      <button type="button" data-nav-action="challenges"><span class="nav-emoji">🏆</span>Wyzwania</button>
+      <button type="button" data-nav-action="badges"><span class="nav-emoji">🥇</span>Odznaki</button>
+      <button type="button" data-nav-action="calendar"><span class="nav-emoji">🗓️</span>Kalendarz</button>
+      <button type="button" data-nav-action="class"><span class="nav-emoji">🏫</span>Moja klasa</button>
+      <button type="button" data-nav-action="ocr" data-nav-role="family"><span class="nav-emoji">📷</span>Skanuj kartę OCR</button>
+      <button type="button" data-nav-action="teams"><span class="nav-emoji">🦊</span>Drużyny</button>
+      <button type="button" data-nav-action="parent" data-nav-role="family"><span class="nav-emoji">👨‍👩‍👧</span>Rodzina</button>
+      <button type="button" data-nav-action="reports" data-nav-role="family"><span class="nav-emoji">📋</span>Raporty</button>
+      <button type="button" data-nav-action="data"><span class="nav-emoji">📥</span>Import i eksport</button>
+      <button type="button" data-nav-action="settings"><span class="nav-emoji">⚙️</span>Ustawienia</button>
+    </nav>
+    <p class="sidebar-small">Bez presji i bez porównywania dzieci. Każdy ruch się liczy.</p>
+    <div class="sidebar-footer">📗 Wpisów na profilu: <strong id="shellEntryCount">0</strong><br><small>Dane zapisywane lokalnie</small></div>
+  </aside>
 
   <main id="mainContent" class="shell">
     <section id="pilotSetupCard" class="card pilot-card hidden" aria-labelledby="setupTitle">
@@ -57,17 +94,41 @@
           </label>
         </div>
         <button id="startPilotBtn" class="primary" data-i18n="app.start">Zacznij korzystać</button>
+        <div class="setup-restore">
+          <strong>Masz już dane Aktywnika?</strong>
+          <p>Nie zakładaj pustego profilu. Przywróć poprzednią kopię JSON wraz z wpisami i profilami.</p>
+          <label class="button-link ghost file-button">📁 Przywróć kopię JSON
+            <input id="setupRestoreBackupInput" type="file" accept="application/json,.json" hidden />
+          </label>
+          <p id="setupRestoreBackupStatus" role="status" aria-live="polite"></p>
+        </div>
         <small id="setupHint" data-i18n="app.setupHint">Tryb osobisty działa lokalnie bez konta. Dane możesz później eksportować jako kopię.</small>
       </div>
     </section>
+    <section id="importSuccessBanner" class="card import-success-banner" role="status" aria-live="polite" hidden>
+      <span aria-hidden="true" class="import-success-icon">✅</span>
+      <div><strong>Import zapisany!</strong><p id="importSuccessText">Dane zostały dodane do dziennika.</p></div>
+      <button id="importShowEntriesBtn" class="primary" type="button">📔 Pokaż wpisy</button>
+    </section>
     <section id="childPanel">
-      <div class="hero card">
+      <div class="app-view" data-app-view="add">
+        <section id="streakCard" class="card streak-card" aria-labelledby="streakTitle">
+          <div class="streak-title">
+            <div><h2 id="streakTitle"><span aria-hidden="true">🔥</span> <b id="streakDays">0</b> dni z rzędu</h2>
+              <p>Każdy ruch się liczy. Również spokojny dzień.</p></div>
+            <span class="streak-icon" aria-hidden="true">🏆</span>
+          </div>
+          <div id="streakWeekGrid" class="streak-week-grid" aria-label="Aktywności z bieżącego tygodnia"></div>
+          <p id="streakMessage" class="streak-bottom"></p>
+        </section>
+      <div class="hero card illustrated-hero">
         <div>
           <p class="eyebrow"><span data-i18n="app.today">Dzisiaj</span> <span id="childDisplayName"></span></p>
-          <h1 data-i18n="app.whatDid">Co robiłeś/aś?</h1>
-          <p data-i18n="app.chooseActivity">Wybierz ulubioną aktywność albo znajdź inną.</p>
+          <h1 id="playfulGreeting">Cześć! 👋</h1>
+          <p id="playfulTodayHint" class="calm-note">Na jaki ruch masz dziś ochotę?</p>
         </div>
         <div class="metric"><span id="todayMinutes">0</span><small data-i18n="app.minToday">min dzisiaj</small></div>
+        <span class="brand-art hero-illustration" aria-hidden="true"></span>
       </div>
 
       <section id="childOverviewCard" class="card overview-card">
@@ -85,6 +146,21 @@
         <small class="calm-note" data-i18n="app.calmSummary">To tylko podsumowanie aktywności — bez celów, rankingów i porównywania z innymi.</small>
       </section>
 
+      <section id="teamsIntroCard" class="card" hidden>
+        <h2>🦊 Drużyny Aktywnika</h2>
+        <p>Wyzwania zespołowe przygotowujemy dla klas i rodzin. W tej wersji możesz już zbierać prywatne odznaki i realizować indywidualne wyzwania.</p>
+        <button class="ghost" type="button" id="teamsLocalChallengesBtn">🏆 Pokaż dostępne wyzwania</button>
+      </section>
+      <section id="quickTimerCard" class="card" aria-labelledby="quickTimerTitle">
+        <div class="quick-timer-content">
+          <div>
+            <p class="eyebrow">Stoper aktywności</p>
+            <h2 id="quickTimerTitle" class="timer-clock">00:00:00</h2>
+            <p class="timer-meta">Wybierz aktywność i uruchom stoper. Czas zapisze się także po zamknięciu aplikacji.</p>
+          </div>
+          <button id="quickTimerStartBtn" class="quick-timer-action" type="button" aria-label="Przygotuj aktywność do pomiaru">▶</button>
+        </div>
+      </section>
       <section id="timerStatusCard" class="card timer-card hidden">
         <div class="timer-live">
           <div>
@@ -101,6 +177,11 @@
         <small data-i18n="app.timerHint">Możesz zminimalizować lub zamknąć PWA. Czas jest liczony od zapisanego momentu startu.</small>
       </section>
 
+      <section class="card" aria-label="Wybierz aktywność obrazkiem">
+        <div class="section-head"><h2>🎨 Ruszamy!</h2><small class="calm-note">Dotknij obrazka</small></div>
+        <div id="playfulActivities" class="playful-chips"></div>
+      </section>
+
       <section class="card">
         <div class="section-head">
           <h2 data-i18n="app.favorites">⭐ Ulubione</h2>
@@ -115,6 +196,18 @@
           <input id="activitySearch" type="search" placeholder="Szukaj aktywności" data-i18n-placeholder="app.search" />
         </div>
         <div id="allActivities" class="activity-grid compact"></div>
+      </section>
+      <section class="card" aria-labelledby="discoverModulesTitle">
+        <div class="section-head"><h2 id="discoverModulesTitle">✨ Odkrywaj Aktywnik+</h2></div>
+        <div id="illustratedModules" class="illustrated-module-grid"></div>
+        <p id="adventureSurprise" class="calm-note" role="status" aria-live="polite"></p>
+      </section>
+      <section id="adventurePanel" class="card" hidden>
+        <div class="section-head"><h2 id="adventurePanelTitle">Twoje przygody</h2><button id="adventureClose" class="ghost" type="button">Zamknij</button></div>
+        <div id="adventureBadges" class="badge-grid" hidden></div>
+        <div id="adventureChallenges" hidden></div>
+        <div id="adventureCalendar" hidden></div>
+        <small>To tylko Twoje postępy. Bez porównywania z innymi.</small>
       </section>
 
       <section id="entryCard" class="card hidden">
@@ -146,6 +239,9 @@
         <small id="entryDraftStatus" class="calm-note" aria-live="polite" data-i18n="app.draftLocal">Niedokończony wpis zapisuje się automatycznie tylko na tym urządzeniu.</small>
       </section>
 
+      </div>
+      <div class="app-view" data-app-view="diary" hidden>
+      <h2 class="screen-heading">Dziennik aktywności</h2>
       <section class="card">
         <div class="section-head"><h2 data-i18n="app.recent">Moje ostatnie wpisy</h2><span id="pendingChildBadge" class="badge"></span></div>
         <div id="childEntries" class="list"></div>
@@ -156,12 +252,38 @@
         <div id="childRewardHistory" class="list"></div>
       </section>
 
+      </div>
+      <div class="app-view" data-app-view="stats" hidden>
+      <h2 class="screen-heading">Statystyki i cele</h2>
+      <section id="goalPanel" class="card" aria-labelledby="goalTitle">
+        <div class="section-head"><h2 id="goalTitle">◎ Moje cele</h2><span class="badge">dobrowolnie</span></div>
+        <div class="goal-period-buttons" id="goalPeriodButtons" role="group" aria-label="Okres celu">
+          <button type="button" data-goal-days="7">7 dni</button>
+          <button type="button" data-goal-days="14">14 dni</button>
+          <button type="button" data-goal-days="30">30 dni</button>
+        </div>
+        <div class="goal-body">
+          <div id="goalProgressRing" class="goal-ring" role="img" aria-label="Postęp celu"><div class="goal-ring-inner" id="goalPercent">●</div></div>
+          <div class="goal-stats"><small id="goalPeriodLabel">Ostatnie 7 dni</small><strong id="goalMinutes">0 min</strong><small id="goalSubtext">Cel nieustawiony</small></div>
+        </div>
+        <div class="goal-form">
+          <label>Cel tygodniowy (minuty)
+            <input id="goalInput" type="number" min="0" max="4200" step="1" placeholder="np. 120" />
+          </label>
+          <button id="saveGoalBtn" class="ghost" type="button">Zapisz cel</button>
+          <small id="goalFormStatus" role="status" aria-live="polite"></small>
+        </div>
+        <small id="goalNote" class="goal-note"></small>
+      </section>
       <section class="card">
         <div class="section-head"><h2 data-i18n="app.stats">Moje statystyki</h2><select id="reportPeriod" aria-label="Okres statystyk"><option value="month" data-i18n="app.month">Miesiąc</option><option value="quarter" data-i18n="app.quarter">Kwartał</option><option value="half" data-i18n="app.half">Półrocze</option><option value="year" data-i18n="app.year">Rok</option></select></div>
         <div id="statsGrid" class="stats-grid"></div>
         <div id="activityBreakdown" class="bars"></div>
       </section>
 
+      </div>
+      <div class="app-view" data-app-view="data" hidden>
+      <h2 class="screen-heading">Dane i raporty</h2>
       <section id="selfDataCard" class="card hidden">
         <div class="section-head"><h2 data-i18n="app.myData">Moje dane</h2><span class="badge" data-i18n="app.local">lokalnie</span></div>
         <p data-i18n="app.myDataText">W trybie osobistym możesz korzystać bez konta. Zapisz kopię przed zmianą urządzenia lub czyszczeniem przeglądarki.</p>
@@ -171,11 +293,26 @@
           <label class="button-link ghost file-button"><span data-i18n="app.restore">Przywróć kopię</span>
             <input id="selfImportBackupInput" type="file" accept="application/json,.json" hidden />
           </label>
+          <label class="button-link ghost file-button"><span data-i18n="app.mergeBackup">Dodaj wpisy z kopii</span>
+            <input id="selfMergeBackupInput" type="file" accept="application/json,.json" hidden />
+          </label>
+          <a class="button-link ghost" href="#structuredImportCard">📥 Importuj Excel / CSV / JSON</a>
+          <button id="selfSyncLocalDataBtn" class="ghost" type="button">Wyślij dane do chmury</button>
           <button id="selfPersistentStorageBtn" class="ghost" data-i18n="app.protect">Chroń dane na urządzeniu</button>
           <button id="selfDeleteLocalDataBtn" class="danger" data-i18n="app.delete">Usuń dane</button>
         </div>
         <small id="selfStorageStatus" data-i18n="app.storageStatus">Dane są zapisane lokalnie w tej przeglądarce.</small>
       </section>
+      <section id="familyDataCard" class="card" hidden>
+        <h2>Twoje dane rodzinne</h2>
+        <p>Profile dzieci, akceptacje, raporty, kopie zapasowe i synchronizację chmury obsługuje chroniona PIN-em strefa rodzica.</p>
+        <div class="cta">
+          <a class="button-link primary" href="konto.html">Konto / Synchronizacja</a>
+          <a class="button-link ghost" href="school-cloud.html">Panel nauczyciela</a>
+        </div>
+        <p><small>Przed zmianą urządzenia pobierz kopię JSON w strefie rodzica.</small></p>
+      </section>
+      </div>
     </section>
 
     <section id="parentPanel" class="hidden">
@@ -321,7 +458,7 @@
         <div id="approvalHistory" class="list"></div>
       </section>
 
-      <section class="card">
+      <section id="parentReportCard" class="card">
         <div class="section-head"><h2 data-i18n="parent.reports">Raporty</h2><div class="entry-actions report-actions"><label class="report-month-picker"><span data-i18n="parent.referenceMonth">Miesiąc odniesienia</span> <input id="parentReportMonth" type="month" /></label><button id="exportCsvBtn" class="ghost">Eksport CSV</button><button id="printReportBtn" class="ghost" data-i18n="parent.printSummary">Drukuj podsumowanie</button><button id="printSchoolReportBtn" class="primary" data-i18n="parent.schoolJournal">Dziennik A4 1–70+</button></div></div>
         <div class="report-buttons">
           <button data-report="month">Miesięczny</button><button data-report="quarter">Kwartalny</button><button data-report="half">Półroczny</button><button data-report="year">Roczny</button>
@@ -344,6 +481,11 @@
           <label class="button-link ghost file-button"><span data-i18n="app.restore">Przywróć kopię</span>
             <input id="importBackupInput" type="file" accept="application/json,.json" hidden />
           </label>
+          <label class="button-link ghost file-button"><span data-i18n="app.mergeBackup">Dodaj wpisy z kopii</span>
+            <input id="mergeBackupInput" type="file" accept="application/json,.json" hidden />
+          </label>
+          <a class="button-link ghost" href="#structuredImportCard">📥 Importuj Excel / CSV / JSON</a>
+          <button id="syncLocalDataBtn" class="ghost" type="button">Wyślij dane do chmury</button>
           <button id="requestPersistentStorageBtn" class="ghost" data-i18n="app.protect">Chroń dane na urządzeniu</button>
           <button id="deleteLocalDataBtn" class="danger" data-i18n="parent.deleteDevice">Usuń dane z tego urządzenia</button>
         </div>
@@ -461,6 +603,29 @@
         <a class="button-link primary" href="paper.html" target="_blank" rel="noopener">Otwórz formularz do druku</a>
       </section>
     </section>
+    <section id="structuredImportCard" class="card" hidden aria-labelledby="structuredImportTitle">
+      <div class="section-head"><h2 id="structuredImportTitle">📥 Import danych</h2><span class="badge">lokalnie</span></div>
+      <p>Dodaj aktywności z Excel, CSV, TSV lub JSON. Plik jest odczytywany na urządzeniu, bez wysyłania do serwera.</p>
+      <div class="import-controls">
+        <label class="import-control">Wybierz plik
+          <input id="structuredImportFile" type="file" accept=".json,.csv,.tsv,.txt,.xlsx,.xls,.xlsm,.ods,application/json,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+        </label>
+        <label class="import-sheet-row" hidden>Arkusz
+          <select id="structuredImportSheet" aria-label="Arkusz do importu"></select>
+        </label>
+      </div>
+      <label for="structuredImportPaste"><strong>Lub wklej tabelę z Excela</strong></label>
+      <textarea id="structuredImportPaste" class="import-paste" placeholder="Data&#9;Aktywność&#9;Minuty&#10;2026-11-02&#9;Rower&#9;30" rows="4"></textarea>
+      <div class="import-controls">
+        <button id="structuredImportPasteBtn" class="ghost" type="button">Sprawdź wklejone dane</button>
+        <button id="structuredImportClear" class="ghost" type="button">Wyczyść</button>
+      </div>
+      <div id="structuredImportPreview" class="import-preview" hidden></div>
+      <div class="actions"><button id="structuredImportConfirm" class="primary" type="button" disabled>Dodaj sprawdzone wpisy</button></div>
+      <div class="import-controls"><button id="structuredExportXlsx" class="ghost" type="button">📊 Pobierz Excel (.xlsx)</button><button id="structuredExportXls" class="ghost" type="button">📈 Pobierz Excel (.xls)</button></div>
+      <p id="structuredImportStatus" role="status" aria-live="polite">Wymagane kolumny: Data, Aktywność, Minuty. Opcjonalne: Zmęczenie, Notatka, Profil.</p>
+      <small>Przy imporcie nie nadpisujemy istniejących wpisów. W trybie rodzinnym wymagany jest odblokowany PIN. Przed większym importem pobierz kopię JSON.</small>
+    </section>
   </main>
 
   <section id="schoolPrintReport" class="school-print-report" aria-hidden="true"></section>
@@ -521,6 +686,11 @@
   <script src="sync-client.js"></script>
   <script src="family-sync-client.js"></script>
   <script src="app.js"></script>
+  <script src="app-experience.js"></script>
+  <script src="app-playful.js"></script>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="app-import.js"></script>
+  <script src="app-shell.js"></script>
   <script src="install.js"></script>
 </body>
 </html>

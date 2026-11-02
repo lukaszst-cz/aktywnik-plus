@@ -5,11 +5,17 @@
   "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f1f5f9",
-  "theme_color": "#0f172a",
+  "background_color": "#f5f9f0",
+  "theme_color": "#103824",
   "description": "Bezpłatny tracker aktywności z trybem Dla siebie, Rodzina oraz pilotażowym modułem szkoły/klubu.",
   "prefer_related_applications": false,
   "icons": [
+    {
+      "src": "icons/aktywnik-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",

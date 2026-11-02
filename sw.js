@@ -1,9 +1,11 @@
-const CACHE='aktywnik-plus-v57';
+const CACHE='aktywnik-plus-v62';
 const ASSETS=[
   './',
   './index.html',
   './app.html',
   './konto.html',
+  './school-cloud.html',
+  './school-cloud.js',
   './paper.html',
   './paper-uniwersalny.html',
   './paper.js',
@@ -17,6 +19,14 @@ const ASSETS=[
   './landing.css',
   './styles.css',
   './app.js',
+  './app-experience.js',
+  './app-experience.css',
+  './app-visuals.css',
+  './app-shell.css',
+  './app-shell.js',
+  './app-playful.js',
+  './app-import.js',
+  './vendor/xlsx.full.min.js',
   './i18n.js',
   './auth-config.js',
   './auth.js',
@@ -25,6 +35,7 @@ const ASSETS=[
   './install.js',
   './share.js',
   './manifest.webmanifest',
+  './icons/aktywnik-logo.svg',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];

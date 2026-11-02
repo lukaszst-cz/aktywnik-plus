@@ -1,0 +1,49 @@
+/* Shared illustrated application shell. Works with existing child/parent/school sections. */
+#sidebarToggleBtn{border:0;background:#e4f6d6;color:#103824;border-radius:13px;min-height:42px;min-width:44px;font-size:1.3rem;cursor:pointer}
+#appSidebar{position:fixed;top:0;bottom:0;left:0;width:237px;z-index:20;padding:20px 13px;background:linear-gradient(180deg,#073622 0%,#0b4d30 59%,#16623b 100%);color:#f1ffe9;box-shadow:3px 0 22px #0928171c;overflow-y:auto}
+#appSidebar::after{content:"";pointer-events:none;position:absolute;bottom:0;left:0;right:0;height:130px;opacity:.4;background:radial-gradient(circle at 15% 110%,#a9df39 0 24%,transparent 25%),radial-gradient(circle at 76% 108%,#2e8550 0 34%,transparent 35%);z-index:-1}
+.sidebar-logo{display:flex;align-items:center;gap:8px;padding:3px 9px 18px;text-decoration:none;color:#fff}
+.sidebar-logo .brand-art{width:52px;height:52px;background-color:white}
+.sidebar-logo strong{font:800 1.2rem Georgia,serif;color:#f1fff1;display:block}
+.sidebar-logo small{font-size:.68rem;color:#e3fba6;display:block}
+#sidebarNav{display:grid;gap:5px;align-content:start}
+#sidebarNav button{border:0;text-align:left;width:100%;padding:11px 12px;border-radius:13px;background:transparent;color:#f3fff0;display:flex;gap:10px;align-items:center;cursor:pointer;font-weight:760;font-size:.89rem;min-height:44px}
+#sidebarNav button .nav-emoji{font-size:1.22rem;width:28px;text-align:center}
+#sidebarNav button:hover{background:#e9ffca20}
+#sidebarNav button:focus-visible{outline:3px solid #d7ff46;outline-offset:1px}
+#sidebarNav button.selected{color:#0c341d;background:linear-gradient(90deg,#e9ff5d,#a8e841);box-shadow:0 5px 14px #09281744}
+#sidebarNav button[hidden],#sidebarNav[hidden]{display:none!important}
+.sidebar-small{margin:14px 8px;color:#dbf4d4;font-size:.76rem}
+.sidebar-footer{padding:8px 12px;margin-top:20px;border-radius:14px;background:#ffffff16;color:#edf9e4;font-size:.78rem}
+.sidebar-footer strong{font-size:1.12rem}
+#sidebarShade{display:none}
+#teamsIntroCard{background:linear-gradient(120deg,#effbdc,#fff);border:1px solid #d7eac9}
+.shell-nav-chip{margin-right:7px}
+@media(min-width:1090px){
+ .topbar{margin-left:237px}
+ .shell{max-width:1120px;margin:0 12px 0 249px;padding:20px;display:block}
+ .support-card,.app-footer{margin-left:252px;margin-right:18px}
+ #sidebarToggleBtn{display:none}
+ #childViewTabs{display:none!important}
+ .shell-ready .topbar{min-height:75px}
+}
+@media(max-width:1089px){
+ #appSidebar{transform:translateX(-106%);transition:transform .18s ease;z-index:44}
+ body.shell-nav-open #appSidebar{transform:translateX(0)}
+ body.shell-nav-open #sidebarShade{display:block;position:fixed;inset:0;background:#031b13a6;z-index:43}
+ .topbar{margin:0}
+ .shell{max-width:980px;margin:0 auto}
+}
+@media(min-width:1090px) and (max-width:1220px){
+ #appSidebar{width:210px}
+ .topbar{margin-left:210px}
+ .shell{margin-left:222px}
+ .support-card,.app-footer{margin-left:222px}
+}
+@media(max-width:600px){
+ .topbar>.topbar-identity{flex:1;min-width:150px}
+ .topbar .brand-art{width:39px;height:39px}
+ .topbar .secure-actions{width:100%;justify-content:flex-end}
+ .shell{padding:12px}
+}
+@media print{#appSidebar,#sidebarToggleBtn,#sidebarShade{display:none!important}.topbar,.shell,.support-card,.app-footer{margin-left:auto!important}}
