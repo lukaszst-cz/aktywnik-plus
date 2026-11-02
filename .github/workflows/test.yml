@@ -29,6 +29,10 @@ jobs:
           node tests/auth-smoke.mjs
           node --check motivation.js
           node tests/motivation-smoke.mjs
+          node --check goal-sync.js
+          node tests/goal-sync-smoke.mjs
+          grep -q 'goal-sync.js' sw.js
+          grep -q 'motivationConnectCloud' app.html
           grep -q 'motivation.js' sw.js
           grep -q 'motivationCard' app.html
           node --check sync-client.js
