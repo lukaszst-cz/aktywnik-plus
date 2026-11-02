@@ -22,6 +22,14 @@
       <input id="accountEmailInput" type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="twoj@email.pl" data-i18n-placeholder="account.emailPlaceholder">
     </label>
     <div class="cta"><button id="sendMagicLinkBtn" class="primary" type="button" data-i18n="account.send">Wyślij link logowania</button></div>
+    <p>Jeśli wiadomość nie dociera, możesz użyć konta Google (gdy jest włączone w Supabase) lub hasła, jeśli zostało wcześniej ustawione na koncie.</p>
+    <div class="cta"><button id="googleSignInBtn" class="secondary" type="button">Zaloguj przez Google</button></div>
+    <label>Hasło do konta
+      <input id="accountPasswordInput" type="password" autocomplete="current-password" maxlength="256" placeholder="Hasło, jeśli zostało już ustawione">
+    </label>
+    <div class="cta"><button id="passwordSignInBtn" class="secondary" type="button">Zaloguj e-mailem i hasłem</button></div>
+    <p><small>Jeżeli konto zostało utworzone tylko przez Magic Link, może nie mieć hasła. Metody logowania wymagają aktywnego Supabase.</small></p>
+    <div class="cta"><button id="checkAuthBtn" class="secondary" type="button">Sprawdź połączenie z logowaniem</button></div>
   </section>
 
   <section id="loggedInCard" class="section action hidden">
