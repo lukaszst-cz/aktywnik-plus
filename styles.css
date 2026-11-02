@@ -271,3 +271,18 @@ body {background:radial-gradient(circle at 98% 1%,#e2f4d9 0,transparent 32%),var
 .goal-sync-controls small[data-state="error"]{color:#974823}
 .goal-sync-controls button{min-height:46px;text-align:center}
 @media(max-width:600px){.goal-sync-controls button{width:100%}}
+
+
+/* User-controlled completed training summary and Notion handoff */
+.saved-activity-card{background:linear-gradient(135deg,#f0f9e9,#fff);border-color:#bbdfb3;border-width:2px}
+.saved-activity-card h2{font-size:1.25rem}
+.saved-activity-card p{color:#325b42;font-weight:700}
+.notion-link-settings{margin-top:14px;background:#fff;border:1px solid #d7e8cf;border-radius:14px;padding:12px 14px}
+.notion-link-settings summary{font-weight:800;color:#184b34;cursor:pointer}
+.notion-link-settings label{display:block;margin-top:14px;color:#416d51;font-size:.86rem;font-weight:750}
+.notion-link-controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px}
+.notion-link-controls input{flex:1;min-width:220px}
+.notion-link-controls button{flex:0 0 auto}
+#activityNotionFeedback{display:block;min-height:18px}
+@media(max-width:600px){.notion-link-controls input,.notion-link-controls button{width:100%;flex:1 1 100%}}
+@media print{.saved-activity-card{display:none!important}}
