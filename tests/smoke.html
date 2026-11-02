@@ -118,7 +118,7 @@ async function run(){
     w.AktywnikExperience.setView('data');
     if(d.getElementById('structuredImportCard').hidden)throw new Error('self import panel not visible in Data tab');
     await parser.prepare(null,'Data\tAktywność\tMinuty\tZmęczenie\n2026-10-28\tRower\t30\t2');
-    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('CSV import preview could not confirm');
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('CSV import preview could not confirm: '+d.getElementById('structuredImportStatus').textContent);
     w.confirm=()=>true;
     d.getElementById('structuredImportConfirm').click();
     await sleep(50);
