@@ -12,12 +12,14 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="app-experience.css" />
   <link rel="stylesheet" href="app-visuals.css" />
+  <link rel="stylesheet" href="app-shell.css" />
   <title>Aktywnik+ — aplikacja</title>
 </head>
 <body>
   <a class="skip-link" href="#mainContent" data-i18n="app.skip">Przejdź do treści</a>
   <header class="topbar">
-    <div>
+    <button id="sidebarToggleBtn" type="button" aria-label="Otwórz menu Aktywnika" aria-controls="appSidebar" aria-expanded="false">☰</button>
+    <div class="topbar-identity">
       <span class="brand-art" aria-hidden="true"></span><strong class="brand">Aktywnik+</strong>
       <span class="tagline" data-i18n="app.tagline">ruch bez presji</span>
       <span class="version-badge">0.5.0 beta.4</span>
@@ -42,6 +44,29 @@
     </div>
     <small id="logoutStatus" role="status" aria-live="polite"></small>
   </header>
+
+  <div id="sidebarShade" aria-hidden="true"></div>
+  <aside id="appSidebar" aria-label="Menu Aktywnik+">
+    <a class="sidebar-logo" href="./"><span class="brand-art" aria-hidden="true"></span><span><strong>Aktywnik+</strong><small>Ruch · Klasa · Drużyna</small></span></a>
+    <nav id="sidebarNav" aria-label="Główne menu" hidden>
+      <button type="button" data-nav-action="home" class="selected"><span class="nav-emoji">🏡</span>Pulpit</button>
+      <button type="button" data-nav-action="add"><span class="nav-emoji">➕</span>Dodaj aktywność</button>
+      <button type="button" data-nav-action="diary"><span class="nav-emoji">📔</span>Dziennik</button>
+      <button type="button" data-nav-action="stats"><span class="nav-emoji">📊</span>Statystyki</button>
+      <button type="button" data-nav-action="challenges"><span class="nav-emoji">🏆</span>Wyzwania</button>
+      <button type="button" data-nav-action="badges"><span class="nav-emoji">🥇</span>Odznaki</button>
+      <button type="button" data-nav-action="calendar"><span class="nav-emoji">🗓️</span>Kalendarz</button>
+      <button type="button" data-nav-action="class"><span class="nav-emoji">🏫</span>Moja klasa</button>
+      <button type="button" data-nav-action="ocr" data-nav-role="family"><span class="nav-emoji">📷</span>Skanuj kartę OCR</button>
+      <button type="button" data-nav-action="teams"><span class="nav-emoji">🦊</span>Drużyny</button>
+      <button type="button" data-nav-action="parent" data-nav-role="family"><span class="nav-emoji">👨‍👩‍👧</span>Rodzina</button>
+      <button type="button" data-nav-action="reports" data-nav-role="family"><span class="nav-emoji">📋</span>Raporty</button>
+      <button type="button" data-nav-action="data"><span class="nav-emoji">📥</span>Import i eksport</button>
+      <button type="button" data-nav-action="settings"><span class="nav-emoji">⚙️</span>Ustawienia</button>
+    </nav>
+    <p class="sidebar-small">Bez presji i bez porównywania dzieci. Każdy ruch się liczy.</p>
+    <div class="sidebar-footer">📗 Wpisów na profilu: <strong id="shellEntryCount">0</strong><br><small>Dane zapisywane lokalnie</small></div>
+  </aside>
 
   <main id="mainContent" class="shell">
     <section id="pilotSetupCard" class="card pilot-card hidden" aria-labelledby="setupTitle">
@@ -69,6 +94,14 @@
           </label>
         </div>
         <button id="startPilotBtn" class="primary" data-i18n="app.start">Zacznij korzystać</button>
+        <div class="setup-restore">
+          <strong>Masz już dane Aktywnika?</strong>
+          <p>Nie zakładaj pustego profilu. Przywróć poprzednią kopię JSON wraz z wpisami i profilami.</p>
+          <label class="button-link ghost file-button">📁 Przywróć kopię JSON
+            <input id="setupRestoreBackupInput" type="file" accept="application/json,.json" hidden />
+          </label>
+          <p id="setupRestoreBackupStatus" role="status" aria-live="polite"></p>
+        </div>
         <small id="setupHint" data-i18n="app.setupHint">Tryb osobisty działa lokalnie bez konta. Dane możesz później eksportować jako kopię.</small>
       </div>
     </section>
@@ -108,6 +141,11 @@
         <small class="calm-note" data-i18n="app.calmSummary">To tylko podsumowanie aktywności — bez celów, rankingów i porównywania z innymi.</small>
       </section>
 
+      <section id="teamsIntroCard" class="card" hidden>
+        <h2>🦊 Drużyny Aktywnika</h2>
+        <p>Wyzwania zespołowe przygotowujemy dla klas i rodzin. W tej wersji możesz już zbierać prywatne odznaki i realizować indywidualne wyzwania.</p>
+        <button class="ghost" type="button" id="teamsLocalChallengesBtn">🏆 Pokaż dostępne wyzwania</button>
+      </section>
       <section id="quickTimerCard" class="card" aria-labelledby="quickTimerTitle">
         <div class="quick-timer-content">
           <div>
@@ -647,6 +685,7 @@
   <script src="app-playful.js"></script>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="app-import.js"></script>
+  <script src="app-shell.js"></script>
   <script src="install.js"></script>
 </body>
 </html>
