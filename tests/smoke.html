@@ -578,9 +578,9 @@ async function run(){
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');const first=saved.entries.find(x=>x.childId==='child-a');
     if(first.status!=='approved'||first.minutes!==35||!first.correctedByParent)throw new Error('parent correction failed');
     if(!d.getElementById('parentSnapshot').textContent.includes('35 min'))throw new Error('parent quick snapshot missing approved activity');
-    d.getElementById('parentReportMonth').value='2026-10';d.getElementById('parentReportMonth').dispatchEvent(new w.Event('change',{bubbles:true}));await sleep(60);
+    d.getElementById('parentReportMonth').value=testToday.slice(0,7);d.getElementById('parentReportMonth').dispatchEvent(new w.Event('change',{bubbles:true}));await sleep(60);
     if(!d.getElementById('parentReport').textContent.includes('35 min'))throw new Error('selected-month report missing approved entry');
-    const printPages=w.buildSchoolPrintPages('child-a',new w.Date('2026-10-15T12:00:00'));
+    const printPages=w.buildSchoolPrintPages('child-a',new w.Date(testToday.slice(0,7)+'-15T12:00:00'));
     if(printPages.length!==2||printPages[0].rows[0].entry?.minutes!==35||printPages[0].rows.length!==35)throw new Error('A4 monthly report pagination failed');
 
     const childADraftKey=DRAFT_KEY+':child-a',childBDraftKey=DRAFT_KEY+':'+childB.id;
