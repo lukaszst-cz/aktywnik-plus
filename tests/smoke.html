@@ -686,7 +686,7 @@ async function run(){
     const paperBook=w.XLSX.utils.book_new();
     w.XLSX.utils.book_append_sheet(paperBook,w.XLSX.utils.aoa_to_sheet([['Data','Aktywność','Minuty'],['2026-10-02','Rower',19]]),'Karta');
     await w.loadPaperImportFile(new w.File([w.XLSX.write(paperBook,{type:'array',bookType:'xlsx'})],'karta.xlsx'));
-    if(d.getElementById('savePaperImportBtn').disabled||!d.getElementById('paperImportPreview').textContent.includes('Rower'))throw new Error('OCR Excel file not parsed for preview');
+    if(d.getElementById('savePaperImportBtn').disabled||d.querySelector('[data-import-field="activity"]')?.value!=='Rower')throw new Error('OCR Excel file not parsed for preview');
 
     d.getElementById('schoolExitBtn').click();d.getElementById('lockParentBtn').click();await sleep(50);w.switchMode('school');await sleep(50);
     if(!d.getElementById('schoolPanel').classList.contains('hidden'))throw new Error('school accessible after relock');
