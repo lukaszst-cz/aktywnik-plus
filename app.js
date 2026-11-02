@@ -1405,6 +1405,33 @@ async function importBackupMerge(file){
     if(a)a.value='';if(b)b.value='';
   }
 }
+async function syncLocalDataNow(){
+  if(!canManageLocalData())return;
+  if(navigator.onLine===false){
+    setStorageMessage('Brak internetu. Dane pozostają zapisane na urządzeniu.');
+    return;
+  }
+  try{
+    const auth=window.AktywnikAuth;
+    const user=await auth?.currentUser?.();
+    if(!user?.email){
+      setStorageMessage('Najpierw zaloguj się na właściwe konto dorosłego w zakładce Konto / Sync.');
+      return;
+    }
+    if(state.profileMode==='family' && !state.children.some(child=>validUuid(child.cloudChildId))){
+      setStorageMessage('Najpierw połącz profile dzieci z chmurą w strefie rodzica.');
+      return;
+    }
+    if(!confirm('Wysłać lokalne aktywności na konto '+user.email+'? Sprawdź, czy to właściwe konto. Dane już obecne w chmurze mogą zostać połączone według zasad synchronizacji.'))return;
+    const service=state.profileMode==='self'?window.AktywnikSync:window.AktywnikFamilySync;
+    if(!service?.markDirty||!service?.syncNow)throw new Error('Synchronizacja jest niedostępna.');
+    service.markDirty(state);
+    const result=await service.syncNow();
+    setStorageMessage(result===false?'Zlecono synchronizację. Sprawdź stan konta i dostępność chmury. Dane lokalne pozostały na urządzeniu.':'Synchronizacja zakończona. Sprawdź status chmury na obu urządzeniach.');
+  }catch(err){
+    setStorageMessage('Nie udało się zsynchronizować: '+String(err?.message||err));
+  }
+}
 async function requestPersistentStorage(){if(!canManageLocalData())return;try{const ok=await navigator.storage?.persist?.();setStorageMessage(ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.')}catch{setStorageMessage('Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.')}}
 async function renderStorageStatus(){if(!isSelfMode()&&!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();setStorageMessage(persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.')}catch{setStorageMessage('Dane są zapisane lokalnie w tej przeglądarce.')}}
 function deleteLocalData(){if(!canManageLocalData())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;clearAllLocalUserData();location.reload()}
@@ -1459,12 +1486,14 @@ const pilotTestResetBtn=$('#pilotTestResetBtn');if(pilotTestResetBtn)pilotTestRe
 $('#exportBackupBtn').onclick=exportBackup;
 $('#importBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
 $('#mergeBackupInput').onchange=e=>importBackupMerge(e.target.files?.[0]);
+$('#syncLocalDataBtn').onclick=syncLocalDataNow;
 $('#requestPersistentStorageBtn').onclick=requestPersistentStorage;
 $('#deleteLocalDataBtn').onclick=deleteLocalData;
 $('#selfExportCsvBtn').onclick=exportSelfCsv;
 $('#selfExportBackupBtn').onclick=exportBackup;
 $('#selfImportBackupInput').onchange=e=>importBackup(e.target.files?.[0]);
 $('#selfMergeBackupInput').onchange=e=>importBackupMerge(e.target.files?.[0]);
+$('#selfSyncLocalDataBtn').onclick=syncLocalDataNow;
 $('#selfPersistentStorageBtn').onclick=requestPersistentStorage;
 $('#selfDeleteLocalDataBtn').onclick=deleteLocalData;
 $('#createClassBtn').onclick=createClass;
