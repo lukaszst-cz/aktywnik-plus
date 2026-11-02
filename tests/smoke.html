@@ -70,6 +70,20 @@ async function run(){
     if(selfSaved.profileMode!=='self'||selfSaved.children?.[0]?.requireParentApproval!==false)throw new Error('self mode setup failed');
     if(!d.getElementById('parentAccessBtn').classList.contains('hidden'))throw new Error('parent access visible in self mode');
     if(d.getElementById('selfDataCard').classList.contains('hidden'))throw new Error('self data card missing');
+    if(!w.AktywnikExperience?.setView)throw new Error('new dashboard controller missing');
+    if(!d.getElementById('childViewTabs')||!d.getElementById('streakCard')||!d.getElementById('goalPanel'))throw new Error('new dashboard missing');
+    d.querySelector('#childViewTabs [data-view="stats"]').click();await sleep(50);
+    if(d.querySelector('[data-app-view="stats"]').hidden||!d.querySelector('[data-app-view="add"]').hidden)throw new Error('dashboard tabs do not switch');
+    d.getElementById('goalInput').value='120';
+    d.getElementById('saveGoalBtn').click();await sleep(50);
+    selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(selfSaved.weeklyGoals?.[selfSaved.children[0].id]!==120)throw new Error('private goal was not saved locally');
+    const goalBackup=w.backupStateFromPayload(w.makeBackupPayload(selfSaved));
+    if(goalBackup.weeklyGoals?.[selfSaved.children[0].id]!==120)throw new Error('private goal was lost in backup');
+    d.querySelector('#childViewTabs [data-view="data"]').click();
+    if(d.getElementById('selfDataCard').closest('[data-app-view]').hidden)throw new Error('data tab did not open');
+    w.AktywnikExperience.setView('add');
+
     let custom=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Inna aktywność'));if(!custom)throw new Error('custom activity missing');
     custom.click();
     d.getElementById('customActivityName').value='Prace w ogrodzie';
