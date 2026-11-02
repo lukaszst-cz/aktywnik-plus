@@ -31,6 +31,7 @@
     });
     if(next==='stats')renderGoals();
     if(next==='data')renderDataHint();
+    window.AktywnikTableImport?.refreshVisibility?.();
     window.scrollTo?.({top:0,behavior:'auto'});
   }
   function renderStreak(){
