@@ -66,6 +66,22 @@ async function run(){
     d.getElementById('startPilotBtn').click();
     await sleep(120);
     let selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(!d.getElementById('motivationCard')||!w.AktywnikMotivation?.render||!w.AktywnikGoalSync?.syncNow)
+      throw new Error('new motivation dashboard or goal sync is missing');
+    if(!d.getElementById('motivationConnectCloud'))throw new Error('missing optional goals cloud connection control');
+    d.getElementById('motivationGoalInput').value='120';
+    d.getElementById('motivationSaveGoal').click();
+    await sleep(80);
+    selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(selfSaved.children?.[0]?.motivationGoals?.['7']!==120||
+       !selfSaved.children?.[0]?.motivationGoalUpdatedAt?.['7'])
+      throw new Error('motivation goal was not persisted locally with timestamp');
+    if(!d.getElementById('motivationGoalInfo').textContent.includes('120'))
+      throw new Error('motivation progress display not updated after saving goal');
+    d.querySelector('[data-motivation-period="14"]').click();
+    if(!d.querySelector('[data-motivation-period="14"]').classList.contains('selected'))
+      throw new Error('two-week comparison period selector is broken');
+    d.querySelector('[data-motivation-period="7"]').click();
     const selfDraftKey=DRAFT_KEY+':'+selfSaved.children?.[0]?.id;
     if(selfSaved.profileMode!=='self'||selfSaved.children?.[0]?.requireParentApproval!==false)throw new Error('self mode setup failed');
     if(!d.getElementById('parentAccessBtn').classList.contains('hidden'))throw new Error('parent access visible in self mode');
@@ -86,6 +102,17 @@ async function run(){
     if(localStorage.getItem(selfDraftKey)!==null)throw new Error('entry draft not cleared after save');
     selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(selfSaved.entries?.[0]?.activity!=='Prace w ogrodzie'||selfSaved.entries?.[0]?.status!=='approved')throw new Error('self custom activity failed');
+    if(d.getElementById('activitySavedCard').classList.contains('hidden'))
+      throw new Error('post-training summary missing after manual save');
+    if(!d.getElementById('activitySavedSummary').textContent.includes('Prace w ogrodzie'))
+      throw new Error('post-training summary does not match saved entry');
+    d.getElementById('activityNotionUrl').value='https://app.notion.com/p/test-activity';
+    d.getElementById('activitySaveNotionUrl').click();
+    selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(selfSaved.children?.[0]?.notionUrl!=='https://app.notion.com/p/test-activity')
+      throw new Error('per-profile Notion destination not persisted');
+    if(d.getElementById('activityOpenNotion').classList.contains('hidden'))
+      throw new Error('Notion destination link not visible after saving');
     const localDeleteId=selfSaved.entries[0].id;
     const deleteBtn=d.querySelector('[data-self-delete="'+localDeleteId+'"]');
     if(!deleteBtn)throw new Error('self delete action missing');
