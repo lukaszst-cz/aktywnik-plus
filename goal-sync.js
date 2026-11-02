@@ -20,7 +20,8 @@
   function goalsFromState(){
     const state=bridge()?.snapshot();
     if(!state||!Array.isArray(state.children))return [];
-    return state.children.flatMap(child=>{
+    const scopedChildren=state.profileMode==='self'?state.children.filter(child=>child.id===state.child?.id):state.children;
+    return scopedChildren.flatMap(child=>{
       const key=profileKey(child,state.profileMode);
       if(!key)return [];
       return PERIODS.flatMap(period=>{
