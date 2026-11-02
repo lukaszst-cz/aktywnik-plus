@@ -9,6 +9,24 @@
 - Lokalna kopia JSON obejmuje ustawienia celów danego profilu. Cele nie są jeszcze synchronizowane w Supabase.
 - Eksport pełnej historii wybranego profilu do standardowego CSV, razem z wpisami oczekującymi i odrzuconymi, w przeciwieństwie do raportu okresowego, który bazuje na zatwierdzonych wpisach.
 
+
+## Synchronizacja celów między urządzeniami
+
+Moduł `goal-sync.js` działa oddzielnie od synchronizacji treningów i wymaga migracji `backend/migrations/027_user_activity_goals.sql`.
+
+- Każdy okres ma oddzielną datę ostatniej zmiany. Aktualizacje są łączone z uwzględnieniem czasu zapisu.
+- Do Supabase trafiają wyłącznie identyfikator konta, techniczny identyfikator profilu, okres, minuty i data zmiany. Nie wysyłamy nazw dzieci, notatek, PIN-ów ani historii treningów w tym module.
+- Włączenie jest dobrowolne i wymaga kliknięcia w panelu celów oraz potwierdzenia powiązania z kontem.
+- Po połączeniu synchronizacja jest ponawiana po zmianie celu, powrocie online i otwarciu aplikacji.
+- Zmiana zalogowanego konta blokuje automatyczne przekazanie lokalnych celów do nowego konta.
+- W trybie rodzinnym synchronizacja celów działa dla profili jawnie powiązanych z chmurą i przypisanych do danego konta dorosłego.
+- Tabela ma RLS właściciela. Starsza aktualizacja nie nadpisuje nowszej.
+- Uruchomienie wymaga wdrożenia migracji 027 po migracji 026 z PR #94, testów RLS i kontroli na dwóch urządzeniach.
+
+## Szybkie przenoszenie aktywności do Notion
+
+Po zapisaniu aktywności (ręcznie lub Start/Stop) pojawia się podsumowanie z przyciskiem kopiowania wpisu i możliwością otwarcia wskazanej strony Notion. Adres Notion należy do wybranego profilu i jest zapisany w lokalnej kopii JSON. Nic nie jest przesyłane do Notion automatycznie. Eksport CSV pozostaje dostępny.
+
 ## Notion
 
 Na razie dostępny jest eksport CSV do importu do bazy Notion, a także pełny backup JSON. **Nie ma jeszcze automatycznej wysyłki wpisów z aplikacji do Notion.**
@@ -25,7 +43,7 @@ Przy dostosowywaniu schematu Notion użyj kolumn: Name/Aktywność (title), Data
 
 ## Synchronizacja celów
 
-Cele istnieją w `children[].motivationGoals` w lokalnym stanie Aktywnika i w kopii JSON. Obecne API synchronizacji osobistej i rodzinnej nie przenosi tych ustawień. Przed obietnicą pełnego multi-device należy dodać model danych, RLS i migrację zgodną z dotychczasowymi kontami oraz przetestować aktualizacje z dwóch urządzeń.
+Cele oraz daty ich modyfikacji istnieją w `children[].motivationGoals` i `children[].motivationGoalUpdatedAt`. Opcjonalny `goal-sync.js` ma oddzielny model tabeli i wymaga migracji Supabase oraz testów na dwóch urządzeniach przed produkcyjnym uruchomieniem.
 
 ## Bezpieczeństwo i motywacja
 
