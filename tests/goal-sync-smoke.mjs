@@ -17,7 +17,7 @@ const win={
     currentUser:async()=>({id:actor,email:'fixture@example.test'})
   },
   AktywnikMotivationBridge:{
-    snapshot:()=>({profileMode:'self',children:[{
+    snapshot:()=>({profileMode:'self',child:{id:CHILD},children:[{
       id:CHILD,cloudChildId:null,
       motivationGoals:{7:120,14:0,21:0,month:0},
       motivationGoalUpdatedAt:{7:'2026-11-02T10:00:00.000Z'}
