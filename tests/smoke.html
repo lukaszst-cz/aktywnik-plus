@@ -128,7 +128,7 @@ async function run(){
     if(Math.abs(parser.parseMinutes(45/1440)-45)>0.001)throw new Error('Excel fractional-day duration incorrect');
     if(parser.parseMinutes(new Date('1899-12-30T00:45:00Z'))!==45)throw new Error('Excel Date duration incorrect');
     let unsafeHeadersRejected=false;
-    try{parser.matrixRows([['Data','Aktywność','Minuty','Nazwisko ucznia'],['2026-10-28','Rower',30,'X']])}
+    try{parser.matrixRows([['Data','Aktywność','Minuty','Dane osobowe'],['2026-10-28','Rower',30,'X']])}
     catch(e){unsafeHeadersRejected=/nagłówka kolumny/.test(e.message)}
     if(!unsafeHeadersRejected)throw new Error('unrecognized student identity header was silently ignored');
     let unsafeJsonRejected=false;
