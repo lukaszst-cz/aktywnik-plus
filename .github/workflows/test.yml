@@ -27,6 +27,10 @@ jobs:
           node --check auth-config.js
           node --check auth.js
           node tests/auth-smoke.mjs
+          node --check motivation.js
+          node tests/motivation-smoke.mjs
+          grep -q 'motivation.js' sw.js
+          grep -q 'motivationCard' app.html
           node --check sync-client.js
           node --check family-sync-client.js
           node --check school-cloud.js
