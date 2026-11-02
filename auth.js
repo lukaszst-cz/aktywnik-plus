@@ -86,10 +86,11 @@
     const clean=String(email||'').trim().toLowerCase();
     if(!/^\S+@\S+\.\S+$/.test(clean))throw new Error('Podaj poprawny adres e-mail.');
     const redirectTo=new URL(cfg.redirectPath||'/konto.html',location.origin).href;
-    return jsonFetch(authBase()+'/otp',{
+    // GoTrue odczytuje redirect_to z query string, a nie z JSON body.
+    return jsonFetch(authBase()+'/otp?redirect_to='+encodeURIComponent(redirectTo),{
       method:'POST',
       headers:headers(),
-      body:JSON.stringify({email:clean,create_user:true,redirect_to:redirectTo})
+      body:JSON.stringify({email:clean,create_user:true})
     });
   }
   async function signOut(){
@@ -113,6 +114,11 @@
   }
   async function render(){
     if(!cfg.supabaseUrl||!cfg.publishableKey){status(t('account.status.configMissing','Logowanie online nie jest jeszcze skonfigurowane.'),'error');return}
+    const hashParams=new URLSearchParams(location.hash.replace(/^#/,''));
+    const callbackError=hashParams.get('error_description')||hashParams.get('error');
+    if(callbackError){
+      history.replaceState({},document.title,location.pathname+location.search);
+    }
     const fromHash=sessionFromHash();
     if(fromHash){
       writeSession(fromHash);
@@ -123,19 +129,27 @@
     const user=await currentUser();
     if(revision!==authRevision){return render()}
     const logged=$('#loggedInCard'),login=$('#loginCard');
+    const logout=$('#signOutBtn');if(logout)logout.classList.toggle('hidden',!readSession());
     if(user){
       logged?.classList.remove('hidden');login?.classList.add('hidden');
       const email=$('#accountEmail');if(email)email.textContent=user.email||'konto';
       status(t('account.status.loggedIn','Konto jest zalogowane.'),'ok');
     }else{
       logged?.classList.add('hidden');login?.classList.remove('hidden');
-      status(t('account.status.local','Możesz zalogować się linkiem wysłanym na e-mail.'),'');
+      if(callbackError)status(t('account.status.sendFail','Nie udało się potwierdzić logowania:')+' '+String(callbackError).slice(0,180),'error');
+      else if(readSession())status(t('account.status.network','Nie można chwilowo zweryfikować konta. Dane lokalne pozostają dostępne.'),'error');
+      else status(t('account.status.local','Możesz zalogować się linkiem wysłanym na e-mail.'),'');
     }
   }
 
   window.AktywnikAuth={readSession,validSession,currentUser,sendMagicLink,signOut};
 
   window.addEventListener('aktywnik:languagechange',()=>render().catch(()=>{}));
+  window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY)render().catch(()=>{})});
+  window.addEventListener('aktywnik:authchange',()=>{
+    window.AktywnikSync?.renderStatus?.();
+    window.AktywnikFamilySync?.renderStatus?.();
+  });
 
   document.addEventListener('DOMContentLoaded',()=>{
     $('#sendMagicLinkBtn')?.addEventListener('click',async()=>{
