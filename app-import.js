@@ -10,7 +10,7 @@ const aliases={
  minutes:['minuty','minutes','czasmin','czasminuty','czastrwania','czasaktywnosci','duration','czas','trwanie','iloscminut'],
  effort:['zmeczenie','poziomzmeczenia','wysilek','poziomwysilku','effort','intensywnosc','intensity','zmeczenie15'],
  note:['notatka','uwagi','opis','note','notes','komentarz'],
- profile:['profil','dziecko','uczen','uczennica','imieinazwisko','nazwiskoiimie','imieucznia','nazwiskoucznia','nazwaucznia','nazwadziecka','osoba','student','child','name','nazwaprofilu'],
+ profile:['profil','dziecko','uczen','uczennica','imieinazwisko','imienazwisko','nazwiskoiimie','studentname','imieucznia','nazwiskoucznia','nazwaucznia','nazwadziecka','osoba','student','child','name','nazwaprofilu'],
  id:['id','entryid','cliententryid']
 };
 function canon(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')}
@@ -54,6 +54,14 @@ function matrixRows(matrix){
  const head=rows.findIndex((row,i)=>i<6&&['date','activity','minutes'].every(k=>row.some(v=>aliases[k].includes(canon(v)))));
  if(head<0)throw Error('Brakuje nagłówków: Data, Aktywność, Minuty.');
  const names=rows[head].map(v=>String(v??''));
+ const canonicalNames=names.map(canon);
+ // Nie przypisuj cudzych danych do bieżącego dziecka, jeżeli arkusz ma nieznaną kolumnę tożsamości.
+ if(canonicalNames.some(k=>/^(?:childid|studentid|uczenid|iducznia)$/.test(k)))
+  throw Error('Arkusz zawiera identyfikatory uczniów. Importuj oddzielnie dla jednego profilu albo użyj pełnej kopii JSON.');
+ if(canonicalNames.some(k=>/(uczn|dzieck|imie|nazwisk|student|person|osob)/.test(k)) &&
+    !canonicalNames.some(k=>aliases.profile.includes(k)))
+  throw Error('Nie rozpoznano nagłówka kolumny z uczniem. Zmień go na „Imię i nazwisko” lub „Uczeń”.');
+
  const cols={};for(const field of Object.keys(aliases)){cols[field]=names.findIndex(v=>aliases[field].includes(canon(v)))}
  const data=rows.slice(head+1);
  if(data.length>LIMIT)throw Error('Maksymalnie 2000 wierszy w jednym imporcie.');
@@ -64,7 +72,15 @@ function jsonRows(json){
  const arr=Array.isArray(json)?json:(json?.entries||json?.rows||json?.activities||json?.data);
  if(!Array.isArray(arr))throw Error('JSON powinien zawierać tablicę wpisów, entries, rows, activities lub data.');
  if(arr.length>LIMIT)throw Error('Maksymalnie 2000 wpisów w jednym imporcie.');
- return arr.map((r,i)=>Object.fromEntries(Object.keys(aliases).map(k=>[k,lookup(r,k)]).concat([['line',i+1]])));
+ return arr.map((r,i)=>{
+  if(!r||typeof r!=='object'||Array.isArray(r))throw Error('Wpis JSON nr '+(i+1)+' nie jest obiektem.');
+  const keys=Object.keys(r).map(canon);
+  if(keys.some(k=>/^(?:childid|studentid|iducznia)$/.test(k)))
+   throw Error('JSON zawiera identyfikator profilu. Do przenoszenia przypisań użyj pełnej kopii Aktywnika.');
+  if(keys.some(k=>/(uczn|dzieck|imie|nazwisk|student|osob)/.test(k)) && lookup(r,'profile')===undefined)
+   throw Error('JSON ma nieznane pole ucznia. Nazwij je „Uczeń” lub „Profil”.');
+  return Object.fromEntries(Object.keys(aliases).map(k=>[k,lookup(r,k)]).concat([['line',i+1]]));
+ });
 }
 function dateParts(y,m,d){
  const date=new Date(Date.UTC(y,m-1,d));
