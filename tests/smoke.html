@@ -659,7 +659,7 @@ async function run(){
     sessionStorage.setItem(PIN_LOCK_KEY,String(Date.now()+600000));
     w.applyBackupCandidate(restored);
     if(localStorage.getItem(SYNC_KEY)!==null||localStorage.getItem(DELETE_KEY)!==null||localStorage.getItem(LAST_SYNC_KEY)!==null||localStorage.getItem(FAMILY_SYNC_KEY)!==null||localStorage.getItem(FAMILY_LAST_SYNC_KEY)!==null)throw new Error('restore left stale sync transient state');
-    if(!localStorage.getItem(CLOUD_SESSION_KEY))throw new Error('restore unexpectedly removed account session');
+    if(localStorage.getItem(CLOUD_SESSION_KEY)!==null)throw new Error('restore should log out previous cloud account');
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('restore left parent transient state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('restore removed language preference');
 
