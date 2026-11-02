@@ -119,7 +119,14 @@
           <small id="motivationGoalFeedback" aria-live="polite"></small>
         </div>
         <p id="motivationSummaryNote" class="calm-note"></p>
-        <small class="calm-note">Cele są dobrowolne. Zapisują się lokalnie i w kopii JSON. Synchronizacja ustawień celów między urządzeniami będzie wymagać rozbudowy chmury.</small>
+        <div class="goal-sync-controls">
+          <div>
+            <strong>Kopia celów w chmurze</strong>
+            <small id="motivationCloudStatus" aria-live="polite">Cele zapisują się lokalnie, również bez konta.</small>
+          </div>
+          <button id="motivationConnectCloud" type="button" class="ghost">Włącz / sprawdź synchronizację celów</button>
+        </div>
+        <small class="calm-note">Synchronizacja celów jest opcjonalna, wymaga konta dorosłego i oddzielnej tabeli Supabase. Nie wysyła notatek ani historii treningów. Cele zawsze pozostają też w lokalnej kopii JSON.</small>
       </section>
       <section class="card club-card" aria-labelledby="clubTitle">
         <div class="section-head"><div><p class="eyebrow">Start i stop</p><h2 id="clubTitle">Treningi w klubie</h2></div><span class="badge">Pomiar także po zamknięciu PWA</span></div>
@@ -580,6 +587,7 @@
   <script src="family-sync-client.js"></script>
   <script src="app.js"></script>
   <script src="motivation.js"></script>
+  <script src="goal-sync.js"></script>
   <script src="install.js"></script>
 </body>
 </html>
