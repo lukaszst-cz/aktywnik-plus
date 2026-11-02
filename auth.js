@@ -38,7 +38,15 @@
     };
   }
   async function jsonFetch(url,options={}){
-    const res=await fetch(url,options);
+    let res;
+    try{res=await fetch(url,options)}
+    catch(err){
+      if(err instanceof TypeError || err?.name==='TypeError')throw Object.assign(
+        new Error('Brak połączenia z Supabase (przeglądarka zablokowała żądanie lub serwer jest niedostępny). Sprawdź diagnostykę połączenia poniżej.'),
+        {networkError:true}
+      );
+      throw err;
+    }
     let data=null;try{data=await res.json()}catch{}
     if(!res.ok){
       const error=new Error(data?.msg||data?.message||data?.error_description||data?.error||('HTTP '+res.status));
@@ -93,6 +101,43 @@
       body:JSON.stringify({email:clean,create_user:true})
     });
   }
+  async function signInWithPassword(email,password){
+    const clean=String(email||'').trim().toLowerCase();
+    if(!/^\S+@\S+\.\S+$/.test(clean))throw new Error('Podaj poprawny adres e-mail.');
+    if(!password)throw new Error('Wpisz hasło konta.');
+    const data=await jsonFetch(authBase()+'/token?grant_type=password',{
+      method:'POST',headers:headers(),body:JSON.stringify({email:clean,password})
+    });
+    if(!data?.access_token||!data?.refresh_token)throw new Error('Serwer nie zwrócił poprawnej sesji.');
+    writeSession({
+      access_token:data.access_token,refresh_token:data.refresh_token,
+      token_type:data.token_type||'bearer',
+      expires_at:Date.now()+Math.max(60,Number(data.expires_in||3600)-30)*1000
+    });
+    return data;
+  }
+  function signInWithGoogle(){
+    if(!cfg.supabaseUrl||!cfg.publishableKey)throw new Error('Brak konfiguracji Supabase.');
+    const redirectTo=new URL(cfg.redirectPath||'/konto.html',location.origin).href;
+    location.assign(authBase()+'/authorize?provider=google&redirect_to='+encodeURIComponent(redirectTo));
+  }
+  async function checkAuthConnectivity(){
+    const report=[];
+    const localEndpoint='/api/health';
+    for(const item of [
+      {label:'Serwer Aktywnika',url:localEndpoint},
+      {label:'Supabase Auth',url:authBase()+'/health'}
+    ]){
+      const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),7000);
+      try{
+        const res=await fetch(item.url,{cache:'no-store',signal:controller.signal});
+        report.push(item.label+': '+(res.ok?'połączenie OK':'HTTP '+res.status));
+      }catch(err){
+        report.push(item.label+': '+(err?.name==='AbortError'?'przekroczony czas':'brak połączenia / blokada przeglądarki'));
+      }finally{clearTimeout(timeout)}
+    }
+    return report.join('; ');
+  }
   async function signOut(){
     const session=readSession();
     // Wylogowanie lokalne musi zadziałać nawet bez internetu.
@@ -142,7 +187,7 @@
     }
   }
 
-  window.AktywnikAuth={readSession,validSession,currentUser,sendMagicLink,signOut};
+  window.AktywnikAuth={readSession,validSession,currentUser,sendMagicLink,signInWithPassword,signInWithGoogle,checkAuthConnectivity,signOut};
 
   window.addEventListener('aktywnik:languagechange',()=>render().catch(()=>{}));
   window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY)render().catch(()=>{})});
@@ -152,6 +197,25 @@
   });
 
   document.addEventListener('DOMContentLoaded',()=>{
+    $('#checkAuthBtn')?.addEventListener('click',async()=>{
+      const btn=$('#checkAuthBtn');btn.disabled=true;
+      status('Sprawdzanie połączenia…');
+      try{status(await checkAuthConnectivity())}
+      catch(err){status('Nie udało się sprawdzić połączenia: '+err.message,'error')}
+      finally{btn.disabled=false}
+    });
+    $('#googleSignInBtn')?.addEventListener('click',()=>{
+      try{signInWithGoogle()}catch(err){status(err.message,'error')}
+    });
+    $('#passwordSignInBtn')?.addEventListener('click',async()=>{
+      const btn=$('#passwordSignInBtn');btn.disabled=true;
+      try{
+        await signInWithPassword($('#accountEmailInput')?.value,$('#accountPasswordInput')?.value);
+        if($('#accountPasswordInput'))$('#accountPasswordInput').value='';
+        await render();status('Zalogowano na konto.','ok');
+      }catch(err){status('Nie udało się zalogować: '+err.message,'error')}
+      finally{btn.disabled=false}
+    });
     $('#sendMagicLinkBtn')?.addEventListener('click',async()=>{
       const btn=$('#sendMagicLinkBtn');btn.disabled=true;
       try{
@@ -160,7 +224,7 @@
       }catch(err){
         let message=String(err?.message||'');
         if(err?.status===429)message=t('account.status.rateLimit','Limit wiadomości został osiągnięty. Spróbuj później lub skontaktuj się z administratorem.');
-        if(err?.status===0 || !navigator.onLine)message=t('account.status.offline','Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.');
+        if(!navigator.onLine)message=t('account.status.offline','Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.');
         status(t('account.status.sendFail','Nie udało się wysłać linku:')+' '+message,'error');
       }
       finally{btn.disabled=false}
