@@ -21,6 +21,11 @@ jobs:
         run: |
           node --check app.js
           node --check app-experience.js
+          node --check app-playful.js
+          node --check app-import.js
+          node --check vendor/xlsx.full.min.js
+          test -f app-visuals.css
+          grep -q 'vendor/xlsx.full.min.js' app.html
           test -f app-experience.css
           grep -q "app-experience.js" app.html
           grep -q "./app-experience.css" sw.js
