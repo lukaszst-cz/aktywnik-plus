@@ -207,8 +207,19 @@ function commit(){
  message('Dodano '+additions.length+' aktywności. Dane zapisano lokalnie. W trybie rodzinnym wpisy mogą wymagać akceptacji.');
  document.getElementById('structuredImportFile').value='';
 }
+function refreshVisibility(){
+ const card=root();if(!card)return;
+ const profileReady=appReady();
+ const show=profileReady&&(
+   (isSelfMode()&&currentMode==='child'&&!document.querySelector('[data-app-view="data"]')?.hidden)
+   ||(!isSelfMode()&&currentMode==='parent'&&parentUnlocked())
+ );
+ card.hidden=!show;
+ if(!show){pending=null;renderPreview()}
+}
 function init(){
  const form=root();if(!form)return;
+
  const file=document.getElementById('structuredImportFile');
  const text=document.getElementById('structuredImportPaste');
  const sheet=document.getElementById('structuredImportSheet');
@@ -223,7 +234,8 @@ function init(){
  document.getElementById('structuredImportClear')?.addEventListener('click',()=>{
   pending=null;file.value='';text.value='';renderPreview();message('Wyczyszczono podgląd importu.');
  });
+ refreshVisibility();
 }
-window.AktywnikTableImport={parseDelimited,matrixRows,jsonRows,parseDate,parseMinutes,previewRows,prepare};
+window.AktywnikTableImport={parseDelimited,matrixRows,jsonRows,parseDate,parseMinutes,previewRows,prepare,refreshVisibility};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
