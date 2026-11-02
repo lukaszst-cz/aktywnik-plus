@@ -632,7 +632,7 @@ function exportAllEntriesCsv(){
     if(/^[\s]*[=+@\-]/.test(str) && !/^\d{4}-\d{2}-\d{2}$/.test(str))str="'"+str;
     return '"'+str.replace(/"/g,'""')+'"';
   };
-  const csv='\uFEFF'+rows.map(row=>row.map(safeCell).join(';')).join('\r\n');
+  const csv='\uFEFF'+rows.map(row=>row.map(safeCell).join(',')).join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='aktywnik-plus-wszystkie-aktywnosci-'+today()+'.csv';
