@@ -665,6 +665,29 @@ async function run(){
     if(!saved.approvalEvents?.some(x=>x.entryId===rejected.id&&x.action==='rejected'))throw new Error('approval audit missing');
 
     d.getElementById('openSchoolDemoBtn').click();await sleep(60);if(d.getElementById('schoolPanel').classList.contains('hidden'))throw new Error('school demo unavailable to unlocked parent');
+
+    if(!d.getElementById('paperTargetChildSelect')||!d.getElementById('paperImportIncludeDiary'))throw new Error('paper diary linking controls missing');
+    d.getElementById('paperTargetChildSelect').value=childB.id;
+    d.getElementById('importChildName').value='Dziecko B';
+    d.getElementById('paperImportIncludeDiary').checked=true;
+    d.getElementById('ocrPaste').value='Data;Aktywność;Czas;Zmęczenie;Uwagi\n2026-10-01;Park linowy;43;2;OCR test';
+    d.getElementById('parsePaperImportBtn').click();
+    if(d.getElementById('savePaperImportBtn').disabled)throw new Error('OCR paper preview does not enable saving');
+    d.getElementById('savePaperImportBtn').click();await sleep(65);
+    let paperState=JSON.parse(localStorage.getItem(KEY)||'{}');
+    const imported=paperState.entries.filter(e=>e.childId===childB.id&&e.activity==='Park linowy'&&e.note==='OCR test');
+    if(imported.length!==1||imported[0].status!=='approved')throw new Error('OCR paper entry not visible in linked family diary');
+    if(!d.getElementById('paperImportHistory').querySelector('details .paper-rows-table'))throw new Error('OCR paper history details missing');
+    d.getElementById('ocrPaste').value='Data;Aktywność;Czas;Zmęczenie;Uwagi\n2026-10-01;Park linowy;43;2;OCR test';
+    d.getElementById('parsePaperImportBtn').click();
+    d.getElementById('savePaperImportBtn').click();await sleep(65);
+    paperState=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(paperState.entries.filter(e=>e.childId===childB.id&&e.activity==='Park linowy'&&e.note==='OCR test').length!==1)throw new Error('duplicate OCR row was added twice');
+    const paperBook=w.XLSX.utils.book_new();
+    w.XLSX.utils.book_append_sheet(paperBook,w.XLSX.utils.aoa_to_sheet([['Data','Aktywność','Minuty'],['2026-10-02','Rower',19]]),'Karta');
+    await w.loadPaperImportFile(new w.File([w.XLSX.write(paperBook,{type:'array',bookType:'xlsx'})],'karta.xlsx'));
+    if(d.getElementById('savePaperImportBtn').disabled||!d.getElementById('paperImportPreview').textContent.includes('Rower'))throw new Error('OCR Excel file not parsed for preview');
+
     d.getElementById('schoolExitBtn').click();d.getElementById('lockParentBtn').click();await sleep(50);w.switchMode('school');await sleep(50);
     if(!d.getElementById('schoolPanel').classList.contains('hidden'))throw new Error('school accessible after relock');
 
