@@ -109,6 +109,8 @@ async function run(){
     const queuedDeletes=JSON.parse(localStorage.getItem('aktywnik-plus-personal-deletes-v1')||'{}');
     if(!queuedDeletes[localDeleteId])throw new Error('self delete tombstone not queued');
     if(!w.AktywnikTableImport||!w.AktywnikPlayful||!w.XLSX)throw new Error('illustrations, Excel library or importer missing');
+    if(!d.getElementById('appSidebar')||!w.AktywnikShell||!d.getElementById('setupRestoreBackupInput'))throw new Error('visual sidebar or restore from setup missing');
+
     if(!d.querySelector('.brand-art')||!d.getElementById('playfulActivities')||!d.getElementById('illustratedModules'))throw new Error('new visual assets missing');
     const parser=w.AktywnikTableImport;
     if(parser.parseDelimited('Data;Aktywność;Minuty\n2026-10-12;"Rower; spacer";35').length!==2)throw new Error('quoted CSV parsing failed');
@@ -124,8 +126,22 @@ async function run(){
     await sleep(50);
     let tableState=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(!tableState.entries.some(e=>e.activity==='Rower'&&e.date==='2026-10-28'&&e.minutes===30))throw new Error('CSV imported entry missing');
+    if(d.querySelector('[data-app-view="diary"]').hidden)throw new Error('imported entries did not open diary');
+    if(!d.getElementById('childEntries').textContent.includes('Rower'))throw new Error('imported record not rendered in diary');
+    if(d.getElementById('importSuccessBanner').hidden)throw new Error('import success is not visible');
+    w.AktywnikShell.open('data');
+    if(d.querySelector('[data-app-view="data"]').hidden)throw new Error('sidebar cannot open data screen');
+
     await parser.prepare(null,'Data\tAktywność\tMinuty\n2026-10-28\tRower\t30');
     if(!d.getElementById('structuredImportConfirm').disabled)throw new Error('duplicate CSV record not blocked');
+    const exportPayload=w.makeBackupPayload(JSON.parse(localStorage.getItem(KEY)));
+    const backupFile=new w.File([JSON.stringify(exportPayload)],'backup-aktywnik.json',{type:'application/json'});
+    await parser.prepare(backupFile);
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('JSON backup not recognized');
+    d.getElementById('structuredImportConfirm').click();
+    await sleep(40);
+    if(!d.getElementById('structuredImportStatus').textContent.includes('Z kopii'))throw new Error('JSON backup import did not confirm');
+    w.AktywnikShell.open('data');
     const workbook=w.XLSX.utils.book_new();
     w.XLSX.utils.book_append_sheet(workbook,w.XLSX.utils.aoa_to_sheet([['Data','Aktywność','Minuty'],['2026-10-23','Spacer',45]]),'Dziennik');
     const xlsxBytes=w.XLSX.write(workbook,{bookType:'xlsx',type:'array'});
