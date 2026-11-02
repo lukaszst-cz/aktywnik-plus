@@ -458,11 +458,18 @@ function renderTimer(){
   card.classList.toggle('hidden',!visible);if(!visible)return;
   $('#timerActivityName').textContent=active.activity;$('#timerElapsed').textContent=fmtClock(timerElapsedSeconds());$('#timerStartedAt').textContent='Start: '+new Date(active.startAt).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
 }
+function announceEntrySaved(entry){
+  if(!entry||!lastPersistOk)return;
+  window.dispatchEvent(new CustomEvent('aktywnik:entrysaved',{detail:{
+    childId:entry.childId,date:entry.date,activity:entry.activity,minutes:entry.minutes,
+    status:entry.status,source:entry.source,note:entry.note||''
+  }}));
+}
 function stopActivityTimer(){
   const t=state.activeTimer;if(!t)return;const child=getChild(t.childId);if(!child)return;
   const seconds=timerElapsedSeconds(),minutes=clampInt(Math.max(1,Math.round(seconds/60)),1,600,1);
   const entry={id:uuid(),childId:child.id,date:t.date||today(),activity:t.activity,minutes,effort:clampInt(t.effort,1,5,2),note:cleanText(t.note,120),status:approvalRequired(child)?'pending':'approved',source:'timer',startedAt:t.startAt,stoppedAt:nowIso(),measuredSeconds:seconds,createdAt:nowIso(),rejectionReason:''};
-  state.entries.unshift(entry);addApprovalEvent('created',entry,'child','Wpis zapisany przez Start/Stop.');if(entry.status==='approved')addApprovalEvent('approved_auto',entry,'system','Automatyczne zatwierdzenie zgodnie z ustawieniem rodzica.');state.activeTimer=null;persist();
+  state.entries.unshift(entry);addApprovalEvent('created',entry,'child','Wpis zapisany przez Start/Stop.');if(entry.status==='approved')addApprovalEvent('approved_auto',entry,'system','Automatyczne zatwierdzenie zgodnie z ustawieniem rodzica.');state.activeTimer=null;persist();announceEntrySaved(entry);
 }
 function cancelActivityTimer(){
   if(!state.activeTimer)return;
@@ -495,7 +502,10 @@ function saveEntry(){
     const entry={id:uuid(),childId:child.id,...payload,status:approvalRequired(child)?'pending':'approved',source:'manual',createdAt:nowIso(),rejectionReason:''};
     state.entries.unshift(entry);addApprovalEvent('created',entry,'child','Wpis ręczny.');if(entry.status==='approved')addApprovalEvent('approved_auto',entry,'system','Automatyczne zatwierdzenie zgodnie z ustawieniem rodzica.');
   }
-  cancelEntry();persist();
+  const savedEntry=editingEntryId
+    ?state.entries.find(x=>x.id===editingEntryId&&x.childId===child.id)
+    :state.entries[0];
+  cancelEntry();persist();announceEntrySaved(savedEntry);
 }
 function deleteSelfEntry(id){
   if(!isSelfMode())return;
@@ -1159,6 +1169,14 @@ function backupStateFromPayload(raw){
 function makeBackupPayload(source=state){
   return {format:'aktywnik-plus-backup',version:BACKUP_VERSION,exportedAt:nowIso(),data:source};
 }
+function safeNotionUrl(raw){
+  if(!raw)return '';
+  try{
+    const address=new URL(String(raw).trim());
+    if(address.protocol!=='https:'||!['www.notion.so','notion.so','app.notion.com'].includes(address.hostname))return '';
+    return address.href.slice(0,600);
+  }catch{return ''}
+}
 function safeBackupState(raw){
   const base=structuredClone(defaultState);
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Nieprawidłowy plik kopii.');
@@ -1176,7 +1194,7 @@ function safeBackupState(raw){
       const stamp=safeIso(times[period]);
       if(stamp && new Date(stamp).getTime()<=Date.now()+15*60*1000)motivationGoalUpdatedAt[period]=stamp;
     }
-    return {id:cleanText(c.id,80)||uuid(),displayName,favorites:favorites.length?favorites:[...DEFAULT_FAVORITES],requireParentApproval:c.requireParentApproval!==false,cloudChildId,createdAt:c.createdAt||nowIso(),motivationGoals,motivationGoalUpdatedAt};
+    return {id:cleanText(c.id,80)||uuid(),displayName,favorites:favorites.length?favorites:[...DEFAULT_FAVORITES],requireParentApproval:c.requireParentApproval!==false,cloudChildId,createdAt:c.createdAt||nowIso(),motivationGoals,motivationGoalUpdatedAt,notionUrl:safeNotionUrl(c.notionUrl)};
   }).filter(Boolean).slice(0,50);
   if(!children.length&&(d.pilot?.started||cleanText(d.pilot?.childDisplayName,60)||(Array.isArray(d.entries)&&d.entries.length))){
     children=[{id:uuid(),displayName:cleanText(d.pilot?.childDisplayName,60)||'Profil dziecka',favorites:(Array.isArray(d.favorites)?d.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20),requireParentApproval:true,cloudChildId:null,createdAt:nowIso()}];
@@ -1562,7 +1580,7 @@ window.AktywnikMotivationBridge={
   snapshot(){
     const child=activeChild();
     return {profileMode:state.profileMode,
-      child:child?{id:child.id,motivationGoals:{...(child.motivationGoals||{})}}:null,
+      child:child?{id:child.id,notionUrl:child.notionUrl||'',motivationGoals:{...(child.motivationGoals||{})}}:null,
       children:state.children.map(c=>({
         id:c.id,cloudChildId:c.cloudChildId||null,
         motivationGoals:{...(c.motivationGoals||{})},
@@ -1604,6 +1622,15 @@ window.AktywnikMotivationBridge={
     }
     if(changed)persist({skipSync:true});
     return changed;
+  },
+  setNotionUrl(value){
+    if(!appReady())return false;
+    const input=String(value||'').trim(),url=safeNotionUrl(input);
+    if(input&&!url)return false;
+    const child=activeChild();if(!child)return false;
+    child.notionUrl=url;
+    persist({skipSync:true});
+    return lastPersistOk;
   },
   startClub(activity){
     if(!appReady()||state.activeTimer||!ACTIVITIES.some(a=>a[0]===activity))return false;
