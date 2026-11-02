@@ -27,6 +27,7 @@
       <span id="cloudSyncBadge" class="badge" aria-live="polite" data-i18n="app.syncOptional">lokalnie · sync opcjonalny</span>
       <span id="deviceChildBadge" class="badge"></span>
       <a class="ghost button-link" href="konto.html" data-i18n="app.accountSync">Konto / Sync ☁️</a>
+      <button id="signOutBtn" class="ghost hidden" type="button" data-i18n="app.logoutCloud">Wyloguj z chmury</button>
       <button id="parentAccessBtn" class="ghost" data-i18n="app.parentZone">Strefa rodzica 🔒</button>
     </div>
   </header>
@@ -170,6 +171,9 @@
           <button id="selfExportBackupBtn" class="primary" data-i18n="app.exportJson">Eksport kopii JSON</button>
           <label class="button-link ghost file-button"><span data-i18n="app.restore">Przywróć kopię</span>
             <input id="selfImportBackupInput" type="file" accept="application/json,.json" hidden />
+          </label>
+          <label class="button-link ghost file-button"><span data-i18n="app.mergeBackup">Dodaj wpisy z kopii</span>
+            <input id="selfMergeBackupInput" type="file" accept="application/json,.json" hidden />
           </label>
           <button id="selfPersistentStorageBtn" class="ghost" data-i18n="app.protect">Chroń dane na urządzeniu</button>
           <button id="selfDeleteLocalDataBtn" class="danger" data-i18n="app.delete">Usuń dane</button>
@@ -343,6 +347,9 @@
           <button id="exportBackupBtn" class="primary" data-i18n="parent.exportBackup">Eksportuj kopię</button>
           <label class="button-link ghost file-button"><span data-i18n="app.restore">Przywróć kopię</span>
             <input id="importBackupInput" type="file" accept="application/json,.json" hidden />
+          </label>
+          <label class="button-link ghost file-button"><span data-i18n="app.mergeBackup">Dodaj wpisy z kopii</span>
+            <input id="mergeBackupInput" type="file" accept="application/json,.json" hidden />
           </label>
           <button id="requestPersistentStorageBtn" class="ghost" data-i18n="app.protect">Chroń dane na urządzeniu</button>
           <button id="deleteLocalDataBtn" class="danger" data-i18n="parent.deleteDevice">Usuń dane z tego urządzenia</button>
