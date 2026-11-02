@@ -160,8 +160,16 @@ function renderPreview(){
  const box=document.getElementById('structuredImportPreview'),confirm=document.getElementById('structuredImportConfirm');
  if(!box||!confirm)return;
  box.hidden=!pending;
- confirm.disabled=!pending?.review?.entries?.length;
+ confirm.disabled=pending?.kind==='backup'?false:!pending?.review?.entries?.length;
  if(!pending)return;
+ if(pending.kind==='backup'){
+  const {candidate,added}=pending;
+  const title=document.createElement('strong');title.textContent='Kopia Aktywnik+';
+  const summary=document.createElement('p');
+  summary.textContent='Profile: '+candidate.children.length+' · wpisy w kopii: '+candidate.entries.length+' · nowe identyfikatory wpisów: '+added+'.';
+  const hint=document.createElement('small');hint.textContent='Bez nadpisywania istniejących danych. Import wymaga tych samych profili i powiązań chmurowych.';
+  box.replaceChildren(title,summary,hint);return;
+ }
  const {target,review}=pending;
  const title=document.createElement('strong');
  title.textContent='Import do profilu: '+target.displayName;
@@ -178,34 +186,104 @@ function renderPreview(){
 }
 async function prepare(file,text=null){
  pending=null;renderPreview();
- const target=getTarget();if(!target){message('Import wymaga trybu osobistego albo odblokowanej strefy rodzica.',true);return}
+ const target=getTarget();
+ if(!target){message('Import wymaga utworzonego profilu i, w trybie rodzinnym, odblokowanej strefy rodzica.',true);return}
  try{
-  const rows=text!==null?matrixRows(parseDelimited(text)):await fileRows(file);
-  const review=previewRows(rows,target,state.entries);
-  pending={target,review,preparedAt:Date.now()};
-  renderPreview();message(review.entries.length?'Sprawdź podgląd, a potem potwierdź import.':'Nie znaleziono nowych poprawnych wpisów.',!review.entries.length);
- }catch(error){message(error.message||String(error),true)}
+  const isJson=text===null&&file&&file.name.toLowerCase().endsWith('.json');
+  if(isJson){
+   if(file.size>MAX_BYTES)throw Error('Plik przekracza limit 8 MB.');
+   const payload=JSON.parse(await file.text());
+   if(payload?.format==='aktywnik-plus-backup'||(payload?.data?.children&&payload?.data?.entries)){
+    const candidate=backupStateFromPayload(payload);
+    if(candidate.profileMode!==state.profileMode)throw Error('Kopia należy do innego trybu. Aby zmienić tryb, skorzystaj z „Przywróć kopię” po zapisaniu obecnych danych.');
+    const currentChildren=new Map(state.children.map(c=>[c.id,c]));
+    if(candidate.children.some(c=>!currentChildren.has(c.id)||(c.cloudChildId||null)!==(currentChildren.get(c.id).cloudChildId||null)))
+      throw Error('Kopia zawiera inny profil lub powiązanie chmurowe. Najpierw zapisz aktualne dane, potem użyj pełnego przywracania kopii.');
+    const ids=new Set(state.entries.map(e=>e.id));
+    const added=candidate.entries.filter(e=>!ids.has(e.id)).length;
+    pending={kind:'backup',candidate,added,target,preparedAt:Date.now()};
+    renderPreview();message(added?'Rozpoznano kopię Aktywnika. Sprawdź podgląd i potwierdź dodanie wpisów.':'Kopia nie zawiera nowych wpisów.');return;
+   }
+   const rows=jsonRows(payload),review=previewRows(rows,target,state.entries);
+   pending={kind:'table',target,review,preparedAt:Date.now()};
+  }else{
+   const rows=text!==null?matrixRows(parseDelimited(text)):await fileRows(file);
+   const review=previewRows(rows,target,state.entries);
+   pending={kind:'table',target,review,preparedAt:Date.now()};
+  }
+  renderPreview();
+  const review=pending.review;
+  message(review.entries.length?'Rozpoznano '+review.scanned+' wierszy. Sprawdź podgląd i potwierdź.':'Nie znaleziono nowych poprawnych wpisów. '+review.errors.slice(0,2).join(' '),!review.entries.length);
+ }catch(error){message('Import nieudany: '+(error.message||String(error)),true)}
+}
+function showImportedEntries(target,amount){
+ const notice=document.getElementById('importSuccessBanner');
+ if(notice){
+  notice.hidden=false;
+  document.getElementById('importSuccessText').textContent='Dodano '+amount+' wpisów do profilu '+target.displayName+'. Otwórz dziennik, aby je zobaczyć.';
+  notice.dataset.childId=target.id;
+ }
+ if(isSelfMode()){
+  window.AktywnikExperience?.setView?.('diary');
+  notice?.scrollIntoView?.({behavior:'auto',block:'start'});
+ }else{
+  notice?.scrollIntoView?.({behavior:'auto',block:'start'});
+ }
+}
+async function restoreAtStartup(file){
+ const out=document.getElementById('setupRestoreBackupStatus');
+ if(!file)return;
+ try{
+  if(appReady()||state.entries.length)throw Error('Na urządzeniu są już dane. Przywracanie przy pierwszym uruchomieniu jest dostępne tylko dla pustego profilu.');
+  if(file.size>MAX_BYTES)throw Error('Kopia przekracza limit 8 MB.');
+  const raw=JSON.parse(await file.text());
+  if(raw?.format!=='aktywnik-plus-backup'&&!(raw?.data?.children&&raw?.data?.entries))
+   throw Error('To nie jest kopia Aktywnika. Plik tabelaryczny wczytasz w zakładce Import i eksport po utworzeniu profilu.');
+  const candidate=backupStateFromPayload(raw);
+  if(!candidate.children.length)throw Error('Kopia nie zawiera profili.');
+  if(candidate.profileMode==='family'&&!candidate.parentAuth?.pinHash)
+   throw Error('Kopia rodzinna nie ma poprawnych danych PIN-u.');
+  if(!confirm('Odzyskać '+candidate.children.length+' profili i '+candidate.entries.length+' aktywności? Konto chmurowe zostanie odłączone na tym urządzeniu.'))return;
+  applyBackupCandidate(candidate);
+  if(out)out.textContent='Kopia przywrócona. Otwieram dziennik.';
+  try{sessionStorage.setItem('aktywnik-plus-current-view','diary')}catch{}
+  location.reload();
+ }catch(error){if(out)out.textContent='Nie udało się przywrócić: '+String(error.message||error)}
+ finally{const input=document.getElementById('setupRestoreBackupInput');if(input)input.value=''}
 }
 function commit(){
- if(!pending||!pending.review.entries.length)return;
+ if(!pending)return;
  const target=getTarget();
  if(!target||target.id!==pending.target.id){message('Profil zmienił się. Wybierz plik ponownie.',true);pending=null;renderPreview();return}
- // Re-check duplicate status at commit; no imported entry can overwrite or alter an existing entry.
+ if(pending.kind==='backup'){
+  if(!confirm('Dodać brakujące wpisy, decyzje i nagrody z kopii? Dane już zapisane zostaną zachowane.'))return;
+  try{
+   const result=mergeBackupCandidate(pending.candidate);
+   pending=null;renderPreview();
+   message('Z kopii dodano '+result.entries+' wpisów, '+result.decisions+' decyzji i '+result.rewards+' nagród.');
+   showImportedEntries(target,result.entries);
+  }catch(error){message('Nie udało się połączyć kopii: '+String(error.message||error),true)}
+  return;
+ }
+ if(!pending.review.entries.length)return;
  const review=previewRows(pending.review.entries,target,state.entries);
  if(!review.entries.length){message('Nie ma już nowych wpisów.',true);pending=null;renderPreview();return}
  if(state.entries.length+review.entries.length>5000){message('Przekroczono limit 5000 zapisanych aktywności.',true);return}
+ if(!confirm('Dodać '+review.entries.length+' wpisów do profilu '+target.displayName+'? Istniejące dane zostaną zachowane.'))return;
  const time=new Date().toISOString();
- if(!confirm('Dodać '+review.entries.length+' wpisów do profilu '+target.displayName+'? Istniejące wpisy zostaną zachowane.'))return;
  const additions=review.entries.map(e=>{
   const status=isSelfMode()||!approvalRequired(target)?'approved':'pending';
-  return {...e,id:crypto.randomUUID(),status,source:'manual',createdAt:time,rejectionReason:''};
+  return {...e,id:crypto.randomUUID(),status,source:'manual',createdAt:time,updatedAt:time,rejectionReason:''};
  });
  state.entries=[...additions,...state.entries];
- additions.forEach(e=>addApprovalEvent('created',e,'child','Import tabeli. Wymaga akceptacji rodzica zgodnie z ustawieniami profilu.'));
+ additions.forEach(e=>addApprovalEvent('created',e,'child','Import tabeli. Wpis może wymagać zatwierdzenia przez opiekuna.'));
  persist();
+ const ok=localStorage.getItem('aktywnik-plus-data-v1');
+ if(!ok){message('Uwaga: przeglądarka nie potwierdziła zapisu. Spróbuj wykonać kopię danych.',true);return}
  pending=null;renderPreview();
- message('Dodano '+additions.length+' aktywności. Dane zapisano lokalnie. W trybie rodzinnym wpisy mogą wymagać akceptacji.');
- document.getElementById('structuredImportFile').value='';
+ message('Dodano '+additions.length+' aktywności. Dane zapisano lokalnie.');
+ const input=document.getElementById('structuredImportFile');if(input)input.value='';
+ showImportedEntries(target,additions.length);
 }
 function exportSpreadsheet(bookType){
  const child=getTarget();if(!child)return;
@@ -241,6 +319,21 @@ function refreshVisibility(){
 function init(){
  const form=root();if(!form)return;
 
+ const setupFile=document.getElementById('setupRestoreBackupInput');
+ setupFile?.addEventListener('change',()=>restoreAtStartup(setupFile.files?.[0]));
+ document.getElementById('importShowEntriesBtn')?.addEventListener('click',()=>{
+  const banner=document.getElementById('importSuccessBanner');
+  const id=banner?.dataset?.childId;
+  if(id&&state.children.some(c=>c.id===id)&&!isSelfMode()&&parentUnlocked()){
+   state.activeChildId=id;persist();
+  }
+  switchMode('child',true);
+  window.AktywnikExperience?.setView?.('diary');
+ });
+ document.getElementById('teamsLocalChallengesBtn')?.addEventListener('click',()=>{
+  window.AktywnikPlayful?.open?.('challenges');
+  document.getElementById('teamsIntroCard').hidden=true;
+ });
  const file=document.getElementById('structuredImportFile');
  const text=document.getElementById('structuredImportPaste');
  const sheet=document.getElementById('structuredImportSheet');
@@ -259,6 +352,6 @@ function init(){
  });
  refreshVisibility();
 }
-window.AktywnikTableImport={parseDelimited,matrixRows,jsonRows,parseDate,parseMinutes,previewRows,prepare,refreshVisibility};
+window.AktywnikTableImport={parseDelimited,matrixRows,jsonRows,parseDate,parseMinutes,previewRows,prepare,refreshVisibility,restoreAtStartup};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
