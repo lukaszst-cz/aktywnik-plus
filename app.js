@@ -1169,11 +1169,13 @@ function safeBackupState(raw){
     const favorites=(Array.isArray(c.favorites)?c.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20);
     const cloudChildId=validUuid(c.cloudChildId)?String(c.cloudChildId).toLowerCase():null;
     const candidate=c.motivationGoals&&typeof c.motivationGoals==='object'?c.motivationGoals:{};
-    const motivationGoals={};
+    const motivationGoals={},motivationGoalUpdatedAt={},times=c.motivationGoalUpdatedAt&&typeof c.motivationGoalUpdatedAt==='object'?c.motivationGoalUpdatedAt:{};
     for(const period of ['7','14','21','month']){
       motivationGoals[period]=clampInt(candidate[period],0,6000,0);
+      const stamp=safeIso(times[period]);
+      if(stamp && new Date(stamp).getTime()<=Date.now()+15*60*1000)motivationGoalUpdatedAt[period]=stamp;
     }
-    return {id:cleanText(c.id,80)||uuid(),displayName,favorites:favorites.length?favorites:[...DEFAULT_FAVORITES],requireParentApproval:c.requireParentApproval!==false,cloudChildId,createdAt:c.createdAt||nowIso(),motivationGoals};
+    return {id:cleanText(c.id,80)||uuid(),displayName,favorites:favorites.length?favorites:[...DEFAULT_FAVORITES],requireParentApproval:c.requireParentApproval!==false,cloudChildId,createdAt:c.createdAt||nowIso(),motivationGoals,motivationGoalUpdatedAt};
   }).filter(Boolean).slice(0,50);
   if(!children.length&&(d.pilot?.started||cleanText(d.pilot?.childDisplayName,60)||(Array.isArray(d.entries)&&d.entries.length))){
     children=[{id:uuid(),displayName:cleanText(d.pilot?.childDisplayName,60)||'Profil dziecka',favorites:(Array.isArray(d.favorites)?d.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20),requireParentApproval:true,cloudChildId:null,createdAt:nowIso()}];
@@ -1556,7 +1558,13 @@ window.addEventListener('afterprint',()=>document.body.classList.remove('school-
 window.AktywnikMotivationBridge={
   snapshot(){
     const child=activeChild();
-    return {child:child?{id:child.id,motivationGoals:{...(child.motivationGoals||{})}}:null,
+    return {profileMode:state.profileMode,
+      child:child?{id:child.id,motivationGoals:{...(child.motivationGoals||{})}}:null,
+      children:state.children.map(c=>({
+        id:c.id,cloudChildId:c.cloudChildId||null,
+        motivationGoals:{...(c.motivationGoals||{})},
+        motivationGoalUpdatedAt:{...(c.motivationGoalUpdatedAt||{})}
+      })),
       entries:child?state.entries.filter(e=>e.childId===child.id).map(e=>({
         childId:e.childId,status:e.status,date:e.date,minutes:e.minutes
       })):[],activeTimer:state.activeTimer?{childId:state.activeTimer.childId}:null};
@@ -1567,8 +1575,32 @@ window.AktywnikMotivationBridge={
     if(!Number.isInteger(value)||value<0||value>6000)return false;
     const child=activeChild();if(!child)return false;
     child.motivationGoals={...(child.motivationGoals||{}),[period]:value};
+    child.motivationGoalUpdatedAt={...(child.motivationGoalUpdatedAt||{}),[period]:nowIso()};
     persist({skipSync:true});
+    if(lastPersistOk)window.AktywnikGoalSync?.schedule?.();
     return lastPersistOk;
+  },
+  mergeCloudGoals(rows){
+    if(!appReady()||!Array.isArray(rows))return false;
+    let changed=false;
+    for(const row of rows.slice(0,250)){
+      if(!['7','14','21','month'].includes(row?.period))continue;
+      if(!Number.isInteger(row.target_minutes)||row.target_minutes<0||row.target_minutes>6000)continue;
+      const stamp=safeIso(row.changed_at);
+      if(!stamp||new Date(stamp).getTime()>Date.now()+15*60*1000)continue;
+      const child=state.profileMode==='self'?activeChild():
+        state.children.find(c=>c.cloudChildId&&'family:'+String(c.cloudChildId).toLowerCase()===row.profile_key);
+      if(!child)continue;
+      if(state.profileMode==='self'&&row.profile_key!=='self')continue;
+      const localDate=new Date(child.motivationGoalUpdatedAt?.[row.period]||0).getTime();
+      const remoteDate=new Date(stamp).getTime();
+      if(remoteDate<=localDate)continue;
+      child.motivationGoals={...(child.motivationGoals||{}),[row.period]:row.target_minutes};
+      child.motivationGoalUpdatedAt={...(child.motivationGoalUpdatedAt||{}),[row.period]:stamp};
+      changed=true;
+    }
+    if(changed)persist({skipSync:true});
+    return changed;
   },
   startClub(activity){
     if(!appReady()||state.activeTimer||!ACTIVITIES.some(a=>a[0]===activity))return false;
