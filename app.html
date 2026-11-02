@@ -156,6 +156,28 @@
         <small data-i18n="app.timerHint">Możesz zminimalizować lub zamknąć PWA. Czas jest liczony od zapisanego momentu startu.</small>
       </section>
 
+      <section id="activitySavedCard" class="card saved-activity-card hidden" aria-labelledby="activitySavedTitle" aria-live="polite">
+        <div class="section-head">
+          <div><p class="eyebrow">Wpis gotowy</p><h2 id="activitySavedTitle">Aktywność zapisana</h2></div>
+          <button type="button" class="ghost" id="activitySavedClose" aria-label="Zamknij potwierdzenie">Zamknij</button>
+        </div>
+        <p id="activitySavedSummary"></p>
+        <div class="entry-actions">
+          <button type="button" class="primary" id="activityCopyNotionBtn">Kopiuj wpis do Notion</button>
+          <a id="activityOpenNotion" class="button-link ghost hidden" href="#" target="_blank" rel="noopener noreferrer">Otwórz mój dziennik Notion</a>
+        </div>
+        <details class="notion-link-settings">
+          <summary>Ustaw docelową stronę w Notion</summary>
+          <label for="activityNotionUrl">Adres strony Notion (opcjonalnie)</label>
+          <div class="notion-link-controls">
+            <input id="activityNotionUrl" type="url" autocomplete="url" inputmode="url" placeholder="https://www.notion.so/..." />
+            <button id="activitySaveNotionUrl" class="ghost" type="button">Zapisz adres</button>
+          </div>
+        </details>
+        <small id="activityNotionFeedback" class="calm-note"></small>
+        <small class="calm-note">Ta funkcja kopiuje dane do schowka. Otwórz własną stronę Notion i wklej wpis. Nic nie jest wysyłane do Notion bez Twojego działania.</small>
+      </section>
+
       <section class="card">
         <div class="section-head">
           <h2 data-i18n="app.favorites">⭐ Ulubione</h2>
@@ -588,6 +610,7 @@
   <script src="app.js"></script>
   <script src="motivation.js"></script>
   <script src="goal-sync.js"></script>
+  <script src="notion-handoff.js"></script>
   <script src="install.js"></script>
 </body>
 </html>
