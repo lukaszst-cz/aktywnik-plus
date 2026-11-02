@@ -353,6 +353,6 @@ function init(){
  });
  refreshVisibility();
 }
-window.AktywnikTableImport={parseDelimited,matrixRows,jsonRows,parseDate,parseMinutes,previewRows,prepare,refreshVisibility,restoreAtStartup};
+window.AktywnikTableImport={parseDelimited,matrixRows,jsonRows,parseDate,parseMinutes,previewRows,prepare,refreshVisibility,restoreAtStartup,parseFile:fileRows};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

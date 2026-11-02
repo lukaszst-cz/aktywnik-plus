@@ -531,7 +531,10 @@
         <div class="form-grid">
           <label>Klasa<select id="importClassId"></select></label>
           <label>Dziecko / identyfikator<input id="importChildName" maxlength="60" placeholder="np. Daniel S." /></label>
-          <label>Plik CSV / JSON / TXT<input id="paperImportFile" type="file" accept=".csv,.json,.txt,text/csv,application/json,text/plain" /></label>
+          <label>Plik CSV / JSON / Excel<input id="paperImportFile" type="file" accept=".csv,.json,.txt,.tsv,.xlsx,.xls,.xlsm,.ods,text/csv,application/json,text/plain" /></label>
+          <label>Powiąż z lokalnym profilem dziecka
+            <select id="paperTargetChildSelect"><option value="">Tylko zapis karty w klasie</option></select>
+          </label>
           <label>Zdjęcie karty — OCR lokalny
             <input id="paperOcrImageFile" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" capture="environment" />
           </label>
@@ -544,6 +547,7 @@
           <button id="parsePaperImportBtn" class="ghost">Pokaż podgląd</button>
           <button id="savePaperImportBtn" class="primary" disabled>Zapisz import</button>
         </div>
+        <label class="paper-include-diary"><input id="paperImportIncludeDiary" type="checkbox" checked /> Dopisz potwierdzone wpisy do dziennika powiązanego dziecka</label>
         <div class="section-head ocr-capability">
           <small>Zdjęcie nie jest wysyłane do School Cloud ani family sync i nie jest zapisywane po odświeżeniu strony.</small>
           <span id="paperOcrCapabilityBadge" class="badge">sprawdzanie OCR…</span>

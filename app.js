@@ -921,7 +921,7 @@ function setReportStatus(classId,childId,status){
 function renderClasses(){
   const classes=state.classes.filter(c=>!c.archived),box=$('#classList');if(!box)return;if(!parentUnlocked()){box.innerHTML='';return}box.innerHTML='';
   classes.forEach(c=>{const children=c.children||[],el=document.createElement('div');el.className='entry',childRows=children.map(ch=>'<div class="class-child"><span><strong>'+escapeHtml(ch.name)+'</strong> · '+(ch.mode==='paper'?'papier':ch.mode==='hybrid'?'hybrydowo':'cyfrowo')+'</span><select data-report-class="'+escapeAttr(c.id)+'" data-report-child="'+escapeAttr(ch.id)+'"><option value="missing" '+(ch.reportStatus==='missing'?'selected':'')+'>brak raportu</option><option value="preparing" '+(ch.reportStatus==='preparing'?'selected':'')+'>w przygotowaniu</option><option value="submitted" '+(ch.reportStatus==='submitted'?'selected':'')+'>oddany</option><option value="reviewed" '+(ch.reportStatus==='reviewed'?'selected':'')+'>sprawdzony</option></select></div>').join('');el.innerHTML='<div style="width:100%"><strong>'+escapeHtml(c.name)+'</strong><small>'+escapeHtml(c.schoolYear)+' · kod klasy: <b>'+escapeHtml(c.code)+'</b> · '+children.length+' dzieci</small>'+(childRows?'<div class="class-children">'+childRows+'</div>':'<small>Brak dzieci w klasie.</small>')+'</div>';box.append(el)});
-  if(!classes.length)box.innerHTML='<small>Nie utworzono jeszcze żadnej klasy.</small>';const options=classes.map(c=>'<option value="'+escapeAttr(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.schoolYear)+'</option>').join('');const select=$('#paperClassId');if(select)select.innerHTML=options;const importSelect=$('#importClassId');if(importSelect)importSelect.innerHTML=options;$$('[data-report-child]').forEach(sel=>sel.onchange=()=>setReportStatus(sel.dataset.reportClass,sel.dataset.reportChild,sel.value));
+  if(!classes.length)box.innerHTML='<small>Nie utworzono jeszcze żadnej klasy.</small>';const options=classes.map(c=>'<option value="'+escapeAttr(c.id)+'">'+escapeHtml(c.name)+' — '+escapeHtml(c.schoolYear)+'</option>').join('');const select=$('#paperClassId');if(select)select.innerHTML=options;const importSelect=$('#importClassId');if(importSelect)importSelect.innerHTML=options;const psel=$('#paperTargetChildSelect');if(psel){const selected=psel.value;psel.replaceChildren();const first=document.createElement('option');first.value='';first.textContent='Tylko zapis karty w klasie';psel.append(first);for(const ch of state.children){const opt=document.createElement('option');opt.value=ch.id;opt.textContent=ch.displayName;psel.append(opt)}psel.value=state.children.some(ch=>ch.id===selected)?selected:'';}$$('[data-report-child]').forEach(sel=>sel.onchange=()=>setReportStatus(sel.dataset.reportClass,sel.dataset.reportChild,sel.value));
 }
 function renderJoinRequests(){
   const box=$('#classJoinRequests');if(!box)return;if(!parentUnlocked()){box.innerHTML='';return}
@@ -1021,7 +1021,33 @@ async function runLocalPaperOcr(){
 window.AktywnikPaperOcr={supported:paperOcrSupported,blocksToDelimitedText:ocrBlocksToDelimitedText,run:runLocalPaperOcr};
 
 async function loadPaperImportFile(file){
-  if(!guardParent()||!file)return;try{$('#ocrPaste').value=await file.text();$('#paperImportStatus').innerHTML='<p class="status-approved">Plik wczytany. Sprawdź podgląd przed zapisem.</p>'}catch{$('#paperImportStatus').innerHTML='<p class="status-pending">Nie udało się odczytać pliku.</p>'}
+ if(!guardParent()||!file)return;
+ try{
+  const extension=(file.name.split('.').pop()||'').toLowerCase();
+  if(['xlsx','xls','xlsm','ods'].includes(extension)){
+   const parser=window.AktywnikTableImport;
+   if(!parser?.parseFile)throw Error('Moduł Excel jest niedostępny. Odśwież aplikację.');
+   const records=await parser.parseFile(file);
+   if(records.length>200)throw Error('Karta może zawierać maksymalnie 200 wierszy. Podziel plik.');
+   const clean=v=>String(v??'').replace(/[;\r\n\t]/g,',').slice(0,160);
+   const lines=['Data;Aktywność;Czas;Zmęczenie;Uwagi'];
+   for(const item of records){
+    lines.push([parser.parseDate(item.date)||item.date,clean(item.activity),
+     parser.parseMinutes(item.minutes),item.effort||2,clean(item.note)].join(';'));
+   }
+   $('#ocrPaste').value=lines.join('\n');
+   renderPaperImportPreview();
+   $('#paperImportStatus').textContent='Arkusz Excel odczytany lokalnie. Sprawdź i popraw wiersze przed zapisaniem.';
+  }else{
+   if(file.size>2*1024*1024)throw Error('Plik przekracza limit 2 MB.');
+   $('#ocrPaste').value=await file.text();
+   renderPaperImportPreview();
+   $('#paperImportStatus').textContent='Plik wczytany. Sprawdź rozpoznane wiersze przed zapisem.';
+  }
+ }catch(error){
+  $('#paperImportStatus').textContent='Nie udało się odczytać: '+String(error.message||error);
+  $('#savePaperImportBtn').disabled=true;
+ }
 }
 function renderPaperImportPreview(){
   if(!guardParent())return;pendingPaperImportRows=parseImportText($('#ocrPaste').value);const box=$('#paperImportPreview');
@@ -1033,23 +1059,83 @@ function collectPaperImportPreview(){
   return pendingPaperImportRows.map((r,i)=>{const get=f=>document.querySelector('[data-import-row="'+i+'"][data-import-field="'+f+'"]')?.value??'';return normalizeImportRow({date:get('date'),activity:get('activity'),minutes:get('minutes'),effort:get('effort'),note:get('note')})}).filter(Boolean);
 }
 function savePaperImport(){
-  if(!guardParent())return;const rows=collectPaperImportPreview(),childName=cleanText($('#importChildName').value,60),classId=$('#importClassId').value;
-  if(!rows.length||!childName){$('#paperImportStatus').innerHTML='<p class="status-pending">Podaj dziecko i co najmniej jeden poprawny wiersz.</p>';return}
-  const klass=state.classes.find(c=>c.id===classId);let familyChildId=null;
-  if(klass){
-    klass.children=klass.children||[];
-    let child=klass.children.find(c=>String(c.name||'').toLowerCase()===childName.toLowerCase());
-    if(!child){child={id:uuid(),familyChildId:null,name:childName,mode:'paper',reportStatus:'submitted',joinedAt:nowIso()};klass.children.push(child)}
-    else child.reportStatus='submitted';
-    familyChildId=child.familyChildId||null;
+ if(!guardParent())return;
+ const rows=collectPaperImportPreview(),childName=cleanText($('#importChildName').value,60),classId=$('#importClassId').value,alertBox=$('#paperImportStatus');
+ if(!rows.length||!childName){alertBox.textContent='Podaj nazwę dziecka i sprawdź wpisy.';return}
+ if(rows.length>200){alertBox.textContent='Jedna karta może zawierać maksymalnie 200 wpisów. Podziel import.';return}
+ const klass=state.classes.find(c=>c.id===classId);
+ const explicitId=$('#paperTargetChildSelect')?.value||'',explicit=explicitId?getChild(explicitId):null;
+ if(explicitId&&!explicit){alertBox.textContent='Wybrany profil nie istnieje.';return}
+ if(explicit&&explicit.displayName.trim().toLowerCase()!==childName.toLowerCase()&&
+    !confirm('Nazwa na karcie różni się od wybranego profilu. Potwierdzić przypisanie do '+explicit.displayName+'?'))return;
+ const linked=klass?.children?.find(c=>String(c.name||'').toLowerCase()===childName.toLowerCase())||null;
+ if(explicit&&linked?.familyChildId&&linked.familyChildId!==explicit.id){alertBox.textContent='Ten uczeń jest powiązany z innym profilem. Nie zmieniono danych.';return}
+ const familyChildId=explicit?.id||(linked?.familyChildId&&getChild(linked.familyChildId)?linked.familyChildId:null);
+ const copyToDiary=!!$('#paperImportIncludeDiary')?.checked&&!!familyChildId;
+ const known=new Set(state.entries.map(e=>[e.childId,e.date,e.activity.toLowerCase(),e.minutes,e.effort,e.note||''].join('|')));
+ const now=nowIso(),added=[];
+ if(copyToDiary){
+  for(const row of rows){
+   const fp=[familyChildId,row.date,String(row.activity).toLowerCase(),row.minutes,row.effort,row.note||''].join('|');
+   if(known.has(fp))continue;
+   known.add(fp);
+   added.push({id:uuid(),childId:familyChildId,...row,status:'approved',source:'manual',createdAt:now,updatedAt:now,rejectionReason:''});
   }
-  state.paperImports=state.paperImports||[];
-  state.paperImports.unshift({id:uuid(),classId,childName,familyChildId,rows,source:'paper_ocr',createdAt:nowIso()});
-  pendingPaperImportRows=[];pendingPaperOcrImageFile=null;$('#ocrPaste').value='';$('#paperImportFile').value='';if($('#paperOcrImageFile'))$('#paperOcrImageFile').value='';$('#savePaperImportBtn').disabled=true;renderPaperOcrCapability();persist();$('#paperImportStatus').innerHTML='<p class="status-approved">Karta zapisana lokalnie i oznaczona jako oddana.</p>';
+  if(state.entries.length+added.length>MAX_ENTRIES){alertBox.textContent='Przekroczono limit zapisanych aktywności. Niczego nie zaimportowano.';return}
+ }
+ if(klass){
+  klass.children=klass.children||[];
+  if(!linked)klass.children.push({id:uuid(),familyChildId:familyChildId||null,name:childName,mode:familyChildId?'hybrid':'paper',reportStatus:'submitted',joinedAt:now});
+  else{linked.reportStatus='submitted';if(explicit&&!linked.familyChildId)linked.familyChildId=explicit.id}
+ }
+ state.paperImports=state.paperImports||[];
+ state.paperImports.unshift({id:uuid(),classId,childName,familyChildId:familyChildId||null,rows,source:'paper_ocr',createdAt:now,addedToDiary:added.length});
+ if(added.length){
+  state.entries=[...added,...state.entries];
+  added.forEach(e=>addApprovalEvent('approved',e,'parent','Wpis zatwierdzony na podstawie papierowej karty.'));
+ }
+ pendingPaperImportRows=[];pendingPaperOcrImageFile=null;
+ $('#ocrPaste').value='';$('#paperImportFile').value='';
+ if($('#paperOcrImageFile'))$('#paperOcrImageFile').value='';
+ $('#savePaperImportBtn').disabled=true;
+ renderPaperOcrCapability();persist();
+ alertBox.textContent=copyToDiary?
+  'Karta zapisana. W dzienniku dziecka dodano '+added.length+' wpisów, pominięto '+(rows.length-added.length)+' duplikatów.':
+  'Karta zapisana w historii klasy ('+rows.length+' wpisów). Bez powiązanego profilu dziecka wpisy pozostają tylko w historii.';
 }
 function renderPaperImports(){
-  const box=$('#paperImportHistory');if(!box)return;if(!parentUnlocked()){box.innerHTML='';return}const imports=state.paperImports||[];
-  box.innerHTML=imports.slice(0,20).map(x=>{const klass=state.classes.find(c=>c.id===x.classId),total=(x.rows||[]).reduce((sum,r)=>sum+Number(r.minutes||0),0);return '<div class="entry"><div><strong>'+escapeHtml(x.childName)+' · '+(x.rows||[]).length+' wpisów</strong><small>'+escapeHtml(klass?.name||'bez klasy')+' · '+fmtMin(total)+' · import OCR/DocPilot</small></div></div>'}).join('')||'<small>Nie zaimportowano jeszcze żadnej karty papierowej.</small>';
+ const box=$('#paperImportHistory');if(!box)return;
+ if(!parentUnlocked()){box.replaceChildren();return}
+ box.replaceChildren();
+ for(const record of (state.paperImports||[]).slice(0,30)){
+  const klass=state.classes.find(c=>c.id===record.classId),rows=record.rows||[];
+  const total=rows.reduce((sum,r)=>sum+Number(r.minutes||0),0);
+  const details=document.createElement('details');details.className='paper-import-details';
+  const title=document.createElement('summary');
+  title.textContent=(record.childName||'Karta')+' · '+rows.length+' wpisów · '+fmtMin(total)+' · '+(klass?.name||'bez klasy');
+  details.append(title);
+  const status=document.createElement('small');
+  status.textContent=record.addedToDiary>0?'Do dziennika dodano: '+record.addedToDiary:'Karta w historii, bez nowych wpisów w dzienniku';
+  details.append(status);
+  const table=document.createElement('table');table.className='paper-rows-table';
+  const head=document.createElement('thead'),tr=document.createElement('tr');
+  for(const name of ['Data','Aktywność','Min','Zmęczenie','Uwagi']){
+   const th=document.createElement('th');th.textContent=name;tr.append(th);
+  }
+  head.append(tr);table.append(head);
+  const tbody=document.createElement('tbody');
+  for(const r of rows.slice(0,200)){
+   const line=document.createElement('tr');
+   for(const value of [r.date,r.activity,r.minutes,r.effort,r.note]){
+    const cell=document.createElement('td');cell.textContent=String(value??'');line.append(cell);
+   }
+   tbody.append(line);
+  }
+  table.append(tbody);
+  const holder=document.createElement('div');holder.className='paper-rows-scroll';holder.append(table);details.append(holder);
+  box.append(details);
+ }
+ if(!box.children.length){const empty=document.createElement('small');empty.textContent='Nie zaimportowano jeszcze żadnej karty.';box.append(empty)}
 }
 
 function renderSetupMode(){
