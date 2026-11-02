@@ -5,12 +5,12 @@ const LIMIT=2000,MAX_BYTES=8*1024*1024;
 let pending=null;
 const root=()=>document.getElementById('structuredImportCard');
 const aliases={
- date:['data','date','dzien','dzienaktywnosci','activitydate'],
+ date:['data','date','dzien','dzienaktywnosci','dataaktywnosci','datawpisu','activitydate'],
  activity:['aktywnosc','activity','rodzajaktywnosci','nazwaktywnosci','sport','cwiczenie','trening','zajecia','rodzaj','activitytype'],
  minutes:['minuty','minutes','czasmin','czasminuty','czastrwania','czasaktywnosci','duration','czas','trwanie','iloscminut'],
- effort:['zmeczenie','wysilek','effort','intensywnosc','intensity','zmeczenie15'],
+ effort:['zmeczenie','poziomzmeczenia','wysilek','poziomwysilku','effort','intensywnosc','intensity','zmeczenie15'],
  note:['notatka','uwagi','opis','note','notes','komentarz'],
- profile:['profil','dziecko','child','name','nazwaprofilu'],
+ profile:['profil','dziecko','uczen','uczennica','imieinazwisko','imienazwisko','nazwiskoiimie','studentname','imieucznia','nazwiskoucznia','nazwaucznia','nazwadziecka','osoba','student','child','name','nazwaprofilu'],
  id:['id','entryid','cliententryid']
 };
 function canon(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')}
@@ -54,6 +54,14 @@ function matrixRows(matrix){
  const head=rows.findIndex((row,i)=>i<6&&['date','activity','minutes'].every(k=>row.some(v=>aliases[k].includes(canon(v)))));
  if(head<0)throw Error('Brakuje nagłówków: Data, Aktywność, Minuty.');
  const names=rows[head].map(v=>String(v??''));
+ const canonicalNames=names.map(canon);
+ // Nie przypisuj cudzych danych do bieżącego dziecka, jeżeli arkusz ma nieznaną kolumnę tożsamości.
+ if(canonicalNames.some(k=>/^(?:childid|studentid|uczenid|iducznia)$/.test(k)))
+  throw Error('Arkusz zawiera identyfikatory uczniów. Importuj oddzielnie dla jednego profilu albo użyj pełnej kopii JSON.');
+ if(canonicalNames.some(k=>/(uczn|dzieck|imie|nazwisk|student|person|osob)/.test(k)) &&
+    !canonicalNames.some(k=>aliases.profile.includes(k)))
+  throw Error('Nie rozpoznano nagłówka kolumny z uczniem. Zmień go na „Imię i nazwisko” lub „Uczeń”.');
+
  const cols={};for(const field of Object.keys(aliases)){cols[field]=names.findIndex(v=>aliases[field].includes(canon(v)))}
  const data=rows.slice(head+1);
  if(data.length>LIMIT)throw Error('Maksymalnie 2000 wierszy w jednym imporcie.');
@@ -64,7 +72,15 @@ function jsonRows(json){
  const arr=Array.isArray(json)?json:(json?.entries||json?.rows||json?.activities||json?.data);
  if(!Array.isArray(arr))throw Error('JSON powinien zawierać tablicę wpisów, entries, rows, activities lub data.');
  if(arr.length>LIMIT)throw Error('Maksymalnie 2000 wpisów w jednym imporcie.');
- return arr.map((r,i)=>Object.fromEntries(Object.keys(aliases).map(k=>[k,lookup(r,k)]).concat([['line',i+1]])));
+ return arr.map((r,i)=>{
+  if(!r||typeof r!=='object'||Array.isArray(r))throw Error('Wpis JSON nr '+(i+1)+' nie jest obiektem.');
+  const keys=Object.keys(r).map(canon);
+  if(keys.some(k=>/^(?:childid|studentid|iducznia)$/.test(k)))
+   throw Error('JSON zawiera identyfikator profilu. Do przenoszenia przypisań użyj pełnej kopii Aktywnika.');
+  if(keys.some(k=>/(uczn|dzieck|imie|nazwisk|student|osob)/.test(k)) && lookup(r,'profile')===undefined)
+   throw Error('JSON ma nieznane pole ucznia. Nazwij je „Uczeń” lub „Profil”.');
+  return Object.fromEntries(Object.keys(aliases).map(k=>[k,lookup(r,k)]).concat([['line',i+1]]));
+ });
 }
 function dateParts(y,m,d){
  const date=new Date(Date.UTC(y,m-1,d));
@@ -72,9 +88,11 @@ function dateParts(y,m,d){
  return [y,String(m).padStart(2,'0'),String(d).padStart(2,'0')].join('-');
 }
 function parseDate(v){
- if(v instanceof Date&&!Number.isNaN(v.valueOf()))return dateParts(v.getFullYear(),v.getMonth()+1,v.getDate());
+ if(Object.prototype.toString.call(v)==='[object Date]'&&!Number.isNaN(v.valueOf()))return dateParts(v.getFullYear(),v.getMonth()+1,v.getDate());
  const text=String(v??'').trim();
  let m=text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:T.*)?$/);
+ if(m)return dateParts(+m[1],+m[2],+m[3]);
+ m=text.match(/^(\d{4})[/.](\d{1,2})[/.](\d{1,2})$/);
  if(m)return dateParts(+m[1],+m[2],+m[3]);
  m=text.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
  if(m)return dateParts(+m[3],+m[2],+m[1]);
@@ -86,7 +104,12 @@ function parseDate(v){
  return null;
 }
 function parseMinutes(value){
- if(typeof value==='number')return value;
+ // Arkusze Excel kodują czas jako ułamek doby; niektóre komórki zwracają obiekt Date.
+ if(Object.prototype.toString.call(value)==='[object Date]'){
+  if(Number.isNaN(value.valueOf()))return NaN;
+  return value.getUTCHours()*60+value.getUTCMinutes()+value.getUTCSeconds()/60;
+ }
+ if(typeof value==='number')return value>0&&value<1?value*1440:value;
  const v=String(value??'').trim().toLowerCase();
  const clock=v.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
  if(clock)return +clock[1]*60+(+clock[2])+(+clock[3]||0)/60;
@@ -276,11 +299,17 @@ function commit(){
   const status=isSelfMode()||!approvalRequired(target)?'approved':'pending';
   return {...e,id:crypto.randomUUID(),status,source:'manual',createdAt:time,updatedAt:time,rejectionReason:''};
  });
- state.entries=[...additions,...state.entries];
+ const previousEntries=state.entries,previousEvents=state.approvalEvents;
+ state.entries=[...additions,...previousEntries];
+ state.approvalEvents=[...previousEvents];
  additions.forEach(e=>addApprovalEvent('created',e,'child','Import tabeli. Wpis może wymagać zatwierdzenia przez opiekuna.'));
  persist();
- const ok=localStorage.getItem('aktywnik-plus-data-v1');
- if(!ok||!lastPersistOk){message('Błąd zapisu na urządzeniu. Wpisy nie zostały bezpiecznie utrwalone, sprawdź dostępne miejsce i uprawnienia przeglądarki.',true);return}
+ if(!lastPersistOk){
+  state.entries=previousEntries;state.approvalEvents=previousEvents;
+  renderAll();
+  message('Błąd zapisu. Przywrócono poprzedni stan. Sprawdź miejsce w pamięci lub pobierz kopię danych.',true);
+  return;
+ }
  pending=null;renderPreview();
  message('Dodano '+additions.length+' aktywności. Dane zapisano lokalnie.');
  const input=document.getElementById('structuredImportFile');if(input)input.value='';

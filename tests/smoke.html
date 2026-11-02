@@ -117,6 +117,25 @@ async function run(){
     if(parser.matrixRows([['Data','Aktywność','Minuty'],['12.10.2026','Spacer','35']])[0].activity!=='Spacer')throw new Error('table header mapping failed');
     if(parser.parseDate('31.02.2026')!==null||parser.parseDate('12.10.2026')!=='2026-10-12')throw new Error('date import validation failed');
     if(parser.jsonRows([{date:'2026-10-11',activity:'Rower',minutes:10}])[0].activity!=='Rower')throw new Error('JSON table import mapping failed');
+    const schoolSheet=parser.matrixRows([
+      ['Data aktywności','Rodzaj aktywności','Czas (min)','Poziom zmęczenia','Imię i nazwisko'],
+      ['2026/10/28','Rower',30,3,'Uczeń A'],
+      ['2026/10/29','Spacer',20,2,'Uczeń B']
+    ]);
+    const schoolReview=parser.previewRows(schoolSheet,{id:'student-a',displayName:'Uczeń A'},[]);
+    if(schoolReview.entries.length!==1||schoolReview.otherProfile!==1||schoolReview.entries[0].effort!==3)throw new Error('multi-student spreadsheet leaked into the wrong profile');
+    if(parser.parseDate('2026/10/28')!=='2026-10-28')throw new Error('ISO spreadsheet slash date not accepted');
+    if(Math.abs(parser.parseMinutes(45/1440)-45)>0.001)throw new Error('Excel fractional-day duration incorrect');
+    if(parser.parseMinutes(new Date('1899-12-30T00:45:00Z'))!==45)throw new Error('Excel Date duration incorrect');
+    let unsafeHeadersRejected=false;
+    try{parser.matrixRows([['Data','Aktywność','Minuty','Dane osobowe'],['2026-10-28','Rower',30,'X']])}
+    catch(e){unsafeHeadersRejected=/nagłówka kolumny/.test(e.message)}
+    if(!unsafeHeadersRejected)throw new Error('unrecognized student identity header was silently ignored');
+    let unsafeJsonRejected=false;
+    try{parser.jsonRows([{date:'2026-10-28',activity:'Rower',minutes:30,childId:'some-other-child'}])}
+    catch(e){unsafeJsonRejected=/identyfikator profilu/.test(e.message)}
+    if(!unsafeJsonRejected)throw new Error('JSON foreign childId silently imported');
+
     w.AktywnikExperience.setView('data');
     if(d.getElementById('structuredImportCard').hidden)throw new Error('self import panel not visible in Data tab');
     await parser.prepare(null,'Data\tAktywność\tMinuty\tZmęczenie\n2026-10-28\tRower\t30\t2');
