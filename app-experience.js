@@ -31,7 +31,7 @@
     });
     if(next==='stats')renderGoals();
     if(next==='data')renderDataHint();
-    window.scrollTo?.({top:0,behavior:'instant'});
+    window.scrollTo?.({top:0,behavior:'auto'});
   }
   function renderStreak(){
     const child=activeChild();
@@ -132,6 +132,13 @@
       state.weeklyGoals={...(state.weeklyGoals||{}),[child.id]:v};
       persist({skipSync:true});
       if($('#goalFormStatus'))$('#goalFormStatus').textContent=v?'Cel zapisany lokalnie.':'Cel usunięty.';
+    });
+    document.addEventListener('click',event=>{
+      // Editing a diary entry opens the original form on the Add tab.
+      if(event.target.closest('[data-child-edit]')){
+        setView('add');
+        setTimeout(()=>$('#entryCard')?.scrollIntoView({behavior:'smooth',block:'center'}),0);
+      }
     });
     $('#quickTimerStartBtn')?.addEventListener('click',()=>{
       setView('add');
