@@ -26,6 +26,7 @@ jobs:
           node --check i18n.js
           node --check auth-config.js
           node --check auth.js
+          node tests/auth-smoke.mjs
           node --check sync-client.js
           node --check family-sync-client.js
           node --check school-cloud.js
