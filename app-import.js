@@ -160,7 +160,7 @@ function renderPreview(){
  const box=document.getElementById('structuredImportPreview'),confirm=document.getElementById('structuredImportConfirm');
  if(!box||!confirm)return;
  box.hidden=!pending;
- confirm.disabled=!pending?.entries.length;
+ confirm.disabled=!pending?.review?.entries?.length;
  if(!pending)return;
  const {target,review}=pending;
  const title=document.createElement('strong');
