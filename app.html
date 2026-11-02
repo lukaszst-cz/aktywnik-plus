@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#0f172a" />
+  <meta name="theme-color" content="#173d2e" />
   <meta name="description" content="Aktywnik+ — prosty, spokojny tracker aktywności dla siebie, rodziny, szkoły lub klubu." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -32,6 +32,13 @@
     </div>
   </header>
 
+  <nav class="activity-shortcuts" aria-label="Skróty do części aplikacji">
+    <a href="#childPanel">✚ Dodaj</a>
+    <a href="#motivationCard">◎ Cele i serie</a>
+    <a href="#childActivityLogCard">☷ Dziennik</a>
+    <a href="#childStatsCard">▤ Statystyki</a>
+    <a href="school-cloud.html">♙ Klasy</a>
+  </nav>
   <main id="mainContent" class="shell">
     <section id="pilotSetupCard" class="card pilot-card hidden" aria-labelledby="setupTitle">
       <div>
@@ -86,6 +93,46 @@
         <small class="calm-note" data-i18n="app.calmSummary">To tylko podsumowanie aktywności — bez celów, rankingów i porównywania z innymi.</small>
       </section>
 
+      <section id="motivationCard" class="card motivation-card" aria-labelledby="motivationTitle">
+        <div class="section-head">
+          <div><p class="eyebrow">Twój rytm, Twoje zasady</p><h2 id="motivationTitle">Cele i postępy</h2></div>
+          <div class="streak-chip" aria-label="Liczba kolejnych aktywnych dni">🔥 <strong id="motivationStreak">0</strong> <span>dni serii</span></div>
+        </div>
+        <div class="motivation-periods" role="group" aria-label="Okres celu i porównania">
+          <button type="button" class="selected" aria-pressed="true" data-motivation-period="7">Tydzień</button>
+          <button type="button" aria-pressed="false" data-motivation-period="14">2 tygodnie</button>
+          <button type="button" aria-pressed="false" data-motivation-period="21">3 tygodnie</button>
+          <button type="button" aria-pressed="false" data-motivation-period="month">Miesiąc</button>
+        </div>
+        <small id="motivationPeriodDate" class="motivation-period-date"></small>
+        <div class="motivation-summary-grid">
+          <div class="motivation-summary-tile"><small>Bieżący okres</small><strong id="motivationCurrent">0 min</strong><span id="motivationEntryCount">0 aktywności</span></div>
+          <div class="motivation-summary-tile"><small>Poprzedni okres, tyle samo dni</small><strong id="motivationPrevious">0 min</strong><span id="motivationComparison" aria-live="polite"></span></div>
+        </div>
+        <div class="goal-setting">
+          <div class="goal-heading"><strong>Własny cel czasowy</strong><small id="motivationGoalInfo">Cel nie jest ustawiony.</small></div>
+          <progress id="motivationProgress" max="100" value="0" aria-label="Postęp realizacji celu"></progress>
+          <div class="goal-controls">
+            <label for="motivationGoalInput">Cel w minutach <input id="motivationGoalInput" type="number" min="10" max="6000" step="10" inputmode="numeric" placeholder="np. 120"></label>
+            <button id="motivationSaveGoal" class="primary" type="button">Zapisz cel</button>
+          </div>
+          <small id="motivationGoalFeedback" aria-live="polite"></small>
+        </div>
+        <p id="motivationSummaryNote" class="calm-note"></p>
+        <small class="calm-note">Cele są dobrowolne. Zapisują się lokalnie i w kopii JSON. Synchronizacja ustawień celów między urządzeniami będzie wymagać rozbudowy chmury.</small>
+      </section>
+      <section class="card club-card" aria-labelledby="clubTitle">
+        <div class="section-head"><div><p class="eyebrow">Start i stop</p><h2 id="clubTitle">Treningi w klubie</h2></div><span class="badge">Pomiar także po zamknięciu PWA</span></div>
+        <p>Rozpocznij pomiar przed zajęciami i zatrzymaj go po powrocie. Czas liczony jest od zapisanego momentu startu. Telefon może zostać w szatni.</p>
+        <div class="club-presets">
+          <button type="button" data-club-start="Basen">🏊 Basen <small>Start</small></button>
+          <button type="button" data-club-start="Judo">🥋 Judo <small>Start</small></button>
+          <button type="button" data-club-start="Piłka nożna">⚽ Piłka nożna <small>Start</small></button>
+          <button type="button" data-club-start="SKS">🏫 SKS <small>Start</small></button>
+          <button type="button" data-club-start="Trening klubowy">🏅 Trening klubowy <small>Start</small></button>
+        </div>
+        <small id="motivationClubFeedback" aria-live="polite"></small>
+      </section>
       <section id="timerStatusCard" class="card timer-card hidden">
         <div class="timer-live">
           <div>
@@ -147,7 +194,7 @@
         <small id="entryDraftStatus" class="calm-note" aria-live="polite" data-i18n="app.draftLocal">Niedokończony wpis zapisuje się automatycznie tylko na tym urządzeniu.</small>
       </section>
 
-      <section class="card">
+      <section id="childActivityLogCard" class="card">
         <div class="section-head"><h2 data-i18n="app.recent">Moje ostatnie wpisy</h2><span id="pendingChildBadge" class="badge"></span></div>
         <div id="childEntries" class="list"></div>
       </section>
@@ -157,7 +204,7 @@
         <div id="childRewardHistory" class="list"></div>
       </section>
 
-      <section class="card">
+      <section id="childStatsCard" class="card">
         <div class="section-head"><h2 data-i18n="app.stats">Moje statystyki</h2><select id="reportPeriod" aria-label="Okres statystyk"><option value="month" data-i18n="app.month">Miesiąc</option><option value="quarter" data-i18n="app.quarter">Kwartał</option><option value="half" data-i18n="app.half">Półrocze</option><option value="year" data-i18n="app.year">Rok</option></select></div>
         <div id="statsGrid" class="stats-grid"></div>
         <div id="activityBreakdown" class="bars"></div>
@@ -168,6 +215,7 @@
         <p data-i18n="app.myDataText">W trybie osobistym możesz korzystać bez konta. Zapisz kopię przed zmianą urządzenia lub czyszczeniem przeglądarki.</p>
         <div class="backup-actions">
           <button id="selfExportCsvBtn" class="ghost" data-i18n="app.exportCsv">Eksport CSV</button>
+          <button id="selfExportAllCsvBtn" class="ghost" type="button">Wszystkie aktywności CSV / Notion</button>
           <button id="selfExportBackupBtn" class="primary" data-i18n="app.exportJson">Eksport kopii JSON</button>
           <label class="button-link ghost file-button"><span data-i18n="app.restore">Przywróć kopię</span>
             <input id="selfImportBackupInput" type="file" accept="application/json,.json" hidden />
@@ -346,6 +394,7 @@
         <p data-i18n="parent.backupText">Przed zmianą telefonu, czyszczeniem przeglądarki lub końcem miesiąca zapisz kopię. Plik pozostaje u Ciebie.</p>
         <div class="backup-actions">
           <button id="exportBackupBtn" class="primary" data-i18n="parent.exportBackup">Eksportuj kopię</button>
+          <button id="exportAllCsvBtn" class="ghost" type="button">Wszystkie aktywności CSV / Notion</button>
           <label class="button-link ghost file-button"><span data-i18n="app.restore">Przywróć kopię</span>
             <input id="importBackupInput" type="file" accept="application/json,.json" hidden />
           </label>
@@ -530,6 +579,7 @@
   <script src="sync-client.js"></script>
   <script src="family-sync-client.js"></script>
   <script src="app.js"></script>
+  <script src="motivation.js"></script>
   <script src="install.js"></script>
 </body>
 </html>
