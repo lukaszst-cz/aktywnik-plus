@@ -207,6 +207,27 @@ function commit(){
  message('Dodano '+additions.length+' aktywności. Dane zapisano lokalnie. W trybie rodzinnym wpisy mogą wymagać akceptacji.');
  document.getElementById('structuredImportFile').value='';
 }
+function exportSpreadsheet(bookType){
+ const child=getTarget();if(!child)return;
+ try{
+  if(!window.XLSX?.utils?.aoa_to_sheet)throw Error('Moduł Excel nie jest dostępny.');
+  const safe=(v)=>String(v??'').replace(/^[=+@-]/,v=>'\''+v).slice(0,160);
+  const rows=[['Data','Aktywność','Minuty','Zmęczenie','Notatka','Status']];
+  for(const entry of state.entries.filter(e=>e.childId===child.id).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)))){
+   rows.push([safe(entry.date),safe(entry.activity),Number(entry.minutes)||0,Number(entry.effort)||2,safe(entry.note),safe(entry.status)]);
+  }
+  const workbook=window.XLSX.utils.book_new();
+  const sheet=window.XLSX.utils.aoa_to_sheet(rows);
+  sheet['!cols']=[{wch:15},{wch:29},{wch:11},{wch:15},{wch:45},{wch:16}];
+  window.XLSX.utils.book_append_sheet(workbook,sheet,'Aktywności');
+  const bytes=window.XLSX.write(workbook,{type:'array',bookType});
+  const blob=new Blob([bytes],{type:'application/octet-stream'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='aktywnik-'+localToday()+'.'+(bookType==='biff8'?'xls':'xlsx');
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+  message('Plik Excel przygotowany lokalnie.');
+ }catch(error){message('Eksport Excel: '+String(error.message||error),true)}
+}
 function refreshVisibility(){
  const card=root();if(!card)return;
  const profileReady=appReady();
@@ -231,6 +252,8 @@ function init(){
  sheet?.addEventListener('change',()=>{if(file.files?.[0])prepare(file.files[0])});
  document.getElementById('structuredImportPasteBtn')?.addEventListener('click',()=>prepare(null,text?.value||''));
  document.getElementById('structuredImportConfirm')?.addEventListener('click',commit);
+ document.getElementById('structuredExportXlsx')?.addEventListener('click',()=>exportSpreadsheet('xlsx'));
+ document.getElementById('structuredExportXls')?.addEventListener('click',()=>exportSpreadsheet('biff8'));
  document.getElementById('structuredImportClear')?.addEventListener('click',()=>{
   pending=null;file.value='';text.value='';renderPreview();message('Wyczyszczono podgląd importu.');
  });
