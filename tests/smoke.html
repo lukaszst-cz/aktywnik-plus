@@ -108,6 +108,34 @@ async function run(){
     if(selfSaved.entries?.some(e=>e.id===localDeleteId))throw new Error('self delete did not remove local entry');
     const queuedDeletes=JSON.parse(localStorage.getItem('aktywnik-plus-personal-deletes-v1')||'{}');
     if(!queuedDeletes[localDeleteId])throw new Error('self delete tombstone not queued');
+    if(!w.AktywnikTableImport||!w.AktywnikPlayful||!w.XLSX)throw new Error('illustrations, Excel library or importer missing');
+    if(!d.querySelector('.brand-art')||!d.getElementById('playfulActivities')||!d.getElementById('illustratedModules'))throw new Error('new visual assets missing');
+    const parser=w.AktywnikTableImport;
+    if(parser.parseDelimited('Data;Aktywność;Minuty\\n2026-10-12;"Rower; spacer";35').length!==2)throw new Error('quoted CSV parsing failed');
+    if(parser.matrixRows([['Data','Aktywność','Minuty'],['12.10.2026','Spacer','35']])[0].activity!=='Spacer')throw new Error('table header mapping failed');
+    if(parser.parseDate('31.02.2026')!==null||parser.parseDate('12.10.2026')!=='2026-10-12')throw new Error('date import validation failed');
+    if(parser.jsonRows([{date:'2026-10-11',activity:'Rower',minutes:10}])[0].activity!=='Rower')throw new Error('JSON table import mapping failed');
+    w.AktywnikExperience.setView('data');
+    if(d.getElementById('structuredImportCard').hidden)throw new Error('self import panel not visible in Data tab');
+    await parser.prepare(null,'Data\\tAktywność\\tMinuty\\tZmęczenie\\n2026-10-28\\tRower\\t30\\t2');
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('CSV import preview could not confirm');
+    w.confirm=()=>true;
+    d.getElementById('structuredImportConfirm').click();
+    await sleep(50);
+    let tableState=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(!tableState.entries.some(e=>e.activity==='Rower'&&e.date==='2026-10-28'&&e.minutes===30))throw new Error('CSV imported entry missing');
+    await parser.prepare(null,'Data\\tAktywność\\tMinuty\\n2026-10-28\\tRower\\t30');
+    if(!d.getElementById('structuredImportConfirm').disabled)throw new Error('duplicate CSV record not blocked');
+    const workbook=w.XLSX.utils.book_new();
+    w.XLSX.utils.book_append_sheet(workbook,w.XLSX.utils.aoa_to_sheet([['Data','Aktywność','Minuty'],['2026-10-23','Spacer',45]]),'Dziennik');
+    const xlsxBytes=w.XLSX.write(workbook,{bookType:'xlsx',type:'array'});
+    await parser.prepare(new w.File([xlsxBytes],'aktywnosc.xlsx'));
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('XLSX import preview unavailable');
+    const xlsBytes=w.XLSX.write(workbook,{bookType:'biff8',type:'array'});
+    await parser.prepare(new w.File([xlsBytes],'aktywnosc.xls'));
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('XLS import preview unavailable');
+    w.AktywnikExperience.setView('add');
+
 
     const cloudBridge=w.AktywnikCloudBridge;
     if(!cloudBridge?.mergePersonalEntries)throw new Error('personal cloud merge bridge missing');
@@ -166,6 +194,7 @@ async function run(){
     if(d.getElementById('entryCard').classList.contains('hidden')||d.getElementById('activityDuration').value!=='22')throw new Error('legacy entry draft was not restored');
     if(localStorage.getItem(DRAFT_KEY)!==null||!localStorage.getItem(DRAFT_KEY+':child-a'))throw new Error('legacy entry draft migration failed');
     d.getElementById('cancelEntryBtn').click();await sleep(30);
+    if(!d.getElementById('structuredImportCard').hidden)throw new Error('child view exposed parent-only import panel');
     if(!w.AktywnikSync)throw new Error('sync client missing');
     if(w.AktywnikSync.protocolVersion!==1)throw new Error('sync protocol version missing');
     const familySyncStatus=d.getElementById('cloudSyncBadge').textContent.toLowerCase();
