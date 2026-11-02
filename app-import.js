@@ -259,6 +259,7 @@ function commit(){
   if(!confirm('Dodać brakujące wpisy, decyzje i nagrody z kopii? Dane już zapisane zostaną zachowane.'))return;
   try{
    const result=mergeBackupCandidate(pending.candidate);
+   renderAll();
    pending=null;renderPreview();
    message('Z kopii dodano '+result.entries+' wpisów, '+result.decisions+' decyzji i '+result.rewards+' nagród.');
    showImportedEntries(target,result.entries);
@@ -279,7 +280,7 @@ function commit(){
  additions.forEach(e=>addApprovalEvent('created',e,'child','Import tabeli. Wpis może wymagać zatwierdzenia przez opiekuna.'));
  persist();
  const ok=localStorage.getItem('aktywnik-plus-data-v1');
- if(!ok){message('Uwaga: przeglądarka nie potwierdziła zapisu. Spróbuj wykonać kopię danych.',true);return}
+ if(!ok||!lastPersistOk){message('Błąd zapisu na urządzeniu. Wpisy nie zostały bezpiecznie utrwalone, sprawdź dostępne miejsce i uprawnienia przeglądarki.',true);return}
  pending=null;renderPreview();
  message('Dodano '+additions.length+' aktywności. Dane zapisano lokalnie.');
  const input=document.getElementById('structuredImportFile');if(input)input.value='';
