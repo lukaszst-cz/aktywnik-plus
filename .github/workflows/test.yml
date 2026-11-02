@@ -2,9 +2,9 @@ name: Test pilot
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feature/**']
   pull_request:
-    branches: [main]
+    branches: [main, 'fix/**']
   workflow_dispatch:
 
 permissions:
@@ -27,6 +27,18 @@ jobs:
           node --check auth-config.js
           node --check auth.js
           node tests/auth-smoke.mjs
+          node --check motivation.js
+          node tests/motivation-smoke.mjs
+          node --check goal-sync.js
+          node tests/goal-sync-smoke.mjs
+          node --check notion-handoff.js
+          node tests/notion-handoff-smoke.mjs
+          grep -q 'notion-handoff.js' sw.js
+          grep -q 'activitySavedCard' app.html
+          grep -q 'goal-sync.js' sw.js
+          grep -q 'motivationConnectCloud' app.html
+          grep -q 'motivation.js' sw.js
+          grep -q 'motivationCard' app.html
           node --check sync-client.js
           node --check family-sync-client.js
           node --check school-cloud.js
