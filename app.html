@@ -9,17 +9,25 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="icon" type="image/png" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="app-experience.css" />
   <title>Aktywnik+ — aplikacja</title>
 </head>
 <body>
   <a class="skip-link" href="#mainContent" data-i18n="app.skip">Przejdź do treści</a>
   <header class="topbar">
     <div>
-      <strong class="brand">Aktywnik+</strong>
+      <span class="brand-mark" aria-hidden="true">A++</span><strong class="brand">Aktywnik+</strong>
       <span class="tagline" data-i18n="app.tagline">ruch bez presji</span>
       <span class="version-badge">0.5.0 beta.4</span>
       <span class="local-session-badge" data-i18n="app.localSession">bez logowania · dane lokalne</span>
     </div>
+    <nav id="childViewTabs" aria-label="Widoki aplikacji" hidden>
+      <button type="button" data-view="add">＋ Dodaj</button>
+      <button type="button" data-view="diary">▤ Dziennik</button>
+      <button type="button" data-view="stats">▥ Statystyki</button>
+      <button type="button" data-view="data">▤ Dane</button>
+    </nav>
+    <span class="nav-profile" id="navProfileInitial" aria-label="Aktualny profil">•</span>
     <select class="language-switch" data-language-switch><option value="pl">PL</option><option value="en">EN</option></select>
     <button class="install-mini" type="button" data-install-pwa data-i18n="common.install">Zainstaluj</button>
     <div class="secure-actions">
@@ -30,6 +38,7 @@
       <button id="signOutBtn" class="ghost hidden" type="button" data-i18n="app.logoutCloud">Wyloguj z chmury</button>
       <button id="parentAccessBtn" class="ghost" data-i18n="app.parentZone">Strefa rodzica 🔒</button>
     </div>
+    <small id="logoutStatus" role="status" aria-live="polite"></small>
   </header>
 
   <main id="mainContent" class="shell">
@@ -62,6 +71,16 @@
       </div>
     </section>
     <section id="childPanel">
+      <div class="app-view" data-app-view="add">
+        <section id="streakCard" class="card streak-card" aria-labelledby="streakTitle">
+          <div class="streak-title">
+            <div><h2 id="streakTitle"><span aria-hidden="true">🔥</span> <b id="streakDays">0</b> dni z rzędu</h2>
+              <p>Każdy ruch się liczy. Również spokojny dzień.</p></div>
+            <span class="streak-icon" aria-hidden="true">🏆</span>
+          </div>
+          <div id="streakWeekGrid" class="streak-week-grid" aria-label="Aktywności z bieżącego tygodnia"></div>
+          <p id="streakMessage" class="streak-bottom"></p>
+        </section>
       <div class="hero card">
         <div>
           <p class="eyebrow"><span data-i18n="app.today">Dzisiaj</span> <span id="childDisplayName"></span></p>
@@ -86,6 +105,16 @@
         <small class="calm-note" data-i18n="app.calmSummary">To tylko podsumowanie aktywności — bez celów, rankingów i porównywania z innymi.</small>
       </section>
 
+      <section id="quickTimerCard" class="card" aria-labelledby="quickTimerTitle">
+        <div class="quick-timer-content">
+          <div>
+            <p class="eyebrow">Stoper aktywności</p>
+            <h2 id="quickTimerTitle" class="timer-clock">00:00:00</h2>
+            <p class="timer-meta">Wybierz aktywność i uruchom stoper. Czas zapisze się także po zamknięciu aplikacji.</p>
+          </div>
+          <button id="quickTimerStartBtn" class="quick-timer-action" type="button" aria-label="Przygotuj aktywność do pomiaru">▶</button>
+        </div>
+      </section>
       <section id="timerStatusCard" class="card timer-card hidden">
         <div class="timer-live">
           <div>
@@ -147,6 +176,9 @@
         <small id="entryDraftStatus" class="calm-note" aria-live="polite" data-i18n="app.draftLocal">Niedokończony wpis zapisuje się automatycznie tylko na tym urządzeniu.</small>
       </section>
 
+      </div>
+      <div class="app-view" data-app-view="diary" hidden>
+      <h2 class="screen-heading">Dziennik aktywności</h2>
       <section class="card">
         <div class="section-head"><h2 data-i18n="app.recent">Moje ostatnie wpisy</h2><span id="pendingChildBadge" class="badge"></span></div>
         <div id="childEntries" class="list"></div>
@@ -157,12 +189,38 @@
         <div id="childRewardHistory" class="list"></div>
       </section>
 
+      </div>
+      <div class="app-view" data-app-view="stats" hidden>
+      <h2 class="screen-heading">Statystyki i cele</h2>
+      <section id="goalPanel" class="card" aria-labelledby="goalTitle">
+        <div class="section-head"><h2 id="goalTitle">◎ Moje cele</h2><span class="badge">dobrowolnie</span></div>
+        <div class="goal-period-buttons" id="goalPeriodButtons" role="group" aria-label="Okres celu">
+          <button type="button" data-goal-days="7">7 dni</button>
+          <button type="button" data-goal-days="14">14 dni</button>
+          <button type="button" data-goal-days="30">30 dni</button>
+        </div>
+        <div class="goal-body">
+          <div id="goalProgressRing" class="goal-ring" role="img" aria-label="Postęp celu"><div class="goal-ring-inner" id="goalPercent">●</div></div>
+          <div class="goal-stats"><small id="goalPeriodLabel">Ostatnie 7 dni</small><strong id="goalMinutes">0 min</strong><small id="goalSubtext">Cel nieustawiony</small></div>
+        </div>
+        <div class="goal-form">
+          <label>Cel tygodniowy (minuty)
+            <input id="goalInput" type="number" min="0" max="4200" step="1" placeholder="np. 120" />
+          </label>
+          <button id="saveGoalBtn" class="ghost" type="button">Zapisz cel</button>
+          <small id="goalFormStatus" role="status" aria-live="polite"></small>
+        </div>
+        <small id="goalNote" class="goal-note"></small>
+      </section>
       <section class="card">
         <div class="section-head"><h2 data-i18n="app.stats">Moje statystyki</h2><select id="reportPeriod" aria-label="Okres statystyk"><option value="month" data-i18n="app.month">Miesiąc</option><option value="quarter" data-i18n="app.quarter">Kwartał</option><option value="half" data-i18n="app.half">Półrocze</option><option value="year" data-i18n="app.year">Rok</option></select></div>
         <div id="statsGrid" class="stats-grid"></div>
         <div id="activityBreakdown" class="bars"></div>
       </section>
 
+      </div>
+      <div class="app-view" data-app-view="data" hidden>
+      <h2 class="screen-heading">Dane i raporty</h2>
       <section id="selfDataCard" class="card hidden">
         <div class="section-head"><h2 data-i18n="app.myData">Moje dane</h2><span class="badge" data-i18n="app.local">lokalnie</span></div>
         <p data-i18n="app.myDataText">W trybie osobistym możesz korzystać bez konta. Zapisz kopię przed zmianą urządzenia lub czyszczeniem przeglądarki.</p>
@@ -181,6 +239,16 @@
         </div>
         <small id="selfStorageStatus" data-i18n="app.storageStatus">Dane są zapisane lokalnie w tej przeglądarce.</small>
       </section>
+      <section id="familyDataCard" class="card" hidden>
+        <h2>Twoje dane rodzinne</h2>
+        <p>Profile dzieci, akceptacje, raporty, kopie zapasowe i synchronizację chmury obsługuje chroniona PIN-em strefa rodzica.</p>
+        <div class="cta">
+          <a class="button-link primary" href="konto.html">Konto / Synchronizacja</a>
+          <a class="button-link ghost" href="school-cloud.html">Panel nauczyciela</a>
+        </div>
+        <p><small>Przed zmianą urządzenia pobierz kopię JSON w strefie rodzica.</small></p>
+      </section>
+      </div>
     </section>
 
     <section id="parentPanel" class="hidden">
@@ -530,6 +598,7 @@
   <script src="sync-client.js"></script>
   <script src="family-sync-client.js"></script>
   <script src="app.js"></script>
+  <script src="app-experience.js"></script>
   <script src="install.js"></script>
 </body>
 </html>
