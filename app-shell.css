@@ -47,3 +47,13 @@
  .shell{padding:12px}
 }
 @media print{#appSidebar,#sidebarToggleBtn,#sidebarShade{display:none!important}.topbar,.shell,.support-card,.app-footer{margin-left:auto!important}}
+
+.paper-include-diary{display:flex;align-items:center;gap:9px;padding:12px;background:#edf8df;border-radius:14px;margin:10px 0;font-weight:750;color:#17462b;line-height:1.35}
+.paper-include-diary input{width:19px;height:19px;flex:none}
+.paper-import-details{margin:9px 0;border-radius:16px;border:1px solid #d6e6ce;background:#f9fdf6;padding:12px}
+.paper-import-details summary{cursor:pointer;font-weight:750;color:#173f2a;line-height:1.5}
+.paper-import-details small{display:block;color:#57725f;margin:7px 0}
+.paper-rows-scroll{overflow-x:auto;max-width:100%}
+.paper-rows-table{border-collapse:collapse;width:100%;min-width:440px;font-size:.82rem}
+.paper-rows-table td,.paper-rows-table th{border-bottom:1px solid #dfead8;padding:7px 6px;text-align:left}
+.paper-rows-table th{background:#e1f5d0;color:#183f2b}
