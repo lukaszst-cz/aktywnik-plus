@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><title>Aktywnik School: test klas i wyboru szkoły</title>
+<style>body{font:15px system-ui;padding:15px}#result{padding:15px;background:#eef6eb;border-radius:10px}iframe{border:1px solid #d5e5c7;width:100%;height:500px;margin-top:12px}</style>
+</head><body>
+<div id="result" role="status">Weryfikacja School Cloud...</div>
+<iframe id="schoolFixture" title="School Cloud regression"></iframe>
+<script>
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function until(check,ms=6000){
+ const end=Date.now()+ms;
+ while(Date.now()<end){if(check())return;await sleep(25)}
+ throw new Error('Przekroczono czas oczekiwania: '+check.toString().slice(0,100));
+}
+function fail(error){document.body.dataset.test='fail';$('#result').textContent='FAIL: '+String(error?.message||error);$('#result').style.background='#ffe7e5'}
+function pass(){document.body.dataset.test='pass';$('#result').textContent='PASS: School Cloud preserves school selection, isolates slow responses, switches classes, creates invites and reads join requests'}
+async function run(){
+ try{
+  const response=await fetch('../school-cloud.html');
+  if(!response.ok)throw Error('School HTML inaccessible');
+  const html=await response.text();
+  const tag=name=>'<script src="'+name+'"><'+'/script>';
+  const fixture=html.replace('<head>','<head><base href="../">')
+    .replace(tag('auth-config.js'),'')
+    .replace(tag('auth.js'),'')
+    .replace(tag('school-cloud.js'),tag('tests/school-cloud-fixture.js')+tag('school-cloud.js'));
+  if(!fixture.includes('tests/school-cloud-fixture.js'))throw Error('Unable to attach test fixture');
+  const iframe=$('#schoolFixture');
+  iframe.srcdoc=fixture;
+  await new Promise((resolve,reject)=>{
+   iframe.addEventListener('load',resolve,{once:true});
+   setTimeout(()=>reject(Error('Iframe failed to load')),6000);
+  });
+  const w=iframe.contentWindow,d=iframe.contentDocument;
+  const by=id=>d.getElementById(id);
+  await until(()=>by('schoolTenantSelect')?.options.length===2);
+  const {A,B,B1,B2}=w.__schoolFixture;
+  if(by('schoolTenantSelect').value!==A)throw Error('Expected first school initially');
+  by('schoolTenantSelect').value=B;
+  by('schoolTenantSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+  await until(()=>by('schoolActiveClassSelect')?.options.length===2&&by('schoolActiveClassName')?.textContent==='5A');
+  await sleep(200);
+  if(by('schoolTenantSelect').value!==B||by('schoolCloudClasses').querySelectorAll('article').length!==2)
+    throw Error('Older response overwrote the second school');
+  if(!d.querySelector('.school-sidebar')||!d.querySelector('.school-welcome-mascot'))
+    throw Error('School visual layout is incomplete');
+  if(by('schoolClassCount').textContent!=='2')throw Error('School class count incorrect');
+  if(by('schoolActiveClassSelect').value!==B1)throw Error('Default active class incorrect');
+  if(!by('schoolActiveClassCard').classList.contains('hidden')&&by('schoolActiveClassName').textContent!=='5A')
+    throw Error('Active class panel inconsistent');
+  by('schoolActiveClassSelect').value=B2;
+  by('schoolActiveClassSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+  if(by('schoolActiveClassName').textContent!=='6B'||by('schoolCurrentClassLabel').textContent!=='6B')
+    throw Error('Same dashboard did not switch class data');
+  by('schoolCloudRefreshBtn').click();
+  await until(()=>w.__schoolFixture.meLoads>=2);
+  await until(()=>by('schoolActiveClassSelect').options.length===2);
+  if(by('schoolTenantSelect').value!==B)throw Error('Refresh reset selected school');
+  if(by('schoolActiveClassSelect').value!==B2||by('schoolActiveClassName').textContent!=='6B')
+   throw Error('Refresh did not preserve current class');
+  by('schoolActiveCreateInviteBtn').click();
+  await until(()=>by('schoolActiveInviteResult').textContent.includes('Token'));
+  const inviteRequests=w.__schoolFixture.requests.filter(x=>x.path==='/api/v1/class-invites'&&x.method==='POST');
+  if(inviteRequests.length!==1)throw Error('Invitation was not created exactly once');
+  const activeCopy=by('schoolActiveInviteResult').querySelector('button');
+  if(!activeCopy||!activeCopy.textContent.includes('Kopiuj'))throw Error('Invite on active class has no copy control');
+  by('schoolActiveClassSelect').value=B1;
+  by('schoolActiveClassSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+  if(by('schoolActiveInviteResult').textContent.includes('44444444')||by('schoolActiveInviteResult').querySelector('button'))
+   throw Error('Switching class leaked a different class invite token');
+  by('schoolActiveClassSelect').value=B2;
+  by('schoolActiveClassSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+  if(!by('schoolActiveInviteResult').querySelector('button'))throw Error('Returning to class lost copy control');
+
+  by('schoolActiveViewRequestsBtn').click();
+  await until(()=>by('schoolCloudRequests').textContent.includes('Zgłoszenie'));
+  const requestPath=w.__schoolFixture.requests.filter(x=>x.path.includes('/api/v1/class-join?')).pop()?.path||'';
+  if(!requestPath.includes(B2))throw Error('Join requests came from wrong class');
+  if(by('schoolCloudMain').classList.contains('hidden'))throw Error('Signed-in School Cloud is hidden');
+  pass();
+ }catch(e){fail(e)}
+}
+run();
+</script></body></html>
