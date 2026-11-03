@@ -152,6 +152,17 @@ async function run(){
     try{parser.jsonRows([{date:'2026-10-28',activity:'Rower',minutes:30,childId:'some-other-child'}])}
     catch(e){unsafeJsonRejected=/identyfikator profilu/.test(e.message)}
     if(!unsafeJsonRejected)throw new Error('JSON foreign childId silently imported');
+    for(const identityKey of ['profile_id','cloudChildId','pupil_uuid','guardian_id','id_profilu']){
+      let rejectedJson=false,rejectedSheet=false;
+      try{parser.jsonRows([{date:'2026-10-28',activity:'Rower',minutes:30,[identityKey]:'foreign'}])}
+      catch(e){rejectedJson=/identyfikator profilu/.test(e.message)}
+      try{parser.matrixRows([['Data','Aktywność','Minuty',identityKey],['2026-10-28','Rower',30,'foreign']])}
+      catch(e){rejectedSheet=/identyfikatory uczniów/.test(e.message)}
+      if(!rejectedJson||!rejectedSheet)throw new Error('foreign identity '+identityKey+' bypassed import guard');
+    }
+    const entryIdRows=parser.matrixRows([['Data','Aktywność','Minuty','ID'],['2026-10-28','Rower',30,'entry-123']]);
+    if(entryIdRows[0].id!=='entry-123')throw new Error('ordinary activity entry ID incorrectly rejected');
+
 
     w.AktywnikExperience.setView('data');
     if(d.getElementById('structuredImportCard').hidden)throw new Error('self import panel not visible in Data tab');
