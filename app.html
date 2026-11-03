@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="app-experience.css" />
   <link rel="stylesheet" href="app-visuals.css" />
   <link rel="stylesheet" href="app-shell.css" />
+  <link rel="stylesheet" href="app-profile.css" />
   <title>Aktywnik+ — aplikacja</title>
 </head>
 <body>
@@ -284,6 +285,29 @@
       </div>
       <div class="app-view" data-app-view="data" hidden>
       <h2 class="screen-heading">Dane i raporty</h2>
+      <section id="profileAvatarCardSelf" class="card avatar-card" hidden>
+        <div class="section-head"><h2>🎨 Mój bohater Aktywnika</h2><span class="badge">prywatne</span></div>
+        <div class="avatar-layout">
+          <img id="avatarPreviewSelf" class="avatar-preview" src="icons/aktywnik-logo.svg" alt="Wybrana postać profilu" width="110" height="110" />
+          <div class="avatar-text">
+            <strong id="avatarProfileNameSelf">Profil</strong>
+            <p>Wybierz postać, która będzie Cię reprezentować. Zdjęcie jest dobrowolne.</p>
+            <div class="avatar-choices" role="group" aria-label="Wybierz postać">
+              <button type="button" data-avatar-style="boy" aria-pressed="false"><img src="icons/avatar-boy.svg" alt="" width="44" height="44" /> Chłopiec</button>
+              <button type="button" data-avatar-style="girl" aria-pressed="false"><img src="icons/avatar-girl.svg" alt="" width="44" height="44" /> Dziewczynka</button>
+              <button type="button" data-avatar-style="star" aria-pressed="true"><img src="icons/aktywnik-logo.svg" alt="" width="44" height="44" /> Gwiazdka</button>
+            </div>
+          </div>
+        </div>
+        <div class="avatar-actions">
+          <label class="button-link ghost file-button">📷 Dodaj własne zdjęcie
+            <input id="avatarUploadSelf" type="file" accept="image/jpeg,image/png,image/webp" hidden />
+          </label>
+          <button type="button" class="ghost" id="avatarRemoveSelf">Usuń zdjęcie</button>
+        </div>
+        <p class="calm-note">Zdjęcie jest pomniejszane i przechowywane tylko w tej przeglądarce. Nie pojawia się w klasie, chmurze ani kopii JSON. Dorosły może je usunąć w każdej chwili.</p>
+        <small id="avatarStatusSelf" class="avatar-status" role="status" aria-live="polite"></small>
+      </section>
       <section id="selfDataCard" class="card hidden">
         <div class="section-head"><h2 data-i18n="app.myData">Moje dane</h2><span class="badge" data-i18n="app.local">lokalnie</span></div>
         <p data-i18n="app.myDataText">W trybie osobistym możesz korzystać bez konta. Zapisz kopię przed zmianą urządzenia lub czyszczeniem przeglądarki.</p>
@@ -334,6 +358,29 @@
         <small id="parentSnapshotHint" class="calm-note" data-i18n="parent.snapshotHint">Podsumowanie dotyczy wybranego profilu dziecka.</small>
       </section>
 
+      <section id="profileAvatarCardParent" class="card avatar-card" hidden>
+        <div class="section-head"><h2>🎨 Mój bohater Aktywnika</h2><span class="badge">prywatne</span></div>
+        <div class="avatar-layout">
+          <img id="avatarPreviewParent" class="avatar-preview" src="icons/aktywnik-logo.svg" alt="Wybrana postać profilu" width="110" height="110" />
+          <div class="avatar-text">
+            <strong id="avatarProfileNameParent">Profil</strong>
+            <p>Wybierz postać, która będzie Cię reprezentować. Zdjęcie jest dobrowolne.</p>
+            <div class="avatar-choices" role="group" aria-label="Wybierz postać">
+              <button type="button" data-avatar-style="boy" aria-pressed="false"><img src="icons/avatar-boy.svg" alt="" width="44" height="44" /> Chłopiec</button>
+              <button type="button" data-avatar-style="girl" aria-pressed="false"><img src="icons/avatar-girl.svg" alt="" width="44" height="44" /> Dziewczynka</button>
+              <button type="button" data-avatar-style="star" aria-pressed="true"><img src="icons/aktywnik-logo.svg" alt="" width="44" height="44" /> Gwiazdka</button>
+            </div>
+          </div>
+        </div>
+        <div class="avatar-actions">
+          <label class="button-link ghost file-button">📷 Dodaj własne zdjęcie
+            <input id="avatarUploadParent" type="file" accept="image/jpeg,image/png,image/webp" hidden />
+          </label>
+          <button type="button" class="ghost" id="avatarRemoveParent">Usuń zdjęcie</button>
+        </div>
+        <p class="calm-note">Zdjęcie jest pomniejszane i przechowywane tylko w tej przeglądarce. Nie pojawia się w klasie, chmurze ani kopii JSON. Dorosły może je usunąć w każdej chwili.</p>
+        <small id="avatarStatusParent" class="avatar-status" role="status" aria-live="polite"></small>
+      </section>
       <section class="card">
         <div class="section-head"><h2 data-i18n="parent.children">Moje dzieci</h2><button id="lockParentBtn" class="ghost" data-i18n="parent.lock">Zablokuj strefę rodzica 🔒</button></div>
         <div class="form-grid">
@@ -695,6 +742,7 @@
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="app-import.js"></script>
   <script src="app-shell.js"></script>
+  <script src="app-profile.js"></script>
   <script src="install.js"></script>
 </body>
 </html>
