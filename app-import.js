@@ -15,6 +15,8 @@ const aliases={
  id:['id','entryid','cliententryid']
 };
 function canon(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+// Identifiers from another family or school must never be silently mapped to the current child.
+function isProfileIdentifier(key){return /^(?:child|student|pupil|uczen|uczennica|dziecko|profile|profil|cloudchild|cloudprofile|familychild|guardian|opiekun)(?:id|uuid)$/.test(key)||/^(?:iducznia|iddziecka|idprofilu|idopiekuna|identyfikatorucznia|identyfikatordziecka|identyfikatorprofilu)$/.test(key)}
 function lookup(row,key){
  const keys=Object.keys(row||{});
  const found=keys.find(k=>aliases[key].includes(canon(k)));
@@ -72,7 +74,7 @@ function matrixRows(matrix){
  const names=rows[head].map(v=>String(v??''));
  const canonicalNames=names.map(canon);
  // Nie przypisuj cudzych danych do bieżącego dziecka, jeżeli arkusz ma nieznaną kolumnę tożsamości.
- if(canonicalNames.some(k=>/^(?:childid|studentid|uczenid|iducznia)$/.test(k)))
+ if(canonicalNames.some(isProfileIdentifier))
   throw Error('Arkusz zawiera identyfikatory uczniów. Importuj oddzielnie dla jednego profilu albo użyj pełnej kopii JSON.');
  if(canonicalNames.some(k=>/(uczn|dzieck|imie|nazwisk|student|person|osob)/.test(k)) &&
     !canonicalNames.some(k=>aliases.profile.includes(k)))
@@ -91,7 +93,7 @@ function jsonRows(json){
  return arr.map((r,i)=>{
   if(!r||typeof r!=='object'||Array.isArray(r))throw Error('Wpis JSON nr '+(i+1)+' nie jest obiektem.');
   const keys=Object.keys(r).map(canon);
-  if(keys.some(k=>/^(?:childid|studentid|iducznia)$/.test(k)))
+  if(keys.some(isProfileIdentifier))
    throw Error('JSON zawiera identyfikator profilu. Do przenoszenia przypisań użyj pełnej kopii Aktywnika.');
   if(keys.some(k=>/(uczn|dzieck|imie|nazwisk|student|osob)/.test(k)) && lookup(r,'profile')===undefined)
    throw Error('JSON ma nieznane pole ucznia. Nazwij je „Uczeń” lub „Profil”.');
