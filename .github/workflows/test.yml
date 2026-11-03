@@ -25,6 +25,10 @@ jobs:
           node --check app-shell.js
           test -f app-shell.css
           node --check app-import.js
+          node --check app-profile.js
+          test -f app-profile.css
+          grep -q 'app-profile.js' app.html
+          grep -q './icons/avatar-boy.svg' sw.js
           node --check vendor/xlsx.full.min.js
           test -f app-visuals.css
           grep -q 'vendor/xlsx.full.min.js' app.html
