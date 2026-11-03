@@ -5,7 +5,7 @@
   const OP_STORAGE_KEY='aktywnik-school-operation-ids-v1';
   const memoryOperations=new Map();
   let context=null,classes=[],years=[];
-  let selectedClassId='',tenantLoadEpoch=0;
+  let selectedClassId='',tenantLoadEpoch=0,lastLoadedTenant='';
   const invitationResults=new Map();
 
   function readOperationIds(){
@@ -206,9 +206,13 @@
     // Increment epoch to prevent an older slow response from overwriting a newly selected school.
     const epoch=++tenantLoadEpoch;
     renderContext();
+    const tenant=selectedTenant();
+    const savedClass=tenant===lastLoadedTenant?selectedClassId:'';
+    lastLoadedTenant=tenant;
     classes=[];years=[];selectedClassId='';invitationResults.clear();
     $('#schoolCloudRequests').replaceChildren();
     renderClasses();
+    selectedClassId=savedClass;
     if(canStaff())await Promise.all([loadYears(epoch),loadClasses(epoch)]);
   }
   async function createClass(){
