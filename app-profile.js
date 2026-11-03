@@ -161,6 +161,7 @@ async function eraseForChild(id){
  forgetUrl(id);
 }
 async function clearAll(){
+ if(!window.indexedDB)return;
  await transaction('readwrite',null,null);
  for(const id of [...photoCache.keys()])forgetUrl(id);
 }
