@@ -112,6 +112,7 @@ async function run(){
     if(!d.getElementById('appSidebar')||!w.AktywnikShell||!d.getElementById('setupRestoreBackupInput'))throw new Error('visual sidebar or restore from setup missing');
 
     if(!d.querySelector('.brand-art')||!d.getElementById('playfulActivities')||!d.getElementById('illustratedModules'))throw new Error('new visual assets missing');
+    if(!w.AktywnikProfiles||!d.getElementById('profileAvatarCardSelf')||!d.getElementById('profileAvatarCardParent'))throw new Error('profile avatar modules unavailable');
     const parser=w.AktywnikTableImport;
     if(parser.parseDelimited('Data;Aktywność;Minuty\n2026-10-12;"Rower; spacer";35').length!==2)throw new Error('quoted CSV parsing failed');
     if(parser.matrixRows([['Data','Aktywność','Minuty'],['12.10.2026','Spacer','35']])[0].activity!=='Spacer')throw new Error('table header mapping failed');
@@ -153,6 +154,20 @@ async function run(){
 
     await parser.prepare(null,'Data\tAktywność\tMinuty\n2026-10-28\tRower\t30');
     if(!d.getElementById('structuredImportConfirm').disabled)throw new Error('duplicate CSV record not blocked');
+    if(d.getElementById('profileAvatarCardSelf').hidden)throw new Error('personal avatar setup hidden');
+    const girlChoice=d.querySelector('#profileAvatarCardSelf [data-avatar-style="girl"]');
+    girlChoice.click();await sleep(35);
+    let avatarState=JSON.parse(localStorage.getItem(KEY)||'{}');
+    if(avatarState.children[0].avatarStyle!=='girl'||girlChoice.getAttribute('aria-pressed')!=='true')throw new Error('chosen profile art not persisted');
+    if(w.backupStateFromPayload(w.makeBackupPayload(avatarState)).children[0].avatarStyle!=='girl')throw new Error('profile art missing from JSON backup');
+    const avatarCanvas=d.createElement('canvas');avatarCanvas.width=24;avatarCanvas.height=24;
+    avatarCanvas.getContext('2d').fillRect(0,0,24,24);
+    const avatarBlob=await new Promise(resolve=>avatarCanvas.toBlob(resolve,'image/png'));
+    await w.AktywnikProfiles.upload('self',new w.File([avatarBlob],'test.png',{type:'image/png'}));
+    await sleep(100);
+    if(!d.getElementById('avatarPreviewSelf').src.startsWith('blob:'))throw new Error('uploaded private photo not displayed');
+    await w.AktywnikProfiles.remove('self');await sleep(75);
+    if(!d.getElementById('avatarPreviewSelf').src.endsWith('/icons/avatar-girl.svg'))throw new Error('private photo removal did not restore selected avatar');
     const exportPayload=w.makeBackupPayload(JSON.parse(localStorage.getItem(KEY)));
     const backupFile=new w.File([JSON.stringify(exportPayload)],'backup-aktywnik.json',{type:'application/json'});
     await parser.prepare(backupFile);
@@ -301,6 +316,10 @@ async function run(){
     await w.unlockParent();
     await sleep(70);
     if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('correct PIN did not open parent zone');
+    if(d.getElementById('profileAvatarCardParent').hidden)throw new Error('parent profile avatar editor hidden after PIN');
+    d.querySelector('#profileAvatarCardParent [data-avatar-style="boy"]').click();await sleep(35);
+    if(JSON.parse(localStorage.getItem(KEY)).children[0].avatarStyle!=='boy')throw new Error('parent could not select family child avatar');
+
     w.lockParent();
     await sleep(50);
 
