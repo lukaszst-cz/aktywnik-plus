@@ -62,6 +62,16 @@ async function run(){
   await until(()=>by('schoolActiveInviteResult').textContent.includes('Token'));
   const inviteRequests=w.__schoolFixture.requests.filter(x=>x.path==='/api/v1/class-invites'&&x.method==='POST');
   if(inviteRequests.length!==1)throw Error('Invitation was not created exactly once');
+  const activeCopy=by('schoolActiveInviteResult').querySelector('button');
+  if(!activeCopy||!activeCopy.textContent.includes('Kopiuj'))throw Error('Invite on active class has no copy control');
+  by('schoolActiveClassSelect').value=B1;
+  by('schoolActiveClassSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+  if(by('schoolActiveInviteResult').textContent.includes('44444444')||by('schoolActiveInviteResult').querySelector('button'))
+   throw Error('Switching class leaked a different class invite token');
+  by('schoolActiveClassSelect').value=B2;
+  by('schoolActiveClassSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+  if(!by('schoolActiveInviteResult').querySelector('button'))throw Error('Returning to class lost copy control');
+
   by('schoolActiveViewRequestsBtn').click();
   await until(()=>by('schoolCloudRequests').textContent.includes('Zgłoszenie'));
   const requestPath=w.__schoolFixture.requests.filter(x=>x.path.includes('/api/v1/class-join?')).pop()?.path||'';
