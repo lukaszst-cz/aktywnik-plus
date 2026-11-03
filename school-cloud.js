@@ -5,6 +5,8 @@
   const OP_STORAGE_KEY='aktywnik-school-operation-ids-v1';
   const memoryOperations=new Map();
   let context=null,classes=[],years=[];
+  let selectedClassId='',tenantLoadEpoch=0;
+  const invitationResults=new Map();
 
   function readOperationIds(){
     try{
@@ -110,7 +112,12 @@
     $('#schoolCloudProfile').textContent=(profile?.display_name||'Konto')+(profile?.profile_type?' · '+profile.profile_type:'');
     const memberships=(context?.memberships||[]).filter(m=>m.active!==false);
     const tenantSelect=$('#schoolTenantSelect');
+    const chosenTenant=tenantSelect.value;
     tenantSelect.innerHTML=memberships.map(m=>'<option value="'+esc(m.tenant_id)+'">'+esc(m.role)+' · '+esc(m.tenant_id.slice(0,8))+'…</option>').join('');
+    if(memberships.some(m=>m.tenant_id===chosenTenant))tenantSelect.value=chosenTenant;
+    if(!memberships.length)tenantSelect.innerHTML='<option value="">Brak przypisanej szkoły</option>';
+    $('#schoolRoleLabel').textContent=selectedMembership()?.role==='school_admin'?'Administrator szkoły':canStaff()?'Nauczyciel':'Opiekun';
+    $('#schoolDashboard').classList.toggle('hidden',!canStaff());
     $('#schoolStaffPanel').classList.toggle('hidden',!canStaff());
     $('#schoolAdminCreateBox').classList.toggle('hidden',!canStaff());
     $('#schoolJoinRequestsPanel').classList.toggle('hidden',!canStaff());
@@ -123,45 +130,94 @@
     renderContext();
     await loadTenantData();
   }
-  async function loadYears(){
+  async function loadYears(epoch=tenantLoadEpoch){
     const tenant=selectedTenant();
-    if(!tenant){years=[];$('#schoolYearSelect').innerHTML='';return}
+    if(!tenant){if(epoch===tenantLoadEpoch){years=[];$('#schoolYearSelect').replaceChildren()}return}
     const data=await api('/api/v1/school-years?tenantId='+encodeURIComponent(tenant));
-    years=data.schoolYears||[];
+    if(epoch!==tenantLoadEpoch||selectedTenant()!==tenant)return;
+    years=(data.schoolYears||[]).filter(y=>y.tenant_id===tenant||!y.tenant_id);
     $('#schoolYearSelect').innerHTML=years.map(y=>'<option value="'+esc(y.id)+'">'+esc(y.label)+'</option>').join('');
+    renderActiveClass();
   }
-  async function loadClasses(){
-    if(!canStaff()){classes=[];renderClasses();return}
-    const data=await api('/api/v1/classes');
+  async function loadClasses(epoch=tenantLoadEpoch){
+    if(!canStaff()){if(epoch===tenantLoadEpoch){classes=[];renderClasses()}return}
     const tenant=selectedTenant();
-    classes=(data.classes||[]).filter(c=>c.tenant_id===tenant);
+    const data=await api('/api/v1/classes');
+    if(epoch!==tenantLoadEpoch||selectedTenant()!==tenant)return;
+    classes=(data.classes||[]).filter(c=>c.tenant_id===tenant&&c.archived_at===null);
     renderClasses();
   }
+  function renderActiveClass(){
+    const current=classes.find(c=>c.id===selectedClassId)||null;
+    const panel=$('#schoolActiveClassCard'),active=$('#schoolActiveClassSelect');
+    $('#schoolClassCount').textContent=String(classes.length);
+    $('#schoolCurrentClassLabel').textContent=current?.name||'Brak klasy';
+    if(panel)panel.classList.toggle('hidden',!current);
+    if(!current)return;
+    $('#schoolActiveClassName').textContent=current.name;
+    const year=years.find(y=>y.id===current.school_year_id);
+    $('#schoolActiveClassYear').textContent=year?.label?'Rok szkolny: '+year.label:'Wybierz rok szkolny w ustawieniach szkoły';
+    const info=invitationResults.get(current.id)||'';
+    $('#schoolActiveInviteResult').textContent=info;
+    if(active&&active.value!==current.id)active.value=current.id;
+    const selected=$('#schoolRequestClassSelect');
+    if(selected&&[...selected.options].some(opt=>opt.value===current.id))selected.value=current.id;
+    document.querySelectorAll('[data-view-class]').forEach(btn=>{
+      const yes=btn.dataset.viewClass===current.id;
+      btn.setAttribute('aria-pressed',String(yes));
+      btn.closest('article')?.classList.toggle('selected',yes);
+    });
+  }
+  function selectClass(classId){
+    if(!classes.some(c=>c.id===classId))return;
+    selectedClassId=classId;
+    renderActiveClass();
+    $('#schoolCloudRequests').replaceChildren();
+  }
   function renderClasses(){
-    const box=$('#schoolCloudClasses'),select=$('#schoolRequestClassSelect');
-    if(!box||!select)return;
-    box.innerHTML='';
-    select.innerHTML=classes.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('');
+    const box=$('#schoolCloudClasses'),requestSelect=$('#schoolRequestClassSelect'),activeSelect=$('#schoolActiveClassSelect');
+    if(!box||!requestSelect||!activeSelect)return;
+    if(!classes.some(c=>c.id===selectedClassId))selectedClassId=classes[0]?.id||'';
+    box.replaceChildren();
+    requestSelect.innerHTML=classes.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('');
+    activeSelect.innerHTML=classes.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('');
+    activeSelect.disabled=!classes.length;
     for(const c of classes){
       const article=document.createElement('article');
-      article.innerHTML='<h3>'+esc(c.name)+'</h3><p>Klasa zabezpieczona RLS.</p><div class="cta"><button class="secondary" type="button" data-create-invite="'+esc(c.id)+'">Utwórz zaproszenie</button></div><p data-invite-result="'+esc(c.id)+'"></p>';
-      box.append(article);
+      const title=document.createElement('h3');title.textContent='🏫 '+c.name;
+      const description=document.createElement('p');
+      description.textContent='Pulpit klasy i zaproszenia rodziców';
+      const actions=document.createElement('div');actions.className='cta';
+      const choose=document.createElement('button');choose.type='button';
+      choose.className='secondary';choose.dataset.viewClass=c.id;choose.textContent='Otwórz klasę';
+      choose.addEventListener('click',()=>selectClass(c.id));
+      const invite=document.createElement('button');invite.type='button';invite.className='secondary';
+      invite.dataset.createInvite=c.id;invite.textContent='Utwórz zaproszenie';
+      invite.addEventListener('click',()=>createInvite(c.id));
+      actions.append(choose,invite);
+      const output=document.createElement('p');output.dataset.inviteResult=c.id;output.setAttribute('role','status');
+      output.textContent=invitationResults.get(c.id)||'';
+      article.append(title,description,actions,output);box.append(article);
     }
-    if(!classes.length)box.innerHTML='<p>Brak klas widocznych dla tego konta.</p>';
-    box.querySelectorAll('[data-create-invite]').forEach(btn=>btn.addEventListener('click',()=>createInvite(btn.dataset.createInvite)));
+    if(!classes.length){const empty=document.createElement('p');empty.textContent='Nie ma jeszcze klas widocznych dla tego konta. Jeśli masz uprawnienia, utwórz pierwszą klasę.';box.append(empty)}
+    renderActiveClass();
   }
   async function loadTenantData(){
+    // Increment epoch to prevent an older slow response from overwriting a newly selected school.
+    const epoch=++tenantLoadEpoch;
     renderContext();
-    if(canStaff())await Promise.all([loadYears(),loadClasses()]);
-    else{years=[];classes=[];renderClasses()}
+    classes=[];years=[];selectedClassId='';invitationResults.clear();
+    $('#schoolCloudRequests').replaceChildren();
+    renderClasses();
+    if(canStaff())await Promise.all([loadYears(epoch),loadClasses(epoch)]);
   }
   async function createClass(){
     const button=$('#schoolCloudCreateClassBtn'),tenant=selectedTenant(),schoolYearId=$('#schoolYearSelect').value,name=$('#schoolCloudClassName').value.trim();
     if(!tenant||!schoolYearId||!name){status('Wybierz rok i podaj nazwę klasy.','error');return}
     if(name.length>80){status('Nazwa klasy może mieć maksymalnie 80 znaków.','error');return}
     if(button?.disabled)return;
-    if(button)button.disabled=true;
     if(!canStaff()){status('Brak uprawnień do tworzenia klas w tej szkole.','error');return}
+    if(button)button.disabled=true;
     const payload={tenantId:tenant,schoolYearId,name};
     const operationId=await getOperationId('create-class',payload);
     try{
@@ -175,18 +231,34 @@
     }
   }
   async function createInvite(classId){
-    const button=document.querySelector('[data-create-invite="'+CSS.escape(classId)+'"]');
-    if(button?.disabled)return;
-    if(button)button.disabled=true;
-    const payload={classId,validDays:14};
-    const operationId=await getOperationId('create-invite',payload);
+    if(!canStaff()||!classes.some(c=>c.id===classId)){status('Nie masz dostępu do tej klasy.','error');return}
+    const buttons=[...document.querySelectorAll('[data-create-invite]')].filter(b=>b.dataset.createInvite===classId);
+    buttons.push(...[...document.querySelectorAll('#schoolActiveCreateInviteBtn')].filter(()=>selectedClassId===classId));
+    if(buttons.some(b=>b.disabled))return;
+    buttons.forEach(b=>b.disabled=true);
+    const payload={classId,validDays:14},epoch=tenantLoadEpoch;
     try{
+      const operationId=await getOperationId('create-invite',payload);
       const data=await api('/api/v1/class-invites',{method:'POST',body:JSON.stringify({...payload,operationId})});
       await clearOperationId('create-invite',payload);
-      const out=document.querySelector('[data-invite-result="'+CSS.escape(classId)+'"]');
-      if(out)out.textContent=data.token?'Token (14 dni): '+data.token:'Zaproszenie utworzone.';
+      if(epoch!==tenantLoadEpoch||!classes.some(c=>c.id===classId))return;
+      const explanation=data.token?'Token dla rodzica (ważny 14 dni): '+data.token:'Zaproszenie utworzone.';
+      invitationResults.set(classId,explanation);
+      for(const out of [...document.querySelectorAll('[data-invite-result]')].filter(el=>el.dataset.inviteResult===classId)){
+        out.textContent=explanation;
+        if(data.token){
+          const copy=document.createElement('button');copy.className='secondary';copy.type='button';
+          copy.textContent='Kopiuj token';
+          copy.addEventListener('click',async()=>{
+            try{await navigator.clipboard.writeText(data.token);status('Token skopiowany. Przekaż go rodzicowi prywatnie.','ok')}
+            catch{status('Zaznacz token na ekranie i skopiuj ręcznie.','error')}
+          });
+          out.append(document.createTextNode(' '),copy);
+        }
+      }
+      renderActiveClass();
     }finally{
-      if(button)button.disabled=false;
+      buttons.forEach(b=>b.disabled=false);
     }
   }
   async function createCloudChild(){
@@ -223,7 +295,9 @@
   async function loadRequests(){
     const classId=$('#schoolRequestClassSelect').value,box=$('#schoolCloudRequests');
     if(!classId){box.innerHTML='<p>Brak wybranej klasy.</p>';return}
+    const epoch=tenantLoadEpoch;
     const data=await api('/api/v1/class-join?classId='+encodeURIComponent(classId));
+    if(epoch!==tenantLoadEpoch||$('#schoolRequestClassSelect').value!==classId)return;
     const requests=(data.requests||[]).filter(r=>r.status==='pending');
     box.innerHTML='';
     for(const r of requests){
@@ -264,6 +338,14 @@
 
   document.addEventListener('DOMContentLoaded',()=>{
     $('#schoolTenantSelect')?.addEventListener('change',()=>loadTenantData().catch(err=>status(err.message,'error')));
+    $('#schoolActiveClassSelect')?.addEventListener('change',event=>selectClass(event.target.value));
+    $('#schoolActiveCreateInviteBtn')?.addEventListener('click',()=>createInvite(selectedClassId).catch(err=>status(err.message,'error')));
+    $('#schoolActiveViewRequestsBtn')?.addEventListener('click',()=>{
+      if(!selectedClassId)return;
+      $('#schoolRequestClassSelect').value=selectedClassId;
+      $('#schoolJoinRequestsPanel').scrollIntoView({behavior:'smooth',block:'start'});
+      loadRequests().catch(err=>status(err.message,'error'));
+    });
     $('#schoolCloudRefreshBtn')?.addEventListener('click',()=>loadContext().catch(err=>status(err.message,'error')));
     $('#schoolCloudCreateClassBtn')?.addEventListener('click',()=>createClass().catch(err=>status(err.message,'error')));
     $('#schoolCreateChildBtn')?.addEventListener('click',()=>createCloudChild().catch(err=>status(err.message,'error')));
