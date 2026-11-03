@@ -183,7 +183,7 @@ function init(){
  }
  refresh();
 }
-window.AktywnikProfiles={refresh,eraseForChild,clearAll,styles:STYLES};
+window.AktywnikProfiles={refresh,eraseForChild,clearAll,upload,remove,styles:STYLES};
 window.addEventListener('pagehide',()=>{for(const id of [...photoCache.keys()])forgetUrl(id)});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
