@@ -7,6 +7,7 @@
   let context=null,classes=[],years=[];
   let selectedClassId='',tenantLoadEpoch=0,lastLoadedTenant='';
   const invitationResults=new Map();
+  const invitationTokens=new Map();
 
   function readOperationIds(){
     try{
@@ -147,6 +148,23 @@
     classes=(data.classes||[]).filter(c=>c.tenant_id===tenant&&c.archived_at===null);
     renderClasses();
   }
+  function copyInvitationButton(token){
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='secondary';
+    button.textContent='📋 Kopiuj kod';
+    button.setAttribute('aria-label','Skopiuj prywatny kod zaproszenia rodziny');
+    button.addEventListener('click',async()=>{
+      try{
+        if(!navigator.clipboard?.writeText)throw new Error('clipboard_unavailable');
+        await navigator.clipboard.writeText(token);
+        status('Kod zaproszenia skopiowany. Przekaż go opiekunowi prywatnie.','ok');
+      }catch{
+        status('Nie można automatycznie skopiować kodu. Zaznacz widoczny kod i skopiuj go ręcznie.','error');
+      }
+    });
+    return button;
+  }
   function renderActiveClass(){
     const current=classes.find(c=>c.id===selectedClassId)||null;
     const panel=$('#schoolActiveClassCard'),active=$('#schoolActiveClassSelect');
@@ -158,7 +176,10 @@
     const year=years.find(y=>y.id===current.school_year_id);
     $('#schoolActiveClassYear').textContent=year?.label?'Rok szkolny: '+year.label:'Wybierz rok szkolny w ustawieniach szkoły';
     const info=invitationResults.get(current.id)||'';
-    $('#schoolActiveInviteResult').textContent=info;
+    const inviteResult=$('#schoolActiveInviteResult');
+    inviteResult.textContent=info;
+    const token=invitationTokens.get(current.id);
+    if(token)inviteResult.append(document.createTextNode(' '),copyInvitationButton(token));
     if(active&&active.value!==current.id)active.value=current.id;
     const selected=$('#schoolRequestClassSelect');
     if(selected&&[...selected.options].some(opt=>opt.value===current.id))selected.value=current.id;
@@ -209,7 +230,7 @@
     const tenant=selectedTenant();
     const savedClass=tenant===lastLoadedTenant?selectedClassId:'';
     lastLoadedTenant=tenant;
-    classes=[];years=[];selectedClassId='';invitationResults.clear();
+    classes=[];years=[];selectedClassId='';invitationResults.clear();invitationTokens.clear();
     $('#schoolCloudRequests').replaceChildren();
     renderClasses();
     selectedClassId=savedClass;
@@ -223,8 +244,8 @@
     if(!canStaff()){status('Brak uprawnień do tworzenia klas w tej szkole.','error');return}
     if(button)button.disabled=true;
     const payload={tenantId:tenant,schoolYearId,name};
-    const operationId=await getOperationId('create-class',payload);
     try{
+      const operationId=await getOperationId('create-class',payload);
       await api('/api/v1/classes',{method:'POST',body:JSON.stringify({...payload,operationId})});
       await clearOperationId('create-class',payload);
       $('#schoolCloudClassName').value='';
@@ -248,17 +269,10 @@
       if(epoch!==tenantLoadEpoch||!classes.some(c=>c.id===classId))return;
       const explanation=data.token?'Token dla rodzica (ważny 14 dni): '+data.token:'Zaproszenie utworzone.';
       invitationResults.set(classId,explanation);
+      if(data.token)invitationTokens.set(classId,data.token);
       for(const out of [...document.querySelectorAll('[data-invite-result]')].filter(el=>el.dataset.inviteResult===classId)){
         out.textContent=explanation;
-        if(data.token){
-          const copy=document.createElement('button');copy.className='secondary';copy.type='button';
-          copy.textContent='Kopiuj token';
-          copy.addEventListener('click',async()=>{
-            try{await navigator.clipboard.writeText(data.token);status('Token skopiowany. Przekaż go rodzicowi prywatnie.','ok')}
-            catch{status('Zaznacz token na ekranie i skopiuj ręcznie.','error')}
-          });
-          out.append(document.createTextNode(' '),copy);
-        }
+        if(data.token)out.append(document.createTextNode(' '),copyInvitationButton(data.token));
       }
       renderActiveClass();
     }finally{
