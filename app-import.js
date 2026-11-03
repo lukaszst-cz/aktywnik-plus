@@ -128,7 +128,11 @@ function parseMinutes(value){
  if(typeof value==='number')return value>0&&value<1?value*1440:value;
  const v=String(value??'').trim().toLowerCase();
  const clock=v.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
- if(clock)return +clock[1]*60+(+clock[2])+(+clock[3]||0)/60;
+ if(clock){
+  const hours=Number(clock[1]),minutes=Number(clock[2]),seconds=Number(clock[3]||0);
+  if(minutes>=60||seconds>=60)return NaN;
+  return hours*60+minutes+seconds/60;
+ }
  const hours=v.match(/^(\d+(?:[.,]\d+)?)\s*h(?:\s*(\d+)\s*min)?$/);
  if(hours)return Number(hours[1].replace(',','.'))*60+Number(hours[2]||0);
  const numeric=v.replace(/\s*(min|minuty|minutes)\s*$/,'').replace(',','.');
@@ -150,7 +154,7 @@ function previewRows(raw,target,existing){
   const effort=effortValue===''?2:Number(effortValue.replace(',','.'));
   const note=String(item.note??'').trim();
   if(!date||date>localToday()||!activity||activity.length>80||!Number.isFinite(number)||number<1||number>600||
-    !Number.isInteger(Math.round(number))||!Number.isFinite(effort)||!Number.isInteger(effort)||effort<1||effort>5||note.length>120){
+    Math.abs(number-Math.round(number))>0.01||!Number.isFinite(effort)||!Number.isInteger(effort)||effort<1||effort>5||note.length>120){
     errors.push('Wiersz '+line+': sprawdź datę, aktywność, czas (1–600 min), zmęczenie (1–5) lub notatkę.');continue;
   }
   const draft={childId:target.id,date,activity,minutes:Math.round(number),effort,note};
