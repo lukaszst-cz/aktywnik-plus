@@ -56,8 +56,8 @@ async function run(){
   await until(()=>w.__schoolFixture.meLoads>=2);
   await until(()=>by('schoolActiveClassSelect').options.length===2);
   if(by('schoolTenantSelect').value!==B)throw Error('Refresh reset selected school');
-  by('schoolActiveClassSelect').value=B2;
-  by('schoolActiveClassSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+  if(by('schoolActiveClassSelect').value!==B2||by('schoolActiveClassName').textContent!=='6B')
+   throw Error('Refresh did not preserve current class');
   by('schoolActiveCreateInviteBtn').click();
   await until(()=>by('schoolActiveInviteResult').textContent.includes('Token'));
   const inviteRequests=w.__schoolFixture.requests.filter(x=>x.path==='/api/v1/class-invites'&&x.method==='POST');
