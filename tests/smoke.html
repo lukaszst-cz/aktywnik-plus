@@ -115,6 +115,13 @@ async function run(){
     if(!w.AktywnikProfiles||!d.getElementById('profileAvatarCardSelf')||!d.getElementById('profileAvatarCardParent'))throw new Error('profile avatar modules unavailable');
     const parser=w.AktywnikTableImport;
     if(parser.parseDelimited('Data;Aktywność;Minuty\n2026-10-12;"Rower; spacer";35').length!==2)throw new Error('quoted CSV parsing failed');
+    const quotedHeaderCsv='"Data, opis; dodatkowy";Aktywność;Minuty\n"2026-10-12";Spacer;35';
+    const quotedHeaderMatrix=parser.parseDelimited(quotedHeaderCsv);
+    if(quotedHeaderMatrix.length!==2||quotedHeaderMatrix[0].length!==3||quotedHeaderMatrix[1][1]!=='Spacer')throw new Error('CSV separator incorrectly detected inside quoted header');
+    const commaCsv='Data,Aktywność,Minuty\n2026-10-12,"Rower; spacer",35';
+    const commaMatrix=parser.parseDelimited(commaCsv);
+    if(commaMatrix[0].length!==3||commaMatrix[1][1]!=='Rower; spacer')throw new Error('comma CSV with quoted semicolon misdetected');
+
     if(parser.matrixRows([['Data','Aktywność','Minuty'],['12.10.2026','Spacer','35']])[0].activity!=='Spacer')throw new Error('table header mapping failed');
     if(parser.parseDate('31.02.2026')!==null||parser.parseDate('12.10.2026')!=='2026-10-12')throw new Error('date import validation failed');
     if(parser.jsonRows([{date:'2026-10-11',activity:'Rower',minutes:10}])[0].activity!=='Rower')throw new Error('JSON table import mapping failed');

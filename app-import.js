@@ -21,9 +21,24 @@ function lookup(row,key){
  return found===undefined?undefined:row[found];
 }
 function delim(text){
- const first=String(text).split(/\r?\n/)[0]||'';
- const chars=['\t',';',','];const counts=chars.map(c=>[c,first.split(c).length-1]);
- counts.sort((a,b)=>b[1]-a[1]);return counts[0][1]?counts[0][0]:';';
+ // Detect separators only outside CSV quotes. A quoted activity may contain
+ // more semicolons or commas than the actual header delimiter.
+ const chars=['\t',';',','],counts=new Map(chars.map(c=>[c,0]));
+ const source=String(text??'').replace(/^\uFEFF/,'');
+ let quoted=false;
+ for(let i=0;i<source.length;i++){
+  const c=source[i];
+  if(c==='"'){
+   if(quoted&&source[i+1]==='"'){i++;continue}
+   quoted=!quoted;continue;
+  }
+  if(!quoted){
+   if(c==='\r'||c==='\n')break;
+   if(counts.has(c))counts.set(c,counts.get(c)+1);
+  }
+ }
+ const ranked=chars.map(c=>[c,counts.get(c)]).sort((a,b)=>b[1]-a[1]);
+ return ranked[0][1]?ranked[0][0]:';';
 }
 function parseDelimited(text,delimiter=delim(text)){
  if(text.length>MAX_BYTES)throw Error('Dane są zbyt duże (maksymalnie 8 MB).');
