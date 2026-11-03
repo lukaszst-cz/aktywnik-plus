@@ -19,11 +19,11 @@ async function run(){
   const response=await fetch('../school-cloud.html');
   if(!response.ok)throw Error('School HTML inaccessible');
   const html=await response.text();
+  const tag=name=>'<script src="'+name+'"><'+'/script>';
   const fixture=html.replace('<head>','<head><base href="../">')
-    .replace('<script src="auth-config.js"></script>','')
-    .replace('<script src="auth.js"></script>','')
-    .replace('<script src="school-cloud.js"></script>',
-      '<script src="tests/school-cloud-fixture.js"></script><script src="school-cloud.js"></script>');
+    .replace(tag('auth-config.js'),'')
+    .replace(tag('auth.js'),'')
+    .replace(tag('school-cloud.js'),tag('tests/school-cloud-fixture.js')+tag('school-cloud.js'));
   if(!fixture.includes('tests/school-cloud-fixture.js'))throw Error('Unable to attach test fixture');
   const iframe=$('#schoolFixture');
   iframe.srcdoc=fixture;
