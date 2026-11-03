@@ -1,4 +1,4 @@
-const CACHE='aktywnik-plus-v65';
+const CACHE='aktywnik-plus-v66';
 const ASSETS=[
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS=[
   './konto.html',
   './school-cloud.html',
   './school-cloud.js',
+  './school-cloud.css',
   './paper.html',
   './paper-uniwersalny.html',
   './paper.js',
