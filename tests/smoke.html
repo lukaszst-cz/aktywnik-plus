@@ -159,7 +159,7 @@ async function run(){
     await sleep(15);
     if(typeof releaseImport!=='function')throw new Error('delayed import did not begin');
     d.getElementById('structuredImportClear').click();
-    releaseImport('Data;Aktywność;Minuty\\n2026-10-27;Spacer;23');
+    releaseImport('Data;Aktywność;Minuty\n2026-10-27;Spacer;23');
     await delayedTask;
     if(!d.getElementById('structuredImportConfirm').disabled||!d.getElementById('structuredImportPreview').hidden)
       throw new Error('cleared asynchronous import resurrected stale preview');
