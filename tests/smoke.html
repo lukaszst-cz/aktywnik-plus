@@ -152,6 +152,27 @@ async function run(){
     w.AktywnikShell.open('data');
     if(d.querySelector('[data-app-view="data"]').hidden)throw new Error('sidebar cannot open data screen');
 
+    // A delayed file must not overwrite a newer import or revive a cleared preview.
+    let releaseImport;
+    const delayedFile={name:'opozniony.csv',size:120,text:()=>new Promise(resolve=>{releaseImport=resolve})};
+    const delayedTask=parser.prepare(delayedFile);
+    await sleep(15);
+    if(typeof releaseImport!=='function')throw new Error('delayed import did not begin');
+    d.getElementById('structuredImportClear').click();
+    releaseImport('Data;Aktywność;Minuty\n2026-10-27;Spacer;23');
+    await delayedTask;
+    if(!d.getElementById('structuredImportConfirm').disabled||!d.getElementById('structuredImportPreview').hidden)
+      throw new Error('cleared asynchronous import resurrected stale preview');
+    let releaseOlder;
+    const olderFile={name:'starszy.csv',size:120,text:()=>new Promise(resolve=>{releaseOlder=resolve})};
+    const olderTask=parser.prepare(olderFile);
+    await sleep(15);
+    await parser.prepare(null,'Data;Aktywność;Minuty\n2026-10-26;Rower;24');
+    if(d.getElementById('structuredImportConfirm').disabled)throw new Error('newer import not ready');
+    releaseOlder('Data;Aktywność;Minuty\n2026-10-25;Spacer;19');
+    await olderTask;
+    if(!d.getElementById('structuredImportPreview').textContent.includes('Rower'))
+      throw new Error('older asynchronous import replaced newer preview');
     await parser.prepare(null,'Data\tAktywność\tMinuty\n2026-10-28\tRower\t30');
     if(!d.getElementById('structuredImportConfirm').disabled)throw new Error('duplicate CSV record not blocked');
     if(d.getElementById('profileAvatarCardSelf').hidden)throw new Error('personal avatar setup hidden');

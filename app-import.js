@@ -3,6 +3,7 @@
 'use strict';
 const LIMIT=2000,MAX_BYTES=8*1024*1024;
 let pending=null;
+let prepareSequence=0;
 const root=()=>document.getElementById('structuredImportCard');
 const aliases={
  date:['data','date','dzien','dzienaktywnosci','dataaktywnosci','datawpisu','activitydate'],
@@ -208,6 +209,7 @@ function renderPreview(){
  box.replaceChildren(title,summary,sample,errors);
 }
 async function prepare(file,text=null){
+ const sequence=++prepareSequence;
  pending=null;renderPreview();
  const target=getTarget();
  if(!target){message('Import wymaga utworzonego profilu i, w trybie rodzinnym, odblokowanej strefy rodzica.',true);return}
@@ -216,6 +218,7 @@ async function prepare(file,text=null){
   if(isJson){
    if(file.size>MAX_BYTES)throw Error('Plik przekracza limit 8 MB.');
    const payload=JSON.parse(await file.text());
+   if(sequence!==prepareSequence||getTarget()?.id!==target.id)return;
    if(payload?.format==='aktywnik-plus-backup'||(payload?.data?.children&&payload?.data?.entries)){
     const candidate=backupStateFromPayload(payload);
     if(candidate.profileMode!==state.profileMode)throw Error('Kopia należy do innego trybu. Aby zmienić tryb, skorzystaj z „Przywróć kopię” po zapisaniu obecnych danych.');
@@ -231,13 +234,14 @@ async function prepare(file,text=null){
    pending={kind:'table',target,review,preparedAt:Date.now()};
   }else{
    const rows=text!==null?matrixRows(parseDelimited(text)):await fileRows(file);
+   if(sequence!==prepareSequence||getTarget()?.id!==target.id)return;
    const review=previewRows(rows,target,state.entries);
    pending={kind:'table',target,review,preparedAt:Date.now()};
   }
   renderPreview();
   const review=pending.review;
   message(review.entries.length?'Rozpoznano '+review.scanned+' wierszy. Sprawdź podgląd i potwierdź.':'Nie znaleziono nowych poprawnych wpisów. '+review.errors.slice(0,2).join(' '),!review.entries.length);
- }catch(error){message('Import nieudany: '+(error.message||String(error)),true)}
+ }catch(error){if(sequence===prepareSequence)message('Import nieudany: '+(error.message||String(error)),true)}
 }
 function showImportedEntries(target,amount){
  const notice=document.getElementById('importSuccessBanner');
@@ -279,6 +283,9 @@ function commit(){
  const target=getTarget();
  if(!target||target.id!==pending.target.id){message('Profil zmienił się. Wybierz plik ponownie.',true);pending=null;renderPreview();return}
  if(pending.kind==='backup'){
+  if(pending.candidate.profileMode!==state.profileMode||pending.candidate.children.some(c=>!state.children.some(current=>current.id===c.id&&(current.cloudChildId||null)===(c.cloudChildId||null)))){
+   pending=null;renderPreview();message('Profile lub powiązania chmurowe zmieniły się. Wczytaj kopię ponownie.',true);return;
+  }
   if(!confirm('Dodać brakujące wpisy, decyzje i nagrody z kopii? Dane już zapisane zostaną zachowane.'))return;
   try{
    const result=mergeBackupCandidate(pending.candidate);
@@ -344,7 +351,7 @@ function refreshVisibility(){
    ||(!isSelfMode()&&currentMode==='parent'&&parentUnlocked())
  );
  card.hidden=!show;
- if(!show){pending=null;renderPreview()}
+ if(!show){prepareSequence++;pending=null;renderPreview()}
 }
 function init(){
  const form=root();if(!form)return;
@@ -368,6 +375,7 @@ function init(){
  const text=document.getElementById('structuredImportPaste');
  const sheet=document.getElementById('structuredImportSheet');
  file?.addEventListener('change',async()=>{
+  prepareSequence++;
   pending=null;
   if(sheet?.parentElement)sheet.parentElement.hidden=true;
   await prepare(file.files?.[0]);
@@ -378,7 +386,7 @@ function init(){
  document.getElementById('structuredExportXlsx')?.addEventListener('click',()=>exportSpreadsheet('xlsx'));
  document.getElementById('structuredExportXls')?.addEventListener('click',()=>exportSpreadsheet('biff8'));
  document.getElementById('structuredImportClear')?.addEventListener('click',()=>{
-  pending=null;file.value='';text.value='';renderPreview();message('Wyczyszczono podgląd importu.');
+  prepareSequence++;pending=null;file.value='';text.value='';renderPreview();message('Wyczyszczono podgląd importu.');
  });
  refreshVisibility();
 }
