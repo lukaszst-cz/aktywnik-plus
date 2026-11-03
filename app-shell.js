@@ -39,7 +39,18 @@ function open(action){
  closeMenu();
  if(!appReady()){$('#pilotSetupCard')?.scrollIntoView({behavior:'smooth'});return}
  selected=action;
- if(['home','add','diary','stats','data'].includes(action)){
+ if(pendingSecure&&pendingSecure!==action)pendingSecure=null;
+ if(action==='data'&&!isSelfMode()){
+  // Data import is a parent-only operation in family mode.
+  if(!parentUnlocked()){
+   pendingSecure='data';
+   $('#parentAccessBtn')?.click();
+   return;
+  }
+  switchMode('parent');
+  window.AktywnikTableImport?.refreshVisibility?.();
+  setTimeout(()=>$('#structuredImportCard')?.scrollIntoView({behavior:'smooth',block:'start'}),20);
+ }else if(['home','add','diary','stats','data'].includes(action)){
   inChild(action==='home'||action==='add'?'add':action);
   if(action==='add')setTimeout(()=>$('#playfulActivities')?.scrollIntoView({behavior:'smooth',block:'center'}),20);
   if(action==='data')setTimeout(()=>$('#structuredImportCard')?.scrollIntoView({behavior:'smooth',block:'start'}),20);
@@ -78,6 +89,9 @@ function init(){
   toggle.setAttribute('aria-expanded',String(isOpen));
  });
  $('#sidebarShade')?.addEventListener('click',closeMenu);
+ $('#parentUnlockDialog')?.addEventListener('close',()=>{
+  if(typeof parentUnlocked==='function'&&!parentUnlocked())pendingSecure=null;
+ });
  $$('#sidebarNav [data-nav-action]').forEach(btn=>btn.addEventListener('click',()=>open(btn.dataset.navAction)));
  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
  const existing=window.AktywnikExperience;
