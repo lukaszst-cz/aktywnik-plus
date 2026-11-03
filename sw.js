@@ -1,4 +1,4 @@
-const CACHE='aktywnik-plus-v64';
+const CACHE='aktywnik-plus-v65';
 const ASSETS=[
   './',
   './index.html',
@@ -24,6 +24,8 @@ const ASSETS=[
   './app-visuals.css',
   './app-shell.css',
   './app-shell.js',
+  './app-profile.js',
+  './app-profile.css',
   './app-playful.js',
   './app-import.js',
   './vendor/xlsx.full.min.js',
@@ -36,6 +38,8 @@ const ASSETS=[
   './share.js',
   './manifest.webmanifest',
   './icons/aktywnik-logo.svg',
+  './icons/avatar-boy.svg',
+  './icons/avatar-girl.svg',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
