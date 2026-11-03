@@ -167,9 +167,9 @@ async function run(){
     const olderFile={name:'starszy.csv',size:120,text:()=>new Promise(resolve=>{releaseOlder=resolve})};
     const olderTask=parser.prepare(olderFile);
     await sleep(15);
-    await parser.prepare(null,'Data;Aktywność;Minuty\\n2026-10-26;Rower;24');
+    await parser.prepare(null,'Data;Aktywność;Minuty\n2026-10-26;Rower;24');
     if(d.getElementById('structuredImportConfirm').disabled)throw new Error('newer import not ready');
-    releaseOlder('Data;Aktywność;Minuty\\n2026-10-25;Spacer;19');
+    releaseOlder('Data;Aktywność;Minuty\n2026-10-25;Spacer;19');
     await olderTask;
     if(!d.getElementById('structuredImportPreview').textContent.includes('Rower'))
       throw new Error('older asynchronous import replaced newer preview');
