@@ -45,6 +45,10 @@ jobs:
           node --check sync-client.js
           node --check family-sync-client.js
           node --check school-cloud.js
+          test -f school-cloud.css
+          grep -q 'school-cloud.css' school-cloud.html
+          node --check tests/school-cloud-fixture.js
+          test -f tests/school-cloud-ui-smoke.html
           grep -q "AbortController" school-cloud.js
           grep -q "request_timeout" school-cloud.js
           node --check install.js
@@ -209,6 +213,24 @@ jobs:
           sleep 2
           node tests/run-smoke.mjs 9222 'http://127.0.0.1:8765/tests/smoke.html'
           echo "Aktywnik+ browser smoke PASS"
+
+      - name: School Cloud switch and class dashboard browser smoke
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --no-first-run \
+            --remote-debugging-port=9225 \
+            --user-data-dir=/tmp/aktywnik-chrome-school \
+            'http://127.0.0.1:8765/tests/school-cloud-ui-smoke.html' \
+            >/tmp/aktywnik-chrome-school.log 2>&1 &
+          echo $! > /tmp/aktywnik-chrome-school.pid
+          sleep 2
+          node tests/run-smoke.mjs 9225 'http://127.0.0.1:8765/tests/school-cloud-ui-smoke.html'
+          echo "Aktywnik+ School Cloud class switch smoke PASS"
 
       - name: I18n browser smoke test
         run: |
