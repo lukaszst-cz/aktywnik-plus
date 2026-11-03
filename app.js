@@ -825,7 +825,7 @@ function renderParentChildren(){
 }
 function addChild(){
   if(!guardParent())return;const name=cleanText($('#newChildName').value,60);if(!name)return;
-  const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:true,cloudChildId:null,createdAt:nowIso()};state.children.push(child);parentSelectedChildId=child.id;$('#newChildName').value='';persist();
+  const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:true,avatarStyle:'star',cloudChildId:null,createdAt:nowIso()};state.children.push(child);parentSelectedChildId=child.id;$('#newChildName').value='';persist();
 }
 function renameChild(){
   if(!guardParent())return;const child=parentChild();if(!child)return;const name=cleanText(prompt('Nowa nazwa profilu dziecka:',child.displayName),60);if(!name)return;child.displayName=name;persist();
@@ -846,9 +846,10 @@ function purgeChildLocalData(childId,target=state){
   });
   if(target.activeTimer?.childId===childId)target.activeTimer=null;
 }
-function removeChild(){
+async function removeChild(){
   if(!guardParent())return;const child=parentChild();if(!child)return;if(state.children.length<=1){alert('Musi pozostać co najmniej jeden profil dziecka.');return}
   if(!confirm('Usunąć profil '+child.displayName+' oraz wszystkie jego lokalne powiązania?'))return;
+  try{await window.AktywnikProfiles?.eraseForChild?.(child.id)}catch(error){alert('Nie udało się usunąć prywatnego zdjęcia: '+String(error.message||error));return}
   purgeChildLocalData(child.id);clearEntryDraft(child.id);
   state.children=state.children.filter(c=>c.id!==child.id);
   if(state.activeChildId===child.id)state.activeChildId=state.children[0].id;
@@ -1150,7 +1151,7 @@ async function startPilot(){
   if(mode==='family'&&pin!==confirmPin){alert('PIN-y nie są takie same.');return}
   state.profileMode=mode;
   if(!state.children.length){
-    const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:mode==='family',cloudChildId:null,createdAt:nowIso()};
+    const child={id:uuid(),displayName:name,favorites:[...DEFAULT_FAVORITES],requireParentApproval:mode==='family',avatarStyle:'star',cloudChildId:null,createdAt:nowIso()};
     state.children=[child];state.activeChildId=child.id;parentSelectedChildId=child.id;state.pilot={started:true};
   }else{
     state.children[0].displayName=name;state.children[0].requireParentApproval=mode==='family';state.activeChildId=state.activeChildId||state.children[0].id;parentSelectedChildId=state.activeChildId;
@@ -1232,10 +1233,10 @@ function safeBackupState(raw){
     const displayName=cleanText(c.displayName||c.name,60);if(!displayName)return null;
     const favorites=(Array.isArray(c.favorites)?c.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20);
     const cloudChildId=validUuid(c.cloudChildId)?String(c.cloudChildId).toLowerCase():null;
-    return {id:cleanText(c.id,80)||uuid(),displayName,favorites:favorites.length?favorites:[...DEFAULT_FAVORITES],requireParentApproval:c.requireParentApproval!==false,cloudChildId,createdAt:c.createdAt||nowIso()};
+    return {id:cleanText(c.id,80)||uuid(),displayName,favorites:favorites.length?favorites:[...DEFAULT_FAVORITES],requireParentApproval:c.requireParentApproval!==false,avatarStyle:['boy','girl','star'].includes(c.avatarStyle)?c.avatarStyle:'star',cloudChildId,createdAt:c.createdAt||nowIso()};
   }).filter(Boolean).slice(0,50);
   if(!children.length&&(d.pilot?.started||cleanText(d.pilot?.childDisplayName,60)||(Array.isArray(d.entries)&&d.entries.length))){
-    children=[{id:uuid(),displayName:cleanText(d.pilot?.childDisplayName,60)||'Profil dziecka',favorites:(Array.isArray(d.favorites)?d.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20),requireParentApproval:true,cloudChildId:null,createdAt:nowIso()}];
+    children=[{id:uuid(),displayName:cleanText(d.pilot?.childDisplayName,60)||'Profil dziecka',favorites:(Array.isArray(d.favorites)?d.favorites:DEFAULT_FAVORITES).map(x=>cleanText(x,80)).filter(x=>allowed.has(x)).slice(0,20),requireParentApproval:true,avatarStyle:'star',cloudChildId:null,createdAt:nowIso()}];
   }
   const ids=new Set(children.map(c=>c.id)),fallback=children[0]?.id||null,activeChildId=ids.has(d.activeChildId)?d.activeChildId:fallback;
   const entries=(Array.isArray(d.entries)?d.entries:[]).slice(0,MAX_ENTRIES).map(e=>{
@@ -1528,7 +1529,12 @@ async function syncLocalDataNow(){
 }
 async function requestPersistentStorage(){if(!canManageLocalData())return;try{const ok=await navigator.storage?.persist?.();setStorageMessage(ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.')}catch{setStorageMessage('Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.')}}
 async function renderStorageStatus(){if(!isSelfMode()&&!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();setStorageMessage(persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.')}catch{setStorageMessage('Dane są zapisane lokalnie w tej przeglądarce.')}}
-function deleteLocalData(){if(!canManageLocalData())return;if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;clearAllLocalUserData();location.reload()}
+async function deleteLocalData(){
+  if(!canManageLocalData())return;
+  if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;
+  try{await window.AktywnikProfiles?.clearAll?.()}catch(error){alert('Nie można usunąć zdjęć profili: '+String(error.message||error)+'. Dane nie zostały usunięte.');return}
+  clearAllLocalUserData();location.reload();
+}
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
 function renderAll(){
@@ -1547,6 +1553,7 @@ function renderAll(){
   window.AktywnikExperience?.refresh?.();
   window.AktywnikTableImport?.refreshVisibility?.();
   window.AktywnikShell?.refresh?.();
+  window.AktywnikProfiles?.refresh?.();
 }
 $('#activitySearch').oninput=renderActivities;
 ['activityDate','activityDuration','activityEffort','customActivityName','activityNote'].forEach(id=>{const el=$('#'+id);if(!el)return;const onEdit=()=>{if(id==='activityEffort')renderFatigueValue();saveEntryDraft()};el.addEventListener('input',onEdit);el.addEventListener('change',onEdit)});

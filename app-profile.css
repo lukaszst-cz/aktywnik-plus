@@ -1,0 +1,16 @@
+.avatar-card{background:linear-gradient(145deg,#fff 60%,#f2fbe8);border:1px solid #d9eacb}
+.avatar-layout{display:flex;align-items:center;gap:18px}
+.avatar-preview{width:112px;height:112px;object-fit:cover;border-radius:28px;border:5px solid #fff;box-shadow:0 6px 22px #153e2524;background:#e7f9e0;flex:none}
+.avatar-text{min-width:0;flex:1}
+.avatar-text>strong{font-size:1.22rem;color:#15432d}
+.avatar-text p{font-size:.9rem;margin:4px 0 12px;color:#4d6956}
+.avatar-choices{display:flex;flex-wrap:wrap;gap:8px}
+.avatar-choices button{border:2px solid #d4e7ce;border-radius:16px;padding:7px 10px;background:#fff;display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:750;color:#183f2a;line-height:1.3}
+.avatar-choices button img{border-radius:11px;flex:none}
+.avatar-choices button.selected{border-color:#2e884d;background:#e2f6cd;box-shadow:0 0 0 2px #a7da8b}
+.avatar-choices button:focus-visible{outline:3px solid #155ed3;outline-offset:3px}
+.avatar-actions{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0}
+.avatar-status[data-error="true"]{color:#a43f1b}
+.nav-profile.profile-picture-shown{background-size:cover;background-position:center;background-repeat:no-repeat;color:transparent;min-width:39px;height:39px}
+@media(max-width:650px){.avatar-layout{flex-direction:column;align-items:flex-start}.avatar-choices button{font-size:.8rem;padding:6px}.avatar-choices img{height:35px;width:35px}.avatar-preview{width:104px;height:104px}}
+@media print{.avatar-card{display:none!important}}
