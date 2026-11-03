@@ -6,10 +6,26 @@
   <meta name="theme-color" content="#0f172a">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="landing.css">
+  <link rel="stylesheet" href="school-cloud.css">
   <title>Aktywnik+ School — klasy i zaproszenia</title>
 </head>
 <body>
-<header class="nav">
+<aside class="school-sidebar" aria-label="Nawigacja Aktywnik+ School">
+  <a href="app.html" class="school-side-brand">
+    <img src="icons/aktywnik-logo.svg" width="62" height="62" alt="">
+    <span><strong>Aktywnik+</strong><small>SCHOOL · KLASA · RUCH</small></span>
+  </a>
+  <nav class="school-side-links" aria-label="Menu szkolne">
+    <a href="#schoolCloudOverview">🏡 Pulpit School</a>
+    <a href="#schoolStaffPanel">🏫 Moje klasy</a>
+    <a href="#schoolJoinRequestsPanel">📬 Zgłoszenia</a>
+    <a href="#schoolGuardianPanel">👨‍👩‍👧 Rodzina</a>
+    <a href="app.html">📷 Karty OCR i dziennik</a>
+    <a href="konto.html">⚙️ Konto i logowanie</a>
+  </nav>
+  <p class="school-side-note">Każda klasa ma taki sam pulpit. Dostęp do danych zależy od roli i uprawnień.</p>
+</aside>
+<header class="nav school-topbar">
   <a class="logo" href="./">Aktywnik+</a>
   <nav>
     <a href="app.html">Aplikacja</a>
@@ -18,10 +34,15 @@
   </nav>
 </header>
 
-<main class="section">
-  <span class="pill">School Cloud • beta</span>
-  <h1>Klasy i dołączanie</h1>
-  <p>Panel korzysta z konta Aktywnik+ i uprawnień zapisanych w bazie. Widoczność danych ogranicza RLS.</p>
+<main class="section school-cloud-workspace" id="schoolCloudOverview">
+  <div class="school-welcome">
+    <div>
+      <span class="pill">Aktywnik+ School · beta</span>
+      <h1>Klasa w centrum ruchu</h1>
+      <p>Jeden czytelny pulpit dla każdej klasy. Zaproszenia, zgłoszenia rodziców i praca nauczyciela w jednym miejscu.</p>
+    </div>
+    <div class="school-welcome-mascot" aria-hidden="true"><img src="icons/aktywnik-logo.svg" width="120" height="120" alt=""></div>
+  </div>
 
   <section id="schoolCloudLoginRequired" class="section action hidden">
     <h2>Zaloguj się</h2>
@@ -30,6 +51,11 @@
   </section>
 
   <section id="schoolCloudMain" class="hidden">
+    <section id="schoolDashboard" class="school-dashboard-summary hidden" aria-label="Szybki podgląd klas">
+      <div><span aria-hidden="true">🏫</span><strong id="schoolClassCount">0</strong><small>Moje klasy</small></div>
+      <div><span aria-hidden="true">📌</span><strong id="schoolCurrentClassLabel">Wybierz klasę</strong><small>Aktywna klasa</small></div>
+      <div><span aria-hidden="true">🔐</span><strong id="schoolRoleLabel">Nauczyciel</strong><small>Rola konta</small></div>
+    </section>
     <section class="section action">
       <div class="section-head">
         <div>
@@ -45,7 +71,7 @@
     </section>
 
     <section id="schoolStaffPanel" class="section action hidden">
-      <h2>Moje klasy</h2>
+      <div class="school-section-title"><span class="school-section-emoji" aria-hidden="true">🏫</span><div><h2>Moje klasy</h2><p>Wybieraj klasę bez zmiany wyglądu i bez mieszania danych.</p></div></div>
       <div id="schoolAdminCreateBox" class="hidden">
         <p>Nauczyciel może utworzyć klasę w szkole, do której ma aktywne przypisanie. Klasa zostanie automatycznie przypisana do niego.</p>
         <div class="cards">
@@ -60,11 +86,28 @@
           <button id="schoolCloudCreateClassBtn" class="primary" type="button">Utwórz klasę</button>
         </div>
       </div>
-      <div id="schoolCloudClasses" class="cards"></div>
+      <label class="school-class-picker" for="schoolActiveClassSelect">Przełącz klasę
+        <select id="schoolActiveClassSelect" aria-label="Wybierz aktywną klasę"></select>
+      </label>
+      <section id="schoolActiveClassCard" class="school-active-class hidden" aria-labelledby="schoolActiveClassName">
+        <div class="school-active-class-details">
+          <span class="school-eyebrow">AKTYWNA KLASA</span>
+          <h3 id="schoolActiveClassName">Klasa</h3>
+          <p id="schoolActiveClassYear">Rok szkolny</p>
+          <small>Ten pulpit ma ten sam układ dla każdej klasy.</small>
+        </div>
+        <div class="school-active-class-actions">
+          <button id="schoolActiveCreateInviteBtn" class="primary" type="button">🔗 Zaproś rodzinę</button>
+          <button id="schoolActiveViewRequestsBtn" class="secondary" type="button">📬 Sprawdź zgłoszenia</button>
+          <a href="app.html" class="secondary">📷 Skanuj kartę w aplikacji</a>
+        </div>
+        <p id="schoolActiveInviteResult" class="school-invite-result" role="status" aria-live="polite"></p>
+      </section>
+      <div id="schoolCloudClasses" class="cards school-class-grid"></div>
     </section>
 
     <section id="schoolJoinRequestsPanel" class="section action hidden">
-      <h2>Zgłoszenia do klasy</h2>
+      <div class="school-section-title"><span class="school-section-emoji" aria-hidden="true">📨</span><div><h2>Zgłoszenia do klasy</h2><p>Weryfikuj zgłoszenia rodziców przed przyjęciem dziecka.</p></div></div>
       <label>Klasa
         <select id="schoolRequestClassSelect"></select>
       </label>
@@ -75,7 +118,7 @@
     </section>
 
     <section id="schoolGuardianPanel" class="section action hidden">
-      <h2>Rodzina w School Cloud</h2>
+      <div class="school-section-title"><span class="school-section-emoji" aria-hidden="true">👨‍👩‍👧</span><div><h2>Rodzina w School Cloud</h2><p>Jeden dorosły zarządza profilami dzieci, bez dodatkowych kont uczniów.</p></div></div>
       <p>Najpierw utwórz profil dziecka w chmurze, jeśli jeszcze go tu nie ma. Profil nie wymaga własnego e-maila ani hasła dziecka.</p>
       <div class="cards">
         <label>Imię / nazwa profilu dziecka
