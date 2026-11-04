@@ -24,7 +24,7 @@ function element(tag,cls,text){
 }
 function availableEntries(){
  const child=activeChild();if(!child)return [];
- return state.entries.filter(e=>e.childId===child.id&&e.status!=='rejected'&&allowedActivityDate(e.date));
+ return state.entries.filter(e=>e.childId===child.id&&e.status==='approved'&&allowedActivityDate(e.date));
 }
 function stats(){
  const entries=availableEntries(),days=new Set(entries.map(e=>e.date)),types=new Set(entries.map(e=>e.activity));
@@ -135,7 +135,17 @@ function refresh(){
  const child=activeChild(),greeting=$('#playfulGreeting');
  if(child&&greeting)greeting.textContent='Cześć, '+child.displayName+'! 👋';
  const todayCount=availableEntries().filter(e=>e.date===today()).length;
- const active=$('#playfulTodayHint');if(active)active.textContent=todayCount?'Dzisiaj zapisano '+todayCount+' aktywności.':'Na jaki ruch masz dziś ochotę?';
+ const waitingCount=child?state.entries.filter(e=>e.childId===child.id&&e.status==='pending'&&e.date===today()).length:0;
+ const active=$('#playfulTodayHint');
+ if(active){
+  const approvedText=todayCount?'Dzisiaj zatwierdzono '+todayCount+' aktywności.':'';
+  const waitingText=waitingCount?' '+waitingCount+' aktywności czeka na zatwierdzenie przez rodzica.':'';
+  active.textContent=approvedText+waitingText||'Na jaki ruch masz dziś ochotę?';
+ }
+ const approvalNote=$('#adventureApprovalNote');
+ if(approvalNote)approvalNote.textContent=typeof isSelfMode==='function'&&!isSelfMode()?
+  'Odznaki i wyzwania są przyznawane po zatwierdzeniu aktywności przez rodzica. Bez porównywania dzieci.':
+  'To tylko Twoje postępy. Bez porównywania z innymi.';
 }
 function init(){
  renderActivities();renderModuleLinks();
