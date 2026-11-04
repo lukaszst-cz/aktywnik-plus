@@ -5,6 +5,7 @@ const $=s=>document.querySelector(s);
 const $$=s=>Array.from(document.querySelectorAll(s));
 let pendingSecure=null;
 let selected='home';
+let selectionBeforeGate='home';
 function closeMenu(){document.body.classList.remove('shell-nav-open');$('#sidebarToggleBtn')?.setAttribute('aria-expanded','false')}
 function render(){
  const ready=typeof appReady==='function'&&appReady();
@@ -38,11 +39,13 @@ function open(action){
  if(!action)return;
  closeMenu();
  if(!appReady()){$('#pilotSetupCard')?.scrollIntoView({behavior:'smooth'});return}
+ const oldSelection=selected;
  selected=action;
  if(pendingSecure&&pendingSecure!==action)pendingSecure=null;
  if(action==='data'&&!isSelfMode()){
   // Data import is a parent-only operation in family mode.
   if(!parentUnlocked()){
+   selectionBeforeGate=oldSelection;
    pendingSecure='data';
    $('#parentAccessBtn')?.click();
    return;
@@ -61,6 +64,7 @@ function open(action){
  }else if(action==='parent'||action==='ocr'||action==='reports'){
   if(isSelfMode()){inChild('data');return}
   if(!parentUnlocked()){
+   selectionBeforeGate=oldSelection;
    pendingSecure=action;
    document.querySelector('#parentAccessBtn')?.click();
    return;
@@ -90,7 +94,11 @@ function init(){
  });
  $('#sidebarShade')?.addEventListener('click',closeMenu);
  $('#parentUnlockDialog')?.addEventListener('close',()=>{
-  if(typeof parentUnlocked==='function'&&!parentUnlocked())pendingSecure=null;
+  if(typeof parentUnlocked==='function'&&!parentUnlocked()&&pendingSecure){
+   pendingSecure=null;
+   selected=selectionBeforeGate;
+   render();
+  }
  });
  $$('#sidebarNav [data-nav-action]').forEach(btn=>btn.addEventListener('click',()=>open(btn.dataset.navAction)));
  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
