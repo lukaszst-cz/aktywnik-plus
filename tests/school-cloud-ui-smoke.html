@@ -46,12 +46,26 @@ async function run(){
     throw Error('School visual layout is incomplete');
   if(by('schoolClassCount').textContent!=='2')throw Error('School class count incorrect');
   if(by('schoolActiveClassSelect').value!==B1)throw Error('Default active class incorrect');
+  await until(()=>by('schoolClassPendingCount').textContent==='2');
+  if(by('schoolCloudRequests').querySelectorAll('article').length!==2)throw Error('Pending requests count leaked wrong class');
+
   if(!by('schoolActiveClassCard').classList.contains('hidden')&&by('schoolActiveClassName').textContent!=='5A')
     throw Error('Active class panel inconsistent');
   by('schoolActiveClassSelect').value=B2;
   by('schoolActiveClassSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
   if(by('schoolActiveClassName').textContent!=='6B'||by('schoolCurrentClassLabel').textContent!=='6B')
     throw Error('Same dashboard did not switch class data');
+  await until(()=>by('schoolClassPendingCount').textContent==='1');
+  if(by('schoolCloudRequests').querySelectorAll('article').length!==1)throw Error('Class 6B did not isolate pending requests');
+  // Switch twice before the slow 5A response can finish.
+  by('schoolActiveClassSelect').value=B1;
+  by('schoolActiveClassSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+  by('schoolActiveClassSelect').value=B2;
+  by('schoolActiveClassSelect').dispatchEvent(new w.Event('change',{bubbles:true}));
+  await sleep(240);
+  if(by('schoolClassPendingCount').textContent!=='1'||by('schoolCloudRequests').querySelectorAll('article').length!==1)
+    throw Error('Stale 5A requests overwrote the active 6B dashboard');
+
   by('schoolCloudRefreshBtn').click();
   await until(()=>w.__schoolFixture.meLoads>=2);
   await until(()=>by('schoolActiveClassSelect').options.length===2);
@@ -76,6 +90,11 @@ async function run(){
   await until(()=>by('schoolCloudRequests').textContent.includes('Zgłoszenie'));
   const requestPath=w.__schoolFixture.requests.filter(x=>x.path.includes('/api/v1/class-join?')).pop()?.path||'';
   if(!requestPath.includes(B2))throw Error('Join requests came from wrong class');
+  if(by('schoolClassPendingCount').textContent!=='1')throw Error('Wrong class pending request count');
+  by('schoolCloudRequests').querySelector('[data-decision="accepted"]').click();
+  await until(()=>by('schoolClassPendingCount').textContent==='0');
+  if(by('schoolCloudRequests').querySelectorAll('article').length!==0)throw Error('Accepted request was not removed');
+
   if(by('schoolCloudMain').classList.contains('hidden'))throw Error('Signed-in School Cloud is hidden');
   pass();
  }catch(e){fail(e)}
