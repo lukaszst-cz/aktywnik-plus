@@ -360,6 +360,11 @@ async function run(){
     familyImportNav.click();
     if(!d.getElementById('parentUnlockDialog').open)throw new Error('family import did not request parent PIN');
     if(!d.getElementById('structuredImportCard').hidden)throw new Error('family import exposed while locked');
+    d.getElementById('parentUnlockDialog').close();
+    await sleep(20);
+    if(familyImportNav.classList.contains('selected'))throw new Error('canceled PIN gate incorrectly left import selected');
+    familyImportNav.click();
+    if(!d.getElementById('parentUnlockDialog').open)throw new Error('PIN did not reopen after cancellation');
     d.getElementById('parentPinInput').value='1111';
     await w.unlockParent();
     await sleep(50);
