@@ -5,7 +5,7 @@
   const OP_STORAGE_KEY='aktywnik-school-operation-ids-v1';
   const memoryOperations=new Map();
   let context=null,classes=[],years=[];
-  let selectedClassId='',tenantLoadEpoch=0,lastLoadedTenant='';
+  let selectedClassId='',tenantLoadEpoch=0,lastLoadedTenant='',requestLoadGeneration=0;
   const invitationResults=new Map();
   const invitationTokens=new Map();
 
@@ -194,6 +194,17 @@
     selectedClassId=classId;
     renderActiveClass();
     $('#schoolCloudRequests').replaceChildren();
+    refreshRequestsForClass();
+  }
+  function refreshRequestsForClass(){
+    const classId=selectedClassId;
+    if(!classId||!canStaff())return;
+    loadRequests().catch(err=>{
+      if(selectedClassId!==classId)return;
+      $('#schoolClassPendingCount').textContent='Błąd odczytu';
+      $('#schoolCloudRequests').textContent='Nie udało się pobrać zgłoszeń. Spróbuj odświeżyć.';
+      status('Nie udało się wczytać zgłoszeń do klasy: '+err.message,'error');
+    });
   }
   function renderClasses(){
     const box=$('#schoolCloudClasses'),requestSelect=$('#schoolRequestClassSelect'),activeSelect=$('#schoolActiveClassSelect');
@@ -222,10 +233,13 @@
     }
     if(!classes.length){const empty=document.createElement('p');empty.textContent='Nie ma jeszcze klas widocznych dla tego konta. Jeśli masz uprawnienia, utwórz pierwszą klasę.';box.append(empty)}
     renderActiveClass();
+    if(classes.length)refreshRequestsForClass();
   }
   async function loadTenantData(){
     // Increment epoch to prevent an older slow response from overwriting a newly selected school.
     const epoch=++tenantLoadEpoch;
+    requestLoadGeneration++;
+    $('#schoolClassPendingCount').textContent='Wybierz klasę';
     renderContext();
     const tenant=selectedTenant();
     const savedClass=tenant===lastLoadedTenant?selectedClassId:'';
@@ -312,26 +326,40 @@
   }
   async function loadRequests(){
     const classId=$('#schoolRequestClassSelect').value,box=$('#schoolCloudRequests');
-    if(!classId){box.innerHTML='<p>Brak wybranej klasy.</p>';return}
-    const epoch=tenantLoadEpoch;
+    const count=$('#schoolClassPendingCount');
+    const generation=++requestLoadGeneration;
+    if(!classId){
+      box.textContent='Brak wybranej klasy.';
+      if(count)count.textContent='Brak klasy';
+      return;
+    }
+    // Never render data from another school or from a superseded, slower class request.
+    const tenantEpoch=tenantLoadEpoch;
+    if(count&&selectedClassId===classId)count.textContent='Sprawdzam…';
+    box.textContent='Pobieranie zgłoszeń…';
     const data=await api('/api/v1/class-join?classId='+encodeURIComponent(classId));
-    if(epoch!==tenantLoadEpoch||$('#schoolRequestClassSelect').value!==classId)return;
-    const requests=(data.requests||[]).filter(r=>r.status==='pending');
-    box.innerHTML='';
+    if(tenantEpoch!==tenantLoadEpoch||generation!==requestLoadGeneration||
+       selectedClassId!==classId||$('#schoolRequestClassSelect').value!==classId)return;
+    const requests=(Array.isArray(data.requests)?data.requests:[])
+      .filter(r=>r.class_id===classId&&r.status==='pending');
+    if(count)count.textContent=String(requests.length);
+    box.replaceChildren();
     for(const r of requests){
       const article=document.createElement('article');
-      article.innerHTML='<h3>Zgłoszenie '+esc(r.id.slice(0,8))+'…</h3><p>Dziecko: '+esc(r.child_id.slice(0,8))+'…</p><div class="cta"><button class="primary" type="button" data-request-id="'+esc(r.id)+'" data-decision="accepted">Akceptuj</button><button class="secondary" type="button" data-request-id="'+esc(r.id)+'" data-decision="rejected">Odrzuć</button></div>';
-      article.querySelectorAll('[data-decision]').forEach(btn=>btn.addEventListener('click',()=>decide(r.id,btn.dataset.decision)));
+      article.innerHTML='<h3>Zgłoszenie '+esc(String(r.id||'').slice(0,8))+'…</h3><p>Dziecko: '+esc(String(r.child_id||'').slice(0,8))+'…</p><div class="cta"><button class="primary" type="button" data-request-id="'+esc(r.id)+'" data-decision="accepted">Akceptuj</button><button class="secondary" type="button" data-request-id="'+esc(r.id)+'" data-decision="rejected">Odrzuć</button></div>';
+      article.querySelectorAll('[data-decision]').forEach(btn=>btn.addEventListener('click',()=>decide(r.id,btn.dataset.decision).catch(err=>status(err.message,'error'))));
       box.append(article);
     }
-    if(!requests.length)box.innerHTML='<p>Brak oczekujących zgłoszeń.</p>';
+    if(!requests.length)box.textContent='Brak oczekujących zgłoszeń.';
   }
   async function decide(requestId,decision){
+    const classAtDecision=selectedClassId;
     const buttons=[...document.querySelectorAll('[data-request-id="'+CSS.escape(requestId)+'"]')];
     if(buttons.some(button=>button.disabled))return;
     buttons.forEach(button=>button.disabled=true);
     try{
       await api('/api/v1/class-join',{method:'POST',body:JSON.stringify({action:'decide',requestId,decision})});
+      if(selectedClassId!==classAtDecision)return;
       status(decision==='accepted'?'Zgłoszenie zaakceptowane.':'Zgłoszenie odrzucone.','ok');
       await loadRequests();
     }finally{
@@ -362,13 +390,14 @@
       if(!selectedClassId)return;
       $('#schoolRequestClassSelect').value=selectedClassId;
       $('#schoolJoinRequestsPanel').scrollIntoView({behavior:'smooth',block:'start'});
-      loadRequests().catch(err=>status(err.message,'error'));
+      refreshRequestsForClass();
     });
     $('#schoolCloudRefreshBtn')?.addEventListener('click',()=>loadContext().catch(err=>status(err.message,'error')));
     $('#schoolCloudCreateClassBtn')?.addEventListener('click',()=>createClass().catch(err=>status(err.message,'error')));
     $('#schoolCreateChildBtn')?.addEventListener('click',()=>createCloudChild().catch(err=>status(err.message,'error')));
     $('#schoolRequestJoinBtn')?.addEventListener('click',()=>requestJoin().catch(err=>status(err.message,'error')));
-    $('#schoolLoadRequestsBtn')?.addEventListener('click',()=>loadRequests().catch(err=>status(err.message,'error')));
+    $('#schoolLoadRequestsBtn')?.addEventListener('click',refreshRequestsForClass);
+    $('#schoolRequestClassSelect')?.addEventListener('change',e=>selectClass(e.target.value));
     init();
   });
 })();

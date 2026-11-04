@@ -6,7 +6,7 @@ const B='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const A1='11111111-1111-4111-8111-111111111111';
 const B1='22222222-2222-4222-8222-222222222222';
 const B2='33333333-3333-4333-8333-333333333333';
-window.__schoolFixture={A,B,A1,B1,B2,requests:[],aClassDelay:120,meLoads:0};
+window.__schoolFixture={A,B,A1,B1,B2,requests:[],aClassDelay:120,meLoads:0,decisions:new Set()};
 window.AktywnikAuth={validSession:async()=>({access_token:'local-test-token'})};
 const wait=ms=>new Promise(done=>setTimeout(done,ms));
 function respond(body,status=200){
@@ -45,10 +45,21 @@ window.fetch=async(request,init={})=>{
  }
  if(path.startsWith('/api/v1/class-join?')){
   const classId=new URLSearchParams(path.split('?')[1]).get('classId');
-  return respond({ok:true,requests:[{id:'55555555-5555-4555-8555-555555555555',class_id:classId,
-      child_id:'66666666-6666-4666-8666-666666666666',status:'pending'}]});
+  const make=(id,target)=>({id,class_id:target,child_id:'66666666-6666-4666-8666-666666666666',status:'pending'});
+  const records=classId===B1?
+   [make('55555555-5555-4555-8555-555555555555',B1),make('55555555-5555-4555-8555-555555555556',B1)]:
+   classId===B2?[make('55555555-5555-4555-8555-555555555557',B2)]:[];
+  // Deliberately inject an unrelated row to detect accidental cross-class rendering.
+  records.push(make('55555555-5555-4555-8555-555555555558',classId===B1?B2:B1));
+  const filtered=records.filter(r=>!req.decisions.has(r.id));
+  await wait(classId===B1?160:15);
+  return respond({ok:true,requests:filtered});
  }
- if(path.startsWith('/api/v1/class-join')&&init.method==='POST')return respond({ok:true});
+ if(path==='/api/v1/class-join'&&init.method==='POST'){
+  const payload=JSON.parse(init.body||'{}');
+  if(payload.action==='decide')req.decisions.add(payload.requestId);
+  return respond({ok:true});
+ }
  throw Error('Unexpected school fixture URL: '+path);
 };
 })();

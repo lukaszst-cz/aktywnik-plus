@@ -104,3 +104,6 @@ footer{margin-left:245px}
  footer{margin:0}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+.school-pending-summary{display:inline-flex;align-items:center;gap:9px;margin:12px 0 0!important;background:#ffffff22;border:1px solid #ddfac366;border-radius:13px;padding:9px 12px;font-weight:700;color:#e5ffe2!important}
+.school-pending-summary strong{background:#def3a3;border-radius:10px;color:#174229;padding:4px 10px;min-width:38px;text-align:center;overflow-wrap:anywhere}
