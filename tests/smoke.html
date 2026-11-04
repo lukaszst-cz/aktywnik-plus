@@ -100,6 +100,7 @@ async function run(){
     if(localStorage.getItem(selfDraftKey)!==null)throw new Error('entry draft not cleared after save');
     selfSaved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(selfSaved.entries?.[0]?.activity!=='Prace w ogrodzie'||selfSaved.entries?.[0]?.status!=='approved')throw new Error('self custom activity failed');
+    if(w.AktywnikPlayful?.stats()?.entries?.length!==1)throw new Error('approved self activity not counted for badges');
     const localDeleteId=selfSaved.entries[0].id;
     const deleteBtn=d.querySelector('[data-self-delete="'+localDeleteId+'"]');
     if(!deleteBtn)throw new Error('self delete action missing');
@@ -405,6 +406,7 @@ async function run(){
     d.getElementById('activityDuration').value='25';d.getElementById('activityNote').value='pierwszy wpis';d.getElementById('saveEntryBtn').click();await sleep(80);
     let saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     if(saved.entries?.length!==1||saved.entries[0].status!=='pending'||saved.entries[0].childId!=='child-a')throw new Error('pending child entry failed');
+    if(w.AktywnikPlayful?.stats()?.entries?.length!==0)throw new Error('pending family entry prematurely earned a badge');
     spacer=[...d.querySelectorAll('.activity')].find(x=>x.textContent.includes('Spacer'));spacer.click();await sleep(30);
     if(d.getElementById('activityDuration').value!=='25')throw new Error('smart duration did not reuse last matching duration');
     if(!d.getElementById('durationSuggestionHint').textContent.includes('25 min'))throw new Error('smart duration hint missing');
