@@ -355,7 +355,16 @@ async function run(){
     if(!await w.verifyParentPin('2468'))throw new Error('correct PIN verification failed');
     if(await w.verifyParentPin('1111'))throw new Error('wrong PIN verification succeeded');
 
-    d.getElementById('parentAccessBtn').click();
+    const familyImportNav=d.querySelector('#sidebarNav [data-nav-action="data"]');
+    if(!familyImportNav)throw new Error('family import sidebar item missing');
+    familyImportNav.click();
+    if(!d.getElementById('parentUnlockDialog').open)throw new Error('family import did not request parent PIN');
+    if(!d.getElementById('structuredImportCard').hidden)throw new Error('family import exposed while locked');
+    d.getElementById('parentUnlockDialog').close();
+    await sleep(20);
+    if(familyImportNav.classList.contains('selected'))throw new Error('canceled PIN gate incorrectly left import selected');
+    familyImportNav.click();
+    if(!d.getElementById('parentUnlockDialog').open)throw new Error('PIN did not reopen after cancellation');
     d.getElementById('parentPinInput').value='1111';
     await w.unlockParent();
     await sleep(50);
@@ -364,6 +373,11 @@ async function run(){
     await w.unlockParent();
     await sleep(70);
     if(d.getElementById('parentPanel').classList.contains('hidden'))throw new Error('correct PIN did not open parent zone');
+    await sleep(110);
+    if(d.getElementById('structuredImportCard').hidden)throw new Error('family import did not show after parent unlock');
+    if(!d.getElementById('childPanel').classList.contains('hidden'))throw new Error('family import opened child view instead of protected parent view');
+    if(!familyImportNav.classList.contains('selected'))throw new Error('family import sidebar selection lost after unlocking');
+
     if(d.getElementById('profileAvatarCardParent').hidden)throw new Error('parent profile avatar editor hidden after PIN');
     d.querySelector('#profileAvatarCardParent [data-avatar-style="boy"]').click();await sleep(35);
     if(JSON.parse(localStorage.getItem(KEY)).children[0].avatarStyle!=='boy')throw new Error('parent could not select family child avatar');

@@ -5,6 +5,7 @@ const $=s=>document.querySelector(s);
 const $$=s=>Array.from(document.querySelectorAll(s));
 let pendingSecure=null;
 let selected='home';
+let selectionBeforeGate='home';
 function closeMenu(){document.body.classList.remove('shell-nav-open');$('#sidebarToggleBtn')?.setAttribute('aria-expanded','false')}
 function render(){
  const ready=typeof appReady==='function'&&appReady();
@@ -38,8 +39,21 @@ function open(action){
  if(!action)return;
  closeMenu();
  if(!appReady()){$('#pilotSetupCard')?.scrollIntoView({behavior:'smooth'});return}
+ const oldSelection=selected;
  selected=action;
- if(['home','add','diary','stats','data'].includes(action)){
+ if(pendingSecure&&pendingSecure!==action)pendingSecure=null;
+ if(action==='data'&&!isSelfMode()){
+  // Data import is a parent-only operation in family mode.
+  if(!parentUnlocked()){
+   selectionBeforeGate=oldSelection;
+   pendingSecure='data';
+   $('#parentAccessBtn')?.click();
+   return;
+  }
+  switchMode('parent');
+  window.AktywnikTableImport?.refreshVisibility?.();
+  setTimeout(()=>$('#structuredImportCard')?.scrollIntoView({behavior:'smooth',block:'start'}),20);
+ }else if(['home','add','diary','stats','data'].includes(action)){
   inChild(action==='home'||action==='add'?'add':action);
   if(action==='add')setTimeout(()=>$('#playfulActivities')?.scrollIntoView({behavior:'smooth',block:'center'}),20);
   if(action==='data')setTimeout(()=>$('#structuredImportCard')?.scrollIntoView({behavior:'smooth',block:'start'}),20);
@@ -50,6 +64,7 @@ function open(action){
  }else if(action==='parent'||action==='ocr'||action==='reports'){
   if(isSelfMode()){inChild('data');return}
   if(!parentUnlocked()){
+   selectionBeforeGate=oldSelection;
    pendingSecure=action;
    document.querySelector('#parentAccessBtn')?.click();
    return;
@@ -78,6 +93,13 @@ function init(){
   toggle.setAttribute('aria-expanded',String(isOpen));
  });
  $('#sidebarShade')?.addEventListener('click',closeMenu);
+ $('#parentUnlockDialog')?.addEventListener('close',()=>{
+  if(typeof parentUnlocked==='function'&&!parentUnlocked()&&pendingSecure){
+   pendingSecure=null;
+   selected=selectionBeforeGate;
+   render();
+  }
+ });
  $$('#sidebarNav [data-nav-action]').forEach(btn=>btn.addEventListener('click',()=>open(btn.dataset.navAction)));
  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
  const existing=window.AktywnikExperience;
