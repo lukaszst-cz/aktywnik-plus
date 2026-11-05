@@ -1604,7 +1604,7 @@ function emergencyRawForExport(){
   let parsed=null;
   try{parsed=JSON.parse(localDataSafety.raw)}catch{return null}
   const data=parsed?.data&&typeof parsed.data==='object'?parsed.data:parsed;
-  if(data?.profileMode==='self')return localDataSafety.raw;
+  if(data?.profileMode==='self'&&!data?.parentAuth?.pinHash)return localDataSafety.raw;
   try{if(parentUnlocked())return localDataSafety.raw}catch{}
   return null;
 }
