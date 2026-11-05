@@ -27,14 +27,24 @@ function mockStore(initial=null,readFails=false,writeFails=false){
     externalWrite(raw){value=raw}
   };
 }
-const validData={schemaVersion:6,profileMode:'self',meta:{},children:[{id:'p1'}],entries:[{id:'e1'}]};
+const validData={schemaVersion:6,profileMode:'self',meta:{},children:[{id:'p1'}],entries:[{id:'e1',childId:'p1'}]};
+const integrityStart=appSource.indexOf('function assertUniqueBackupIds(');
+const integrityEnd=appSource.indexOf('\nfunction backupStateFromPayload(',integrityStart);
+assert.ok(integrityStart>=0&&integrityEnd>integrityStart,'identity validator must exist');
+const validatorContext={
+  BACKUP_VERSION:6,
+  cleanText:(v,max=160)=>String(v??'').trim().slice(0,max),
+  validUuid:v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v||''))
+};
+vm.createContext(validatorContext);
+vm.runInContext(appSource.slice(integrityStart,integrityEnd)+';globalThis.verify=validateBackupIdentityIntegrity;',validatorContext);
 function loadApp(store,normalizer=x=>x){
   let queued=0;
   const ctx={
     localStorage:store, KEY:'aktywnik-plus-data-v1',
     defaultState:{profileMode:'self',children:[],entries:[],meta:{}},
     structuredClone, today:()=> '2026-11-05',nowIso:()=> '2026-11-05T20:00:00.000Z',
-    safeBackupState:normalizer,renderAll(){},
+    safeBackupState:normalizer,validateBackupIdentityIntegrity:validatorContext.verify,BACKUP_VERSION:6,renderAll(){},
     console:{error(){}},
     window:{AktywnikSync:{markDirty(){queued++}},AktywnikFamilySync:{markDirty(){queued++}}},
     parentUnlocked:()=>false
@@ -71,6 +81,25 @@ test('unexpected but parseable JSON is blocked',()=>{
   const a=loadApp(mockStore('{"strange":1}'));
   assert.equal(a.app.safety.locked,true);
   assert.equal(a.app.persist(),false);
+  assert.equal(a.store.stats.writes,0);
+});
+test('unknown child id is not silently reassigned to another profile',()=>{
+  const raw=JSON.stringify({...validData,entries:[{id:'e1',childId:'foreign-child'}]});
+  const a=loadApp(mockStore(raw));
+  assert.equal(a.app.safety.locked,true);
+  assert.equal(a.app.persist(),false);
+  assert.equal(a.store.raw,raw);
+});
+test('duplicate profile identities are rejected before sanitization',()=>{
+  const raw=JSON.stringify({...validData,children:[{id:'p1'},{id:'p1'}]});
+  const a=loadApp(mockStore(raw));
+  assert.equal(a.app.safety.locked,true);
+  assert.equal(a.store.stats.writes,0);
+});
+test('invalid cloud child reference is not silently dropped',()=>{
+  const raw=JSON.stringify({...validData,children:[{id:'p1',cloudChildId:'untrusted-cloud-id'}]});
+  const a=loadApp(mockStore(raw));
+  assert.equal(a.app.safety.locked,true);
   assert.equal(a.store.stats.writes,0);
 });
 test('sanitizer discarding existing entries locks rather than overwrites',()=>{
