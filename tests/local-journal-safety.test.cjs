@@ -119,6 +119,11 @@ test('personal raw backup may be recovered without family PIN',()=>{
   const a=loadApp(mockStore(raw),()=>{throw Error('invalid fields')});
   assert.equal(a.app.emergencyRawForExport(),raw);
 });
+test('mislabelled personal record containing family PIN metadata cannot bypass parent authentication',()=>{
+  const raw=JSON.stringify({...validData,profileMode:'self',parentAuth:{pinHash:'private-hash',pinSalt:'salt'}});
+  const a=loadApp(mockStore(raw),()=>{throw Error('invalid fields')});
+  assert.equal(a.app.emergencyRawForExport(),null);
+});
 test('unparseable raw journal is never exposed by the emergency UI',()=>{
   const a=loadApp(mockStore('{bad'));
   a.ctx.parentUnlocked=()=>true;
