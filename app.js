@@ -1604,6 +1604,8 @@ function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;',
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
 function emergencyRawForExport(){
   if(typeof localDataSafety.raw!=='string')return null;
+  // An already authenticated parent may save the exact bytes even if JSON is malformed.
+  try{if(parentUnlocked())return localDataSafety.raw}catch{}
   let parsed=null;
   try{parsed=JSON.parse(localDataSafety.raw)}catch{return null}
   const data=parsed?.data&&typeof parsed.data==='object'?parsed.data:parsed;
