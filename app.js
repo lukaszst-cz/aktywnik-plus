@@ -26,20 +26,70 @@ const PIN_LOCK_MS=30000;
 const DEFAULT_FAVORITES=['Spacer','Rower','Hulajnoga','Basen','Piłka nożna'];
 const PIN_ITERATIONS=120000;
 const defaultState={schemaVersion:6,profileMode:'family',meta:{lastBackupAt:null,lastWriteAt:null},pilot:{started:false},parentAuth:{pinSalt:'',pinHash:'',iterations:PIN_ITERATIONS,autoLockMinutes:5},children:[],activeChildId:null,activeTimer:null,entries:[],approvalEvents:[],rewards:[],classes:[],joinRequests:[],paperImports:[],weeklyGoals:{},reminderHour:19,reminderMinute:30,school:{deploymentModel:'school_saas',mode:'hybrid',requireParentApproval:true,useEffort:true,usePluses:true,gradeRule:'manual',maxCountedMinutes:null}};
-let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let pendingPaperOcrImageFile=null; let parentReportMonth=today().slice(0,7); let lastPersistOk=true; let familyCloudContext=null; let familyCloudBusy=false;
-function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'{}');return safeBackupState(saved)}catch{return structuredClone(defaultState)}}
-function persist({skipSync=false}={}){
-  state.meta={...(state.meta||{}),lastWriteAt:nowIso()};
+// A failed read is never equivalent to a new account. Keep raw storage untouched.
+const localDataSafety={locked:false,reason:'',raw:null};
+let storageBaseline=null;
+let state=load(); let selected=null; let editingEntryId=null; let reportType='month'; let currentMode='child'; let parentSelectedChildId=state.activeChildId||state.children[0]?.id||null; let pendingPaperImportRows=[]; let pendingPaperOcrImageFile=null; let parentReportMonth=today().slice(0,7); let lastPersistOk=!localDataSafety.locked; let familyCloudContext=null; let familyCloudBusy=false;
+window.AktywnikDataSafety={get locked(){return localDataSafety.locked}};
+function lockLocalData(reason,raw=storageBaseline){
+  localDataSafety.locked=true;localDataSafety.reason=reason;localDataSafety.raw=raw;
+  lastPersistOk=false;
+}
+function load(){
+  let raw=null;
   try{
-    localStorage.setItem(KEY,JSON.stringify(state));
-    lastPersistOk=true;
-    if(!skipSync&&state.profileMode==='self')window.AktywnikSync?.markDirty?.(state);
-    if(!skipSync&&state.profileMode==='family')window.AktywnikFamilySync?.markDirty?.(state);
+    raw=localStorage.getItem(KEY);
+    storageBaseline=raw;
+    if(raw===null)return structuredClone(defaultState);
+    const saved=JSON.parse(raw),data=saved?.data&&typeof saved.data==='object'&&!Array.isArray(saved.data)?saved.data:saved;
+    if(!data||typeof data!=='object'||Array.isArray(data)||
+       !['children','entries','pilot'].some(k=>Object.prototype.hasOwnProperty.call(data,k)))
+      throw new Error('unrecognized_local_journal');
+    // New-format journals must not silently attach orphan entries to another child.
+    if(Number(data.schemaVersion)>=BACKUP_VERSION)
+      validateBackupIdentityIntegrity({format:'aktywnik-plus-backup',version:BACKUP_VERSION,data});
+    const restored=safeBackupState(saved);
+    for(const key of ['children','entries','approvalEvents','rewards','classes','joinRequests','paperImports']){
+      if(Array.isArray(data[key])&&restored[key].length<data[key].length)
+        throw new Error('local_journal_records_rejected_'+key);
+    }
+    return restored;
   }catch(err){
-    lastPersistOk=false;
-    console.error('Aktywnik+: local save failed',err);
+    localDataSafety.locked=true;localDataSafety.reason='read-failed';localDataSafety.raw=raw;
+    console.error('Aktywnik+: journal read failed, all writes and sync are blocked',err);
+    return structuredClone(defaultState);
   }
-  renderAll();
+}
+function writableLocalData(){
+  if(localDataSafety.locked)return false;
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw===storageBaseline)return true;
+    lockLocalData('changed-in-another-tab',raw);
+  }catch(err){console.error('Aktywnik+: journal pre-write check failed',err);lockLocalData('read-failed');}
+  return false;
+}
+function requireWritableLocalData(){
+  if(!writableLocalData())throw new Error('Dziennik został zablokowany, aby chronić dane. Odśwież stronę i sprawdź kopię.');
+}
+function writeLocalJournal(candidate){
+  requireWritableLocalData();
+  const raw=JSON.stringify(candidate);
+  try{localStorage.setItem(KEY,raw);storageBaseline=raw}
+  catch(err){lockLocalData('write-failed');throw err}
+}
+function persist({skipSync=false}={}){
+  if(!writableLocalData()){renderAll();return false}
+  state.meta={...(state.meta||{}),lastWriteAt:nowIso()};
+  try{writeLocalJournal(state);lastPersistOk=true}
+  catch(err){console.error('Aktywnik+: local save failed',err);renderAll();return false}
+  if(!skipSync){
+    try{
+      if(state.profileMode==='self')window.AktywnikSync?.markDirty?.(state);
+      if(state.profileMode==='family')window.AktywnikFamilySync?.markDirty?.(state);
+    }catch(err){console.error('Aktywnik+: cannot enqueue sync',err)}
+  }
+  renderAll();return true;
 }
 const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)];
 function fmtMin(m){const h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
@@ -283,7 +333,8 @@ function mergeFamilyCloudState(localChildId,entries,deletes,decisions=[]){
     localNewer:Number(merged.localNewer||0)+Number(removed.localNewer||0)
   };
 }
-window.AktywnikCloudBridge={mergePersonalEntries:mergePersonalCloudEntries,mergePersonalCloudState,mergeFamilyCloudEntries,mergeFamilyCloudDecisions,mergeFamilyCloudState};
+function guardedCloudMerge(fn){return (...args)=>{requireWritableLocalData();return fn(...args)}}
+window.AktywnikCloudBridge={mergePersonalEntries:guardedCloudMerge(mergePersonalCloudEntries),mergePersonalCloudState:guardedCloudMerge(mergePersonalCloudState),mergeFamilyCloudEntries:guardedCloudMerge(mergeFamilyCloudEntries),mergeFamilyCloudDecisions:guardedCloudMerge(mergeFamilyCloudDecisions),mergeFamilyCloudState:guardedCloudMerge(mergeFamilyCloudState)};
 function parentChild(){return getChild(parentSelectedChildId)||activeChild()}
 function childEntries(childId){return state.entries.filter(e=>e.childId===childId)}
 function childRewards(childId){return state.rewards.filter(r=>r.childId===childId)}
@@ -322,7 +373,7 @@ function recentDuplicate(childId,payload){
 }
 function pinConfigured(){return !!state.parentAuth?.pinHash&&!!state.parentAuth?.pinSalt}
 function isSelfMode(){return state.profileMode==='self'}
-function appReady(){return state.children.length>0&&(isSelfMode()||pinConfigured())}
+function appReady(){return !localDataSafety.locked&&state.children.length>0&&(isSelfMode()||pinConfigured())}
 function bytesToB64(bytes){let out='';bytes.forEach(b=>out+=String.fromCharCode(b));return btoa(out)}
 function b64ToBytes(value){const raw=atob(value);return Uint8Array.from(raw,c=>c.charCodeAt(0))}
 async function derivePin(pin,saltB64,iterations=PIN_ITERATIONS){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:b64ToBytes(saltB64),iterations},key,256);return bytesToB64(new Uint8Array(bits))}
@@ -401,6 +452,7 @@ function renderActivities(){
 }
 function renderSaveStatus(){
   const el=$('#saveStatusBadge');if(!el)return;
+  if(localDataSafety.locked){el.textContent='zapis zablokowany';el.dataset.state='error';return}
   if(!lastPersistOk){el.textContent='błąd zapisu';el.dataset.state='error';return}
   const last=safeIso(state.meta?.lastWriteAt);
   el.textContent=last?'zapisano '+new Date(last).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):'zapis lokalny';
@@ -1282,8 +1334,9 @@ function clearParentTransientState(){
   [PARENT_SESSION_KEY,PARENT_PIN_FAIL_KEY,PARENT_PIN_LOCK_KEY].forEach(key=>sessionStorage.removeItem(key));
 }
 function applyBackupCandidate(candidate){
+  requireWritableLocalData();
   // Zapisz nowy stan przed usunięciem tymczasowych danych, żeby uniknąć utraty kopii przy błędzie pamięci.
-  localStorage.setItem(KEY,JSON.stringify(candidate));
+  writeLocalJournal(candidate);
   clearAllEntryDrafts();
   clearSyncTransientState();
   clearParentTransientState();
@@ -1316,13 +1369,14 @@ function mergeBackupCandidate(candidate){
   const rewards=appendUnique(state.rewards,candidate.rewards,2000);
   if(!entries.length&&!decisions.length&&!rewards.length)return {entries:0,decisions:0,rewards:0};
   const next={...state,entries:[...state.entries,...entries],approvalEvents:[...state.approvalEvents,...decisions],rewards:[...state.rewards,...rewards]};
-  localStorage.setItem(KEY,JSON.stringify(next));
+  writeLocalJournal(next);
   state=next;
   if(state.profileMode==='self')window.AktywnikSync?.markDirty?.(state);
   if(state.profileMode==='family')window.AktywnikFamilySync?.markDirty?.(state);
   return {entries:entries.length,decisions:decisions.length,rewards:rewards.length};
 }
 function clearAllLocalUserData(){
+  requireWritableLocalData();
   clearAllEntryDrafts();
   clearSyncTransientState();
   localStorage.removeItem(KEY);
@@ -1330,7 +1384,7 @@ function clearAllLocalUserData(){
   localStorage.removeItem(PILOT_TEST_KEY);
   clearParentTransientState();
 }
-function canManageLocalData(){return isSelfMode()||guardParent()}
+function canManageLocalData(){return !localDataSafety.locked&&(isSelfMode()||guardParent())}
 function setStorageMessage(message){const parentEl=$('#storageStatus'),selfEl=$('#selfStorageStatus');if(parentEl)parentEl.textContent=message;if(selfEl)selfEl.textContent=message}
 function readLocalJson(key,fallback=null){try{const value=JSON.parse(localStorage.getItem(key)||'null');return value??fallback}catch{return fallback}}
 function pilotDiagnosticsSnapshot(){
@@ -1413,6 +1467,7 @@ function pilotDiagnosticsReport(){
   };
 }
 async function syncPilotNow(){
+  if(!writableLocalData()){renderAll();return}
   if(!guardParent())return;
   const status=$('#pilotDiagnosticsStatus');if(status)status.textContent=uiText('parent.diagSyncing','Synchronizuję…');
   const result=await window.AktywnikFamilySync?.syncNow?.();
@@ -1484,7 +1539,7 @@ window.AktywnikPilotDeviceTest={read:readPilotTestChecklist,report:pilotTestRepo
 
 function exportBackup(){
   if(!canManageLocalData())return;
-  state.meta={...(state.meta||{}),lastBackupAt:nowIso()};persist({skipSync:true});
+  state.meta={...(state.meta||{}),lastBackupAt:nowIso()};if(!persist({skipSync:true}))return;
   const payload=makeBackupPayload(state),blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='aktywnik-plus-backup-'+today()+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);const badge=$('#backupStatus');if(badge)badge.textContent='dziś';
 }
@@ -1509,6 +1564,7 @@ async function importBackupMerge(file){
   }
 }
 async function syncLocalDataNow(){
+  if(!writableLocalData()){renderAll();return}
   if(!canManageLocalData())return;
   if(navigator.onLine===false){
     setStorageMessage('Brak internetu. Dane pozostają zapisane na urządzeniu.');
@@ -1538,6 +1594,7 @@ async function syncLocalDataNow(){
 async function requestPersistentStorage(){if(!canManageLocalData())return;try{const ok=await navigator.storage?.persist?.();setStorageMessage(ok?'Przeglądarka zgodziła się chronić dane tego urządzenia.':'Przeglądarka nie potwierdziła trwałej pamięci. Regularnie eksportuj kopię.')}catch{setStorageMessage('Nie udało się sprawdzić trwałej pamięci. Regularnie eksportuj kopię.')}}
 async function renderStorageStatus(){if(!isSelfMode()&&!parentUnlocked())return;try{const persisted=await navigator.storage?.persisted?.();setStorageMessage(persisted?'Dane mają włączoną trwałą pamięć przeglądarki.':'Dane są lokalne. Warto włączyć ochronę pamięci i regularnie robić kopię.')}catch{setStorageMessage('Dane są zapisane lokalnie w tej przeglądarce.')}}
 async function deleteLocalData(){
+  if(!writableLocalData()){renderAll();return}
   if(!canManageLocalData())return;
   if(!confirm('Usunąć wszystkie lokalne dane Aktywnik+ z tego urządzenia? Tej operacji nie można cofnąć bez wcześniejszej kopii.'))return;
   try{await window.AktywnikProfiles?.clearAll?.()}catch(error){alert('Nie można usunąć zdjęć profili: '+String(error.message||error)+'. Dane nie zostały usunięte.');return}
@@ -1545,8 +1602,78 @@ async function deleteLocalData(){
 }
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;')}
+function emergencyRawForExport(){
+  if(typeof localDataSafety.raw!=='string')return null;
+  // An already authenticated parent may save the exact bytes even if JSON is malformed.
+  try{if(parentUnlocked())return localDataSafety.raw}catch{}
+  let parsed=null;
+  try{parsed=JSON.parse(localDataSafety.raw)}catch{return null}
+  const data=parsed?.data&&typeof parsed.data==='object'?parsed.data:parsed;
+  if(data?.profileMode==='self'&&!data?.parentAuth?.pinHash)return localDataSafety.raw;
+  try{if(parentUnlocked())return localDataSafety.raw}catch{}
+  return null;
+}
+function renderLocalDataRecovery(){
+  if(!localDataSafety.locked||document.getElementById('aktywnikDataRecovery'))return;
+  const overlay=document.createElement('section');
+  overlay.id='aktywnikDataRecovery';overlay.setAttribute('role','alertdialog');overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label','Ochrona danych Aktywnik+');overlay.tabIndex=-1;
+  overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;overflow:auto;background:#f2f8ed;color:#173d2b;padding:clamp(20px,5vw,70px);font:16px/1.55 system-ui,sans-serif';
+  const panel=document.createElement('div');panel.style.cssText='max-width:660px;margin:0 auto;padding:28px;background:white;border:2px solid #a74c37;border-radius:18px';
+  const h=document.createElement('h1');h.textContent='Dziennik został zabezpieczony';
+  const msg=document.createElement('p');msg.textContent=localDataSafety.reason==='changed-in-another-tab'
+    ?'Inna karta zmieniła dane. Zapis i synchronizacja zostały zatrzymane, aby uniknąć nadpisania.'
+    :'Nie udało się bezpiecznie odczytać lub zapisać dziennika. Nie zastąpiono go pustymi danymi. Zapis i synchronizacja zostały wstrzymane.';
+  const help=document.createElement('p');help.textContent='Nie czyść pamięci tej przeglądarki. Najpierw zabezpiecz oryginalne dane. Jeżeli nie możesz pobrać kopii, skorzystaj z pomocy technicznej.';
+  panel.append(h,msg,help);
+  const addDownload=()=>{
+    const raw=emergencyRawForExport();if(raw===null)return false;
+    const btn=document.createElement('button');btn.type='button';btn.textContent='Pobierz surowy zapis awaryjny';
+    btn.style.cssText='display:block;padding:12px;margin:14px 0;border-radius:8px;background:#184c32;color:white;border:0';
+    btn.addEventListener('click',()=>{
+      const blob=new Blob([raw],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download='aktywnik-plus-surowy-zapis-awaryjny.txt';document.body.append(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+    });panel.append(btn);return true;
+  };
+  if(!addDownload()){
+    let auth=null;
+    try{const parsed=JSON.parse(localDataSafety.raw),d=parsed?.data||parsed;
+      if(d?.profileMode!=='self'&&d?.parentAuth?.pinSalt&&d?.parentAuth?.pinHash)auth=d.parentAuth;
+    }catch{}
+    if(auth){
+      const input=document.createElement('input');input.type='password';input.inputMode='numeric';input.autocomplete='off';
+      input.placeholder='PIN opiekuna';input.setAttribute('aria-label','PIN opiekuna');input.maxLength=12;
+      const status=document.createElement('p');status.setAttribute('aria-live','polite');
+      const button=document.createElement('button');button.type='button';button.textContent='Odblokuj eksport awaryjny';
+      button.addEventListener('click',async()=>{
+        if(pinLockRemainingMs()>0){status.textContent='Poczekaj na zakończenie blokady PIN.';return}
+        const pin=input.value;input.value='';
+        if(!/^\d{4,12}$/.test(pin)){registerPinFailure();status.textContent='Nieprawidłowy PIN.';return}
+        const iterations=Number(auth.iterations)||PIN_ITERATIONS;
+        if(!Number.isInteger(iterations)||iterations<50000||iterations>500000){status.textContent='Brak bezpiecznych danych weryfikacyjnych PIN.';return}
+        let ok=false;try{ok=await derivePin(pin,auth.pinSalt,iterations)===auth.pinHash}catch{}
+        if(!ok){registerPinFailure();status.textContent='Nieprawidłowy PIN.';return}
+        try{sessionStorage.setItem(PARENT_SESSION_KEY,String(Date.now()+5*60*1000));clearPinFailures()}catch{return}
+        button.disabled=true;input.disabled=true;status.textContent='Sesja opiekuna odblokowana.';addDownload();
+      });
+      panel.append(input,button,status);
+    }else{
+      const note=document.createElement('p');note.textContent='Nie można zweryfikować PIN-u z uszkodzonego zapisu. Dane pozostają w pamięci urządzenia, ale wymagają ręcznego odzyskania.';panel.append(note);
+    }
+  }
+  const retry=document.createElement('button');retry.type='button';retry.textContent='Sprawdź ponownie po odświeżeniu';
+  retry.style.cssText='display:block;margin-top:15px;padding:12px';retry.addEventListener('click',()=>location.reload());
+  panel.append(retry);overlay.append(panel);document.body.append(overlay);overlay.focus();
+}
+window.addEventListener('storage',event=>{
+  if(event.key!==KEY||localDataSafety.locked||event.newValue===storageBaseline)return;
+  lockLocalData('changed-in-another-tab',event.newValue);renderAll();
+});
 function renderAll(){
-  renderSaveStatus();renderPilot();
+  renderSaveStatus();
+  if(localDataSafety.locked){renderLocalDataRecovery();return}
+  renderPilot();
   if(!appReady())return;
   const child=activeChild();if(!child)return;
   renderTimer();renderActivities();renderChildOverview();renderChildEntries();renderChildRewards();renderStats();renderFatigueValue();if(isSelfMode())renderStorageStatus();

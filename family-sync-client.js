@@ -12,6 +12,7 @@
   let pushing=false;
   let pulling=false;
   let cloudEnabled=null;
+  function blockedByLocalData(){return window.AktywnikDataSafety?.locked===true}
   let familySyncEnabled=null;
 
   function t(key,fallback){
@@ -129,6 +130,7 @@
     };
   }
   function scrubStoredOutbox(){
+    if(blockedByLocalData())return null;
     const current=read();
     if(!current?.snapshot)return current;
     const snapshot=minimalFamilySnapshot(readState());
@@ -144,6 +146,7 @@
     write(next);return next;
   }
   function markDirty(state){
+    if(blockedByLocalData())return false;
     if(!state||state.profileMode!=='family')return;
     const snapshot=minimalFamilySnapshot(state);
     if(!snapshot){write(null);renderStatus();return}
@@ -158,6 +161,7 @@
     schedule();
   }
   function markDeleted(localChildId,entryId,deletedAt){
+    if(blockedByLocalData())return false;
     if(!validUuid(entryId))return false;
     const stamp=new Date(deletedAt||'');
     if(Number.isNaN(stamp.getTime()))return false;
@@ -217,11 +221,12 @@
     if(version>SYNC_PROTOCOL_VERSION)throw new Error('sync_protocol_too_new');
   }
   async function flush(prepared){
+    if(blockedByLocalData())return false;
     if(pushing||!isFamilyMode())return false;
     const scrubbed=scrubStoredOutbox();
     const pendingDeletes=readDeletes();
     if(!scrubbed?.dirty&&!pendingDeletes.length)return true;
-    const ctx=prepared||await context();if(!ctx)return false;
+    const ctx=prepared||await context();if(!ctx||blockedByLocalData())return false;
 
     const q=scrubbed||{
       dirty:false,
@@ -252,6 +257,7 @@
     pushing=true;
     try{
       for(const group of groups.values()){
+        if(blockedByLocalData())return false;
         const res=await fetch('/api/v1/family-sync',{
           method:'POST',
           cache:'no-store',
@@ -285,8 +291,9 @@
     }finally{pushing=false}
   }
   async function pull(prepared){
+    if(blockedByLocalData())return false;
     if(pulling||!isFamilyMode())return false;
-    const ctx=prepared||await context();if(!ctx)return false;
+    const ctx=prepared||await context();if(!ctx||blockedByLocalData())return false;
     const bridge=window.AktywnikCloudBridge;
     if(!bridge?.mergeFamilyCloudState)return false;
 
@@ -297,6 +304,7 @@
       const totals={added:0,updated:0,deleted:0,decisionsAdded:0,localNewer:0,ignored:0};
       for(const link of links){
         const url='/api/v1/family-sync?protocolVersion='+SYNC_PROTOCOL_VERSION+'&childId='+encodeURIComponent(link.cloudChildId);
+        if(blockedByLocalData())return false;
         const res=await fetch(url,{
           method:'GET',cache:'no-store',
           headers:{'Authorization':'Bearer '+ctx.session.access_token}
@@ -318,10 +326,11 @@
     }finally{pulling=false}
   }
   async function syncNow(){
+    if(blockedByLocalData())return false;
     if(cycleRunning||navigator.onLine===false||!isFamilyMode())return false;
     cycleRunning=true;
     try{
-      const ctx=await context();if(!ctx)return false;
+      const ctx=await context();if(!ctx||blockedByLocalData())return false;
       if(read()?.dirty||readDeletes().length){
         const pushed=await flush(ctx);
         if(!pushed&&(read()?.dirty||readDeletes().length))return false;

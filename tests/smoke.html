@@ -348,6 +348,12 @@ async function run(){
     if(scrubbedSerialized.includes('secretTopLevel')||scrubbedSerialized.includes('private-hash')||scrubbedSerialized.includes('parentAuth')||scrubbedSerialized.includes('children'))throw new Error('legacy personal outbox was not scrubbed');
     localStorage.removeItem(SYNC_KEY);
     localStorage.setItem(KEY,JSON.stringify(seeded));
+    // Browser smoke modifies journal storage from the parent document. This is
+    // intentionally treated as a concurrent-tab edit, so reload before writing.
+    await sleep(40);
+    if(!w.AktywnikDataSafety?.locked)throw new Error('external journal modification did not block the stale tab');
+    ctx=await loadApp('family-after-external-write');w=ctx.w;d=ctx.d;
+    if(w.AktywnikDataSafety?.locked)throw new Error('fresh tab did not recover after external edit');
 
     await w.setParentPin('2468');
     w.persist();
@@ -359,7 +365,7 @@ async function run(){
     const familyImportNav=d.querySelector('#sidebarNav [data-nav-action="data"]');
     if(!familyImportNav)throw new Error('family import sidebar item missing');
     familyImportNav.click();
-    if(!d.getElementById('parentUnlockDialog').open)throw new Error('family import did not request parent PIN');
+    if(!d.getElementById('parentUnlockDialog').open)throw new Error('family import did not request parent PIN; appReady='+w.appReady()+', pinConfigured='+w.pinConfigured()+', localSafetyLocked='+w.AktywnikDataSafety?.locked+', view='+w.currentMode+', saved='+w.lastPersistOk);
     if(!d.getElementById('structuredImportCard').hidden)throw new Error('family import exposed while locked');
     d.getElementById('parentUnlockDialog').close();
     await sleep(20);
@@ -668,19 +674,19 @@ async function run(){
 
     const localDecisionId='94949494-9494-4494-8494-949494949494';
     const localDecisionEntryId='95959595-9595-4595-8595-959595959595';
+    // Seed the decision through the normal guarded merge, not by rewriting
+    // localStorage from the test's separate browsing context.
+    const seededDecision=w.AktywnikCloudBridge.mergeFamilyCloudDecisions('child-a',[{
+      client_event_id:localDecisionId,
+      client_entry_id:localDecisionEntryId,
+      decision:'approved',
+      reason:'Rodzic zatwierdził wpis.',
+      before_state:{status:'pending'},
+      after_state:{status:'approved'},
+      decided_at:'2026-10-03T09:10:00.000Z'
+    }]);
+    if(seededDecision.decisionsAdded!==1)throw new Error('family decision fixture not created');
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');
-    saved.approvalEvents=[{
-      id:localDecisionId,
-      entryId:localDecisionEntryId,
-      childId:'child-a',
-      action:'approved',
-      actor:'parent',
-      note:'Rodzic zatwierdził wpis.',
-      before:{status:'pending'},
-      after:{status:'approved'},
-      at:'2026-10-03T09:10:00.000Z'
-    },...(saved.approvalEvents||[])];
-    localStorage.setItem(KEY,JSON.stringify(saved));
 
     familyDecisionEnabled=false;
     familySyncRequests.length=0;
@@ -879,7 +885,47 @@ async function run(){
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('full local wipe left parent session state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('full local wipe removed language preference');
 
-    pass('beta4 personal + full family sync, offline queue preservation, explicit cloud child links, delete/decision sync, fatigue 1-5, minimal sync payloads, per-profile drafts, data controls, family PIN roles, multi-child isolation, reports, audit, backup guards and PWA');
+    // A corrupt persisted journal must remain byte-for-byte intact after boot,
+    // attempted writes and automatic sync, including when an old outbox exists.
+    const corruptJournal='{"profileMode":"family","children":[';
+    localStorage.setItem(KEY,corruptJournal);
+    const blockedQueue=JSON.stringify({dirty:true,snapshot:{profileMode:'family',groups:[]}});
+    localStorage.setItem(FAMILY_SYNC_KEY,blockedQueue);
+    ctx=await loadApp('corrupt-journal');w=ctx.w;d=ctx.d;
+    if(!w.AktywnikDataSafety?.locked)throw new Error('corrupt startup did not lock local journal');
+    if(!d.getElementById('aktywnikDataRecovery'))throw new Error('corrupt startup did not show safe recovery screen');
+    if(w.persist()!==false||localStorage.getItem(KEY)!==corruptJournal)throw new Error('corrupt startup overwrote existing journal');
+    let restoreBlocked=false;
+    try{w.applyBackupCandidate(restored)}catch{restoreBlocked=true}
+    if(!restoreBlocked||localStorage.getItem(KEY)!==corruptJournal)throw new Error('restore bypassed corrupt journal lock');
+    if(await w.AktywnikFamilySync.syncNow()!==false||await w.AktywnikSync.syncNow()!==false)throw new Error('corrupt startup permitted cloud sync');
+    if(localStorage.getItem(FAMILY_SYNC_KEY)!==blockedQueue)throw new Error('corrupt startup modified unsent family outbox');
+    if(d.getElementById('aktywnikDataRecovery').textContent.includes('Pobierz surowy zapis awaryjny'))
+      throw new Error('corrupt family journal leaked raw data without PIN');
+    // A manually repaired, valid journal can be reopened in a fresh browsing context.
+    localStorage.setItem(KEY,JSON.stringify(restored));
+    ctx=await loadApp('recovered-journal');w=ctx.w;d=ctx.d;
+    if(w.AktywnikDataSafety?.locked||!w.appReady())throw new Error('valid repaired journal did not reopen');
+
+    // A parseable journal with an orphan child association must be blocked,
+    // but the real parent PIN must permit raw recovery without changing data.
+    const orphanFamily={...restored,entries:[...restored.entries,{
+      id:'abababab-abab-4bab-8bab-abababababab',
+      childId:'nonexistent-child',date:'2026-10-03',activity:'Spacer',minutes:10,
+      status:'approved',source:'manual'
+    }]};
+    const orphanBytes=JSON.stringify(orphanFamily);
+    localStorage.setItem(KEY,orphanBytes);
+    ctx=await loadApp('orphan-family-recovery');w=ctx.w;d=ctx.d;
+    if(!w.AktywnikDataSafety?.locked)throw new Error('orphan profile identity was not rejected');
+    const recovery=d.getElementById('aktywnikDataRecovery'),pinInput=recovery?.querySelector('input[type="password"]');
+    const unlock=[...(recovery?.querySelectorAll('button')||[])].find(b=>b.textContent.includes('Odblokuj eksport'));
+    if(!pinInput||!unlock)throw new Error('recovery screen did not offer parent PIN for valid verifier');
+    pinInput.value='2468';unlock.click();await sleep(450);
+    if(!recovery.textContent.includes('Pobierz surowy zapis awaryjny'))throw new Error('correct parent PIN did not unlock raw recovery');
+    if(localStorage.getItem(KEY)!==orphanBytes)throw new Error('PIN recovery modified the original journal');
+
+    pass('beta4 personal + family sync, offline queue, parent PIN, safe local journal recovery, profile integrity, multi-child isolation, imports, reports, PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();

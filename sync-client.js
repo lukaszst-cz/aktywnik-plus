@@ -11,6 +11,7 @@
   let pushing=false;
   let pulling=false;
   let cloudEnabled=null;
+  function blockedByLocalData(){return window.AktywnikDataSafety?.locked===true}
 
   function t(key,fallback){
     const i18n=window.AktywnikI18n;
@@ -37,6 +38,7 @@
     }catch{}
   }
   function markDeleted(id,deletedAt=new Date().toISOString()){
+    if(blockedByLocalData())return false;
     if(!id||currentProfileMode()!=='self')return;
     const current=readDeletes();
     current[id]=deletedAt;
@@ -78,6 +80,7 @@
     };
   }
   function scrubStoredOutbox(){
+    if(blockedByLocalData())return null;
     const current=read();
     if(!current?.snapshot)return current;
     const snapshot=minimalPersonalSnapshot(current.snapshot);
@@ -94,6 +97,7 @@
     return next;
   }
   function markDirty(state){
+    if(blockedByLocalData())return false;
     if(currentProfileMode()!=='self')return;
     const snapshot=minimalPersonalSnapshot(state);
     if(!snapshot)return;
@@ -143,13 +147,15 @@
     return {session,caps};
   }
   async function flush(prepared){
+    if(blockedByLocalData())return false;
     if(pushing)return false;
     const q=scrubStoredOutbox();if(!q?.dirty)return true;
     if(q.snapshot?.profileMode!=='self'){write(null);renderStatus();return true}
-    const ctx=prepared||await context();if(!ctx)return false;
+    const ctx=prepared||await context();if(!ctx||blockedByLocalData())return false;
 
     pushing=true;
     try{
+      if(blockedByLocalData())return false;
       const res=await fetch('/api/v1/sync',{
         method:'POST',
         cache:'no-store',
@@ -180,13 +186,15 @@
     }finally{pushing=false}
   }
   async function pull(prepared){
+    if(blockedByLocalData())return false;
     if(pulling||currentProfileMode()!=='self')return false;
-    const ctx=prepared||await context();if(!ctx)return false;
+    const ctx=prepared||await context();if(!ctx||blockedByLocalData())return false;
     const bridge=window.AktywnikCloudBridge;
     if(!bridge?.mergePersonalEntries)return false;
 
     pulling=true;
     try{
+      if(blockedByLocalData())return false;
       const res=await fetch('/api/v1/sync?protocolVersion='+SYNC_PROTOCOL_VERSION,{
         method:'GET',
         cache:'no-store',
@@ -207,10 +215,11 @@
     }finally{pulling=false}
   }
   async function syncNow(){
+    if(blockedByLocalData())return false;
     if(cycleRunning||navigator.onLine===false||currentProfileMode()!=='self')return false;
     cycleRunning=true;
     try{
-      const ctx=await context();if(!ctx)return false;
+      const ctx=await context();if(!ctx||blockedByLocalData())return false;
       if(read()?.dirty||Object.keys(readDeletes()).length){
         const pushed=await flush(ctx);
         if(!pushed&&(read()?.dirty||Object.keys(readDeletes()).length))return false;

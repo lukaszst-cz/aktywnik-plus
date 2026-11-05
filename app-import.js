@@ -282,6 +282,7 @@ async function restoreAtStartup(file){
  const out=document.getElementById('setupRestoreBackupStatus');
  if(!file)return;
  try{
+  if(window.AktywnikDataSafety?.locked)throw Error('Nie można przywrócić kopii: obecny dziennik ma błąd odczytu. Nie wolno go nadpisać.');
   if(appReady()||state.entries.length)throw Error('Na urządzeniu są już dane. Przywracanie przy pierwszym uruchomieniu jest dostępne tylko dla pustego profilu.');
   if(file.size>MAX_BYTES)throw Error('Kopia przekracza limit 8 MB.');
   const raw=JSON.parse(await file.text());
@@ -300,6 +301,7 @@ async function restoreAtStartup(file){
  finally{const input=document.getElementById('setupRestoreBackupInput');if(input)input.value=''}
 }
 function commit(){
+ if(window.AktywnikDataSafety?.locked){message('Dziennik jest zablokowany. Import nie zapisze danych, aby uniknąć ich utraty.',true);return}
  if(!pending)return;
  const target=getTarget();
  if(!target||target.id!==pending.target.id){message('Profil zmienił się. Wybierz plik ponownie.',true);pending=null;renderPreview();return}
