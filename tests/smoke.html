@@ -348,6 +348,12 @@ async function run(){
     if(scrubbedSerialized.includes('secretTopLevel')||scrubbedSerialized.includes('private-hash')||scrubbedSerialized.includes('parentAuth')||scrubbedSerialized.includes('children'))throw new Error('legacy personal outbox was not scrubbed');
     localStorage.removeItem(SYNC_KEY);
     localStorage.setItem(KEY,JSON.stringify(seeded));
+    // Browser smoke modifies journal storage from the parent document. This is
+    // intentionally treated as a concurrent-tab edit, so reload before writing.
+    await sleep(40);
+    if(!w.AktywnikDataSafety?.locked)throw new Error('external journal modification did not block the stale tab');
+    ctx=await loadApp('family-after-external-write');w=ctx.w;d=ctx.d;
+    if(w.AktywnikDataSafety?.locked)throw new Error('fresh tab did not recover after external edit');
 
     await w.setParentPin('2468');
     w.persist();
