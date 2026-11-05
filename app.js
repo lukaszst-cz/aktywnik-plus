@@ -45,6 +45,9 @@ function load(){
     if(!data||typeof data!=='object'||Array.isArray(data)||
        !['children','entries','pilot'].some(k=>Object.prototype.hasOwnProperty.call(data,k)))
       throw new Error('unrecognized_local_journal');
+    // New-format journals must not silently attach orphan entries to another child.
+    if(Number(data.schemaVersion)>=BACKUP_VERSION)
+      validateBackupIdentityIntegrity({format:'aktywnik-plus-backup',version:BACKUP_VERSION,data});
     const restored=safeBackupState(saved);
     for(const key of ['children','entries','approvalEvents','rewards','classes','joinRequests','paperImports']){
       if(Array.isArray(data[key])&&restored[key].length<data[key].length)
