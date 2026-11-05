@@ -674,19 +674,19 @@ async function run(){
 
     const localDecisionId='94949494-9494-4494-8494-949494949494';
     const localDecisionEntryId='95959595-9595-4595-8595-959595959595';
+    // Seed the decision through the normal guarded merge, not by rewriting
+    // localStorage from the test's separate browsing context.
+    const seededDecision=w.AktywnikCloudBridge.mergeFamilyCloudDecisions('child-a',[{
+      client_event_id:localDecisionId,
+      client_entry_id:localDecisionEntryId,
+      decision:'approved',
+      reason:'Rodzic zatwierdził wpis.',
+      before_state:{status:'pending'},
+      after_state:{status:'approved'},
+      decided_at:'2026-10-03T09:10:00.000Z'
+    }]);
+    if(seededDecision.decisionsAdded!==1)throw new Error('family decision fixture not created');
     saved=JSON.parse(localStorage.getItem(KEY)||'{}');
-    saved.approvalEvents=[{
-      id:localDecisionId,
-      entryId:localDecisionEntryId,
-      childId:'child-a',
-      action:'approved',
-      actor:'parent',
-      note:'Rodzic zatwierdził wpis.',
-      before:{status:'pending'},
-      after:{status:'approved'},
-      at:'2026-10-03T09:10:00.000Z'
-    },...(saved.approvalEvents||[])];
-    localStorage.setItem(KEY,JSON.stringify(saved));
 
     familyDecisionEnabled=false;
     familySyncRequests.length=0;
