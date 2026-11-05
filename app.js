@@ -56,7 +56,15 @@ function cleanText(v,max=160){return String(v??'').trim().slice(0,max)}
 function validUuid(v){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v??''))}
 function uiText(key,fallback){const i18n=window.AktywnikI18n,lang=i18n?.getLanguage?.()||document.documentElement.lang||'pl';return i18n?.messages?.[lang]?.[key]||fallback}
 function clampInt(v,min,max,fallback){const n=Math.round(Number(v));return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback}
-function validDate(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(v??'')))return false;return !Number.isNaN(new Date(String(v)+'T12:00:00').getTime())}
+function validDate(v){
+  const value=String(v??'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+  const [year,month,day]=value.split('-').map(Number);
+  if(year<1||month<1||month>12||day<1||day>31)return false;
+  const parsed=new Date(0);
+  parsed.setFullYear(year,month-1,day);
+  return parsed.getFullYear()===year&&parsed.getMonth()===month-1&&parsed.getDate()===day;
+}
 function allowedActivityDate(v){return validDate(v)&&v<=today()}
 function uuid(){return crypto.randomUUID()}
 function nowIso(){return new Date().toISOString()}
