@@ -885,7 +885,29 @@ async function run(){
     if(sessionStorage.getItem(SESSION_KEY)!==null||sessionStorage.getItem(PIN_FAIL_KEY)!==null||sessionStorage.getItem(PIN_LOCK_KEY)!==null)throw new Error('full local wipe left parent session state');
     if(localStorage.getItem(LANG_KEY)!=='pl')throw new Error('full local wipe removed language preference');
 
-    pass('beta4 personal + full family sync, offline queue preservation, explicit cloud child links, delete/decision sync, fatigue 1-5, minimal sync payloads, per-profile drafts, data controls, family PIN roles, multi-child isolation, reports, audit, backup guards and PWA');
+    // A corrupt persisted journal must remain byte-for-byte intact after boot,
+    // attempted writes and automatic sync, including when an old outbox exists.
+    const corruptJournal='{"profileMode":"family","children":[';
+    localStorage.setItem(KEY,corruptJournal);
+    const blockedQueue=JSON.stringify({dirty:true,snapshot:{profileMode:'family',groups:[]}});
+    localStorage.setItem(FAMILY_SYNC_KEY,blockedQueue);
+    ctx=await loadApp('corrupt-journal');w=ctx.w;d=ctx.d;
+    if(!w.AktywnikDataSafety?.locked)throw new Error('corrupt startup did not lock local journal');
+    if(!d.getElementById('aktywnikDataRecovery'))throw new Error('corrupt startup did not show safe recovery screen');
+    if(w.persist()!==false||localStorage.getItem(KEY)!==corruptJournal)throw new Error('corrupt startup overwrote existing journal');
+    let restoreBlocked=false;
+    try{w.applyBackupCandidate(restored)}catch{restoreBlocked=true}
+    if(!restoreBlocked||localStorage.getItem(KEY)!==corruptJournal)throw new Error('restore bypassed corrupt journal lock');
+    if(await w.AktywnikFamilySync.syncNow()!==false||await w.AktywnikSync.syncNow()!==false)throw new Error('corrupt startup permitted cloud sync');
+    if(localStorage.getItem(FAMILY_SYNC_KEY)!==blockedQueue)throw new Error('corrupt startup modified unsent family outbox');
+    if(d.getElementById('aktywnikDataRecovery').textContent.includes('Pobierz surowy zapis awaryjny'))
+      throw new Error('corrupt family journal leaked raw data without PIN');
+    // A manually repaired, valid journal can be reopened in a fresh browsing context.
+    localStorage.setItem(KEY,JSON.stringify(restored));
+    ctx=await loadApp('recovered-journal');w=ctx.w;d=ctx.d;
+    if(w.AktywnikDataSafety?.locked||!w.appReady())throw new Error('valid repaired journal did not reopen');
+
+    pass('beta4 personal + family sync, offline queue, parent PIN, safe local journal recovery, multi-child isolation, imports, reports, PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
