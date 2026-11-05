@@ -907,7 +907,25 @@ async function run(){
     ctx=await loadApp('recovered-journal');w=ctx.w;d=ctx.d;
     if(w.AktywnikDataSafety?.locked||!w.appReady())throw new Error('valid repaired journal did not reopen');
 
-    pass('beta4 personal + family sync, offline queue, parent PIN, safe local journal recovery, multi-child isolation, imports, reports, PWA');
+    // A parseable journal with an orphan child association must be blocked,
+    // but the real parent PIN must permit raw recovery without changing data.
+    const orphanFamily={...restored,entries:[...restored.entries,{
+      id:'abababab-abab-4bab-8bab-abababababab',
+      childId:'nonexistent-child',date:'2026-10-03',activity:'Spacer',minutes:10,
+      status:'approved',source:'manual'
+    }]};
+    const orphanBytes=JSON.stringify(orphanFamily);
+    localStorage.setItem(KEY,orphanBytes);
+    ctx=await loadApp('orphan-family-recovery');w=ctx.w;d=ctx.d;
+    if(!w.AktywnikDataSafety?.locked)throw new Error('orphan profile identity was not rejected');
+    const recovery=d.getElementById('aktywnikDataRecovery'),pinInput=recovery?.querySelector('input[type="password"]');
+    const unlock=[...(recovery?.querySelectorAll('button')||[])].find(b=>b.textContent.includes('Odblokuj eksport'));
+    if(!pinInput||!unlock)throw new Error('recovery screen did not offer parent PIN for valid verifier');
+    pinInput.value='2468';unlock.click();await sleep(450);
+    if(!recovery.textContent.includes('Pobierz surowy zapis awaryjny'))throw new Error('correct parent PIN did not unlock raw recovery');
+    if(localStorage.getItem(KEY)!==orphanBytes)throw new Error('PIN recovery modified the original journal');
+
+    pass('beta4 personal + family sync, offline queue, parent PIN, safe local journal recovery, profile integrity, multi-child isolation, imports, reports, PWA');
   }catch(err){fail(err.message||String(err))}
 }
 run();
