@@ -153,10 +153,11 @@ test('mislabelled personal record containing family PIN metadata cannot bypass p
   const a=loadApp(mockStore(raw),()=>{throw Error('invalid fields')});
   assert.equal(a.app.emergencyRawForExport(),null);
 });
-test('unparseable raw journal is never exposed by the emergency UI',()=>{
+test('unparseable raw journal is withheld unless a parent was already authenticated',()=>{
   const a=loadApp(mockStore('{bad'));
-  a.ctx.parentUnlocked=()=>true;
   assert.equal(a.app.emergencyRawForExport(),null);
+  a.ctx.parentUnlocked=()=>true;
+  assert.equal(a.app.emergencyRawForExport(),'{bad');
 });
 test('startup import is guarded when the journal is unreadable',()=>{
   const code=fs.readFileSync(path.join(root,'app-import.js'),'utf8');
