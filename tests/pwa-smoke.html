@@ -34,27 +34,27 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     sessionStorage.removeItem('aktywnik-pwa-smoke-reloaded');
     let regs=[];
     for(let i=0;i<40;i++){
-      regs=await navigator.serviceWorker.getRegistrations();
+      regs=await withTimeout(navigator.serviceWorker.getRegistrations(),'service worker registrations');
       if(regs.length)break;
       await sleep(100);
     }
     if(!regs.length)throw new Error('service worker not registered');
     let names=[];
     for(let i=0;i<50;i++){
-      names=await caches.keys();
+      names=await withTimeout(caches.keys(),'cache keys');
       if(names.some(n=>n.startsWith('aktywnik-plus-v')))break;
       await sleep(100);
     }
     if(!names.some(n=>n.startsWith('aktywnik-plus-v')))throw new Error('PWA cache missing');
-    const manifest=await fetch('../manifest.webmanifest').then(r=>r.json());
+    const manifest=await withTimeout(fetch('../manifest.webmanifest').then(r=>{if(!r.ok)throw new Error('manifest HTTP '+r.status);return r.json()}),'manifest fetch');
     if(manifest.start_url!=='./app.html')throw new Error('manifest start_url invalid');
     if(!Array.isArray(manifest.icons)||manifest.icons.length<2)throw new Error('manifest icons missing');
-    const cache=await caches.open(names.find(n=>n.startsWith('aktywnik-plus-v')));
+    const cache=await withTimeout(caches.open(names.find(n=>n.startsWith('aktywnik-plus-v'))),'cache open');
     const assets=['../app.html','../app.js','../styles.css'].map(x=>new URL(x,location.href).href);
     for(const asset of assets){
       let hit=null;
       for(let i=0;i<50;i++){
-        hit=await cache.match(asset);
+        hit=await withTimeout(cache.match(asset),'cache match: '+asset);
         if(hit)break;
         await sleep(100);
       }
