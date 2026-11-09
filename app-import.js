@@ -151,6 +151,10 @@ function previewRows(raw,target,existing){
   const line=item.line??'?';
   const profile=String(item.profile??'').trim();
   if(profile&&canon(profile)!==canon(target.displayName)){otherProfile++;continue}
+  // A display name is not a unique child identity. Never guess between siblings.
+  if(profile&&state.children.filter(child=>canon(child.displayName)===canon(profile)).length!==1){
+   errors.push('Wiersz '+line+': nazwa profilu jest niejednoznaczna. Rozdziel dane przed importem.');continue;
+  }
   const date=parseDate(item.date),activity=String(item.activity??'').trim(),number=parseMinutes(item.minutes);
   const effortValue=String(item.effort??'').trim();
   const effort=effortValue===''?2:Number(effortValue.replace(',','.'));
