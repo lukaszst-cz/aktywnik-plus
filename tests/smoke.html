@@ -126,12 +126,15 @@ async function run(){
     if(parser.matrixRows([['Data','Aktywność','Minuty'],['12.10.2026','Spacer','35']])[0].activity!=='Spacer')throw new Error('table header mapping failed');
     if(parser.parseDate('31.02.2026')!==null||parser.parseDate('12.10.2026')!=='2026-10-12')throw new Error('date import validation failed');
     if(parser.jsonRows([{date:'2026-10-11',activity:'Rower',minutes:10}])[0].activity!=='Rower')throw new Error('JSON table import mapping failed');
+    // Use a real child from the current app state: unknown names must not be treated as a valid identity.
+    const selectedStudent=selfSaved.children[0];
+    const otherStudentName=selectedStudent.displayName==='Uczeń B'?'Uczeń C':'Uczeń B';
     const schoolSheet=parser.matrixRows([
       ['Data aktywności','Rodzaj aktywności','Czas (min)','Poziom zmęczenia','Imię i nazwisko'],
-      ['2026/10/28','Rower',30,3,'Uczeń A'],
-      ['2026/10/29','Spacer',20,2,'Uczeń B']
+      ['2026/10/28','Rower',30,3,selectedStudent.displayName],
+      ['2026/10/29','Spacer',20,2,otherStudentName]
     ]);
-    const schoolReview=parser.previewRows(schoolSheet,{id:'student-a',displayName:'Uczeń A'},[]);
+    const schoolReview=parser.previewRows(schoolSheet,selectedStudent,[]);
     if(schoolReview.entries.length!==1||schoolReview.otherProfile!==1||schoolReview.entries[0].effort!==3)throw new Error('multi-student spreadsheet leaked into the wrong profile');
     if(parser.parseDate('2026/10/28')!=='2026-10-28')throw new Error('ISO spreadsheet slash date not accepted');
     if(Math.abs(parser.parseMinutes(45/1440)-45)>0.001)throw new Error('Excel fractional-day duration incorrect');
